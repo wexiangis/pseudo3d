@@ -34,25 +34,25 @@ typedef struct{
     int *outColor;  //col1;col2...
     //
     _3D_PPLink_Type *link;
-}_3D_DotArray_Type;
+}_3D_PointArray_Type;
 
-_3D_DotArray_Type *_3D_pointArray_init(
+_3D_PointArray_Type *_3D_pointArray_init(
     int pointNum, ...);
 
 void _3D_ppLink_add(
-    _3D_DotArray_Type *ddat, 
+    _3D_PointArray_Type *ddat, 
     int point, int targetNum, ...);
 
 void _3D_xyz_to_xy(
     double _3D_XYZ[3], int _2D_XY[2]);
 
 void _3D_angle_to_xyz(
-    _3D_DotArray_Type *ddat);
+    _3D_PointArray_Type *ddat);
 
 //以下要使用tft库
 void _3D_draw(
     int centreX, 
     int centreY, 
-    _3D_DotArray_Type *ddat);
+    _3D_PointArray_Type *ddat);
 
 #endif

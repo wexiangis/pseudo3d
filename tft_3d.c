@@ -20,7 +20,7 @@
 #define _3D_LINE_SIZE   1
 
 //
-void _3D_ppLink_add(_3D_DotArray_Type *ddat, int point, int targetNum, ...)
+void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
 {
     int i, count, tempTarget;
     _3D_PPLink_Type *dpplt;
@@ -54,16 +54,16 @@ void _3D_ppLink_add(_3D_DotArray_Type *ddat, int point, int targetNum, ...)
 }
 
 //
-_3D_DotArray_Type *_3D_pointArray_init(int pointNum, ...)
+_3D_PointArray_Type *_3D_pointArray_init(int pointNum, ...)
 {
     int i, j;
-    _3D_DotArray_Type *ddat;
+    _3D_PointArray_Type *ddat;
     va_list ap;
     //
     if(pointNum <= 0)
         return NULL;
     //
-    ddat = (_3D_DotArray_Type *)calloc(1, sizeof(_3D_DotArray_Type));
+    ddat = (_3D_PointArray_Type *)calloc(1, sizeof(_3D_PointArray_Type));
     //
     ddat->pointNum = pointNum;
     ddat->memSize = pointNum*3*sizeof(double);
@@ -136,7 +136,6 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
     double x,y,z;
     double Xrad,Yrad,Zrad;
 
-    //Rx*Ry*Rz*[x,y,z]
     x = point[0];
     y = point[1];
     z = point[2];
@@ -144,16 +143,46 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
     Yrad = raxyz[1];
     Zrad = raxyz[2];
 
-    // point[0] = x*cos(Yrad)*cos(Zrad) + y*cos(Yrad)*sin(Zrad) - z*sin(Yrad);
-    // point[1] = x*(sin(Xrad)*sin(Yrad)*cos(Zrad) - cos(Xrad)*sin(Zrad)) + y*(sin(Xrad)*sin(Yrad)*sin(Zrad) + cos(Xrad)*cos(Zrad)) + z*sin(Xrad)*cos(Yrad);
-    // point[2] = x*(cos(Xrad)*sin(Yrad)*cos(Zrad) + sin(Xrad)*sin(Zrad)) + y*(cos(Xrad)*sin(Yrad)*sin(Zrad) - sin(Xrad)*cos(Zrad)) + z*cos(Xrad)*cos(Yrad);
+/*      [roll X]
+*   1       0       0
+*   0     cosA    -sinA
+*   0     sinA     cosA
+*
+*       [roll Y]
+*  cosB     0      sinB
+*   0       1       0
+* -sinB     0      cosB
+*
+*       [roll Z]
+*  cosC   -sinC     0
+*  sinC    cosC     0
+*   0       0       1
+*
+*                                    |x|
+*   result = [roll X][roll Y][roll Z]|y|
+*                                    |z|
+*            |point[0]|
+*          = |point[1]|
+*            |point[2]|
+*
+*   point[*] just like the following code
+*/
 
-    point[0] = x*cos(Yrad)*cos(Zrad) - y*cos(Yrad)*sin(Zrad) + z*sin(Yrad);
-    point[1] = x*(sin(Xrad)*sin(Yrad)*cos(Zrad) + cos(Xrad)*sin(Zrad)) - y*(sin(Xrad)*sin(Yrad)*sin(Zrad) - cos(Xrad)*cos(Zrad)) - z*sin(Xrad)*cos(Yrad);
-    point[2] = -x*(cos(Xrad)*sin(Yrad)*cos(Zrad) - sin(Xrad)*sin(Zrad)) + y*(cos(Xrad)*sin(Yrad)*sin(Zrad) + sin(Xrad)*cos(Zrad)) + z*cos(Xrad)*cos(Yrad);
+    point[0] = 
+        x*cos(Yrad)*cos(Zrad) - 
+        y*cos(Yrad)*sin(Zrad) + 
+        z*sin(Yrad);
+    point[1] = 
+        x*(sin(Xrad)*sin(Yrad)*cos(Zrad) + cos(Xrad)*sin(Zrad)) - 
+        y*(sin(Xrad)*sin(Yrad)*sin(Zrad) - cos(Xrad)*cos(Zrad)) - 
+        z*sin(Xrad)*cos(Yrad);
+    point[2] = 
+        -x*(cos(Xrad)*sin(Yrad)*cos(Zrad) - sin(Xrad)*sin(Zrad)) + 
+        y*(cos(Xrad)*sin(Yrad)*sin(Zrad) + sin(Xrad)*cos(Zrad)) + 
+        z*cos(Xrad)*cos(Yrad);
 }
 
-void _3D_angle_to_xyz(_3D_DotArray_Type *ddat)       
+void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)       
 {
     int i, j;
     //
@@ -204,7 +233,7 @@ void _3D_angle_to_xyz(_3D_DotArray_Type *ddat)
 //      centreX/centreY : 设定原点在屏幕的坐标
 //      m*[3] : 动态X\Y\Z轴的空间坐标
 //======================================================
-void _3D_draw(int centreX, int centreY, _3D_DotArray_Type *ddat)
+void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
 {
     int i, j, k;
     _3D_PPLink_Type *dpplt;

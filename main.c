@@ -11,7 +11,7 @@ int main(void)
     char input[16];
 
     //初始化一个多边形
-    _3D_DotArray_Type *ddat;
+    _3D_PointArray_Type *ddat;
 
     //三棱锥
     // if((ddat = _3D_pointArray_init(4, 
