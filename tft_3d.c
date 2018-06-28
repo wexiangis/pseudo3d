@@ -101,26 +101,24 @@ void _3D_xyz_to_xy(double _3D_XYZ[3], int _2D_XY[2])
 {
     double temp;
     double x,y,z;
-    
-    if(_3D_Type)
+    //
+    x = _3D_XYZ[0];
+    y = _3D_XYZ[1];
+    z = _3D_XYZ[2];
+    //
+    if(_3D_Type == 0)
     {
-        ;
-    }
-    else
-    {
-        x = _3D_XYZ[0];
-        y = _3D_XYZ[1];
-        z = _3D_XYZ[2];
-    }
-    
-    _2D_XY[0] = (int)y;
-    _2D_XY[1] = (int)z;
-    
-    if(x != 0)
-    {
-        temp = x*_3D_Pd*sin(_3D_Angle);
-        _2D_XY[0] -= (int)temp;
-        _2D_XY[1] -= (int)temp;
+        //
+        _2D_XY[0] = (int)y;
+        _2D_XY[1] = (int)z;
+        //
+        if(x != 0)
+        {
+            temp = x*_3D_Pd*sin(_3D_Angle);
+            _2D_XY[0] -= (int)temp;
+            _2D_XY[1] -= (int)temp;
+        
+        }
     }
 }
 
