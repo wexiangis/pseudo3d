@@ -73,7 +73,7 @@ int main(void)
     while(1)
     {
         //
-        // PRINT_CLEAR();
+        PRINT_CLEAR();
 
         _3D_angle_to_xyz(ddat);
         _3D_draw(120,120, ddat);
