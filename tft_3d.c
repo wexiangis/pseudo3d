@@ -10,11 +10,11 @@
 // 1:每次都从原始坐标进行XYZ依次旋转,适合一次旋转
 #define _3D_MODE_SWITCH  0
 
-#define _3D_DRAW_XYZ_BASE   1
-#define _3D_DRAW_DORIGIN_LINE  0    //点-原点 连线
-#define _3D_DRAW_PP_LINK  1       //点-点 连线
+#define _3D_DRAW_XYZ_BASE   0
+#define _3D_DRAW_PO_LINE  0    //point-origin connect
+#define _3D_DRAW_PP_LINK  0    //point-point connect
 #if(_3D_DRAW_PP_LINK)
-#define _3D_DRAW_PP_LINK_LAST  0  //最后一个点和最开始一点的连线
+#define _3D_DRAW_PP_LINK_LAST  0  //last point-first point connect
 #endif
 
 #define _3D_LINE_SIZE   1
@@ -277,7 +277,7 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     }
 
     //原点和各个点连线
-#if(_3D_DRAW_DORIGIN_LINE)
+#if(_3D_DRAW_PO_LINE)
     for(i = 0, j = 0; i < ddat->pointNum; i++)
     {
         view_line(ddat->outColor[i], 
@@ -288,10 +288,10 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     }
 #endif
 
-    //前一点和下一点连线
-#if(_3D_DRAW_PP_LINK)
     if(ddat->pointNum > 1)
     {
+#if(_3D_DRAW_PP_LINK)
+        //前一点和下一点连线
         for(i = 0, j = 0; i < ddat->pointNum - 1; i++)
         {
             view_line(
@@ -302,13 +302,14 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
             j += 2;
         }
 #if(_3D_DRAW_PP_LINK_LAST)
+        //最后一点和第一点连线
         view_line(
             (ddat->outColor[0]+ddat->outColor[ddat->pointNum-1])/2, 
             ddat->out[0], ddat->out[1], 
             ddat->out[(ddat->pointNum-1)*2], ddat->out[(ddat->pointNum-1)*2+1], 
             _3D_LINE_SIZE, 0);
 #endif
-
+#endif
         //根据ppLink关系连线
         if((dpplt = ddat->link))
         {
@@ -329,7 +330,6 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
             }
         }
     }
-#endif
 
 }
 

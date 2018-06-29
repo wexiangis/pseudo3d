@@ -9,8 +9,7 @@
 
 #define  _3D_Type       0   //建坐标的方式  0: x/ y| z-
 
-#define  _3D_XYZ_ScanLen    100          //xyz坐标轴长度
-#define  _3D_XYZ_LineLen    80           //动态3根线的长度
+#define  _3D_XYZ_ScanLen    (VIEW_X_SIZE/2-20)          //xyz坐标轴长度
 
 #define  _3D_Angle      (_3D_PI/4)       //空间直角坐标系的夹角      //这里为45度
 #define  _3D_Pd         0.71             //45度视角下斜线长度比例    //

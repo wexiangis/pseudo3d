@@ -44,39 +44,58 @@ int main(void)
     // _3D_ppLink_add(ddat, 4, 1, 1);
     // _3D_ppLink_add(ddat, 5, 3, 1, 2, 3);
 
-    //长方体
-    if((ddat = _3D_pointArray_init(8, 
+    //长方体 x2
+    if((ddat = _3D_pointArray_init(8+8, 
         30.00, 40.00, 50.00, 0xFF00FF, 
         30.00, -40.00, 50.00, 0xFFFF00, 
         -30.00, -40.00, 50.00, 0x00FFFF, 
         -30.00, 40.00, 50.00, 0xFF8000, 
-
         -30.00, 40.00, -50.00, 0xFF00FF, 
         -30.00, -40.00, -50.00, 0xFFFF00, 
         30.00, -40.00, -50.00, 0x00FFFF, 
-        30.00, 40.00, -50.00, 0xFF8000
+        30.00, 40.00, -50.00, 0xFF8000,
+
+        20.00, 30.00+100, 40.00, 0xFF00FF, 
+        20.00, -30.00+100, 40.00, 0xFFFF00, 
+        -20.00, -30.00+100, 40.00, 0x00FFFF, 
+        -20.00, 30.00+100, 40.00, 0xFF8000, 
+        -20.00, 30.00+100, -40.00, 0xFF00FF, 
+        -20.00, -30.00+100, -40.00, 0xFFFF00, 
+        20.00, -30.00+100, -40.00, 0x00FFFF, 
+        20.00, 30.00+100, -40.00, 0xFF8000
         )) == NULL)
     {
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(ddat, 0, 2, 3, 7);
-    _3D_ppLink_add(ddat, 1, 1, 6);
-    _3D_ppLink_add(ddat, 2, 1, 5);
-    _3D_ppLink_add(ddat, 4, 1, 7);
+    _3D_ppLink_add(ddat, 0, 3, 1, 3, 7);
+    _3D_ppLink_add(ddat, 1, 2, 2, 6);
+    _3D_ppLink_add(ddat, 2, 2, 3, 5);
+    _3D_ppLink_add(ddat, 3, 1, 4);
+    _3D_ppLink_add(ddat, 4, 2, 5, 7);
+    _3D_ppLink_add(ddat, 5, 1, 6);
+    _3D_ppLink_add(ddat, 6, 1, 7);
+
+    _3D_ppLink_add(ddat, 0+8, 3, 1+8, 3+8, 7+8);
+    _3D_ppLink_add(ddat, 1+8, 2, 2+8, 6+8);
+    _3D_ppLink_add(ddat, 2+8, 2, 3+8, 5+8);
+    _3D_ppLink_add(ddat, 3+8, 1, 4+8);
+    _3D_ppLink_add(ddat, 4+8, 2, 5+8, 7+8);
+    _3D_ppLink_add(ddat, 5+8, 1, 6+8);
+    _3D_ppLink_add(ddat, 6+8, 1, 7+8);
 
     //初始转角
     // ddat->raxyz[0] = _3D_PI/8;
-    // ddat->raxyz[1] = _3D_PI/16;
+    // ddat->raxyz[1] = _3D_PI/2;
     // ddat->raxyz[2] = -_3D_PI/4;
 
     while(1)
     {
         //
-        PRINT_CLEAR();
+        // PRINT_CLEAR();
 
         _3D_angle_to_xyz(ddat);
-        _3D_draw(120,120, ddat);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat);
         
         //
         PRINT_EN();
