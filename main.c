@@ -11,40 +11,9 @@ int main(void)
     char input[16];
 
     //初始化一个多边形
-    _3D_PointArray_Type *ddat;
+    _3D_PointArray_Type *ddat, *ddat2, *ddat3;
 
-    //三棱锥
-    // if((ddat = _3D_pointArray_init(4, 
-    //     0.00, 80.00, 0.00, 0xFF00FF, 
-    //     0.00, 0.00, 00.00, 0xFFFF00, 
-    //     0.00, 0.00, -80.00, 0x00FFFF, 
-    //     80.00, 0.00, 0.00, 0xFF8000
-    //     )) == NULL)
-    // {
-    //     printf("_3D_pointArray_init failed\r\n");
-    //     return -1;
-    // }
-    // _3D_ppLink_add(ddat, 0, 2, 2, 3);
-    // _3D_ppLink_add(ddat, 1, 1, 3);
-
-    //棱形
-    // if((ddat = _3D_pointArray_init(6, 
-    //     0.00, 80.00, 0.00, 0xFF00FF, 
-    //     80.00, 0.00, 0.00, 0xFFFF00, 
-    //     0.00, 0.00, 80.00, 0x00FFFF, 
-    //     -80.00, 0.00, 0.00, 0xFF8000, 
-    //     0.00, 0.00, -80.00, 0x0080FF, 
-    //     0.00, -80.00, 0.00, 0x8000FF
-    //     )) == NULL)
-    // {
-    //     printf("_3D_pointArray_init failed\r\n");
-    //     return -1;
-    // }
-    // _3D_ppLink_add(ddat, 0, 3, 2, 3, 4);
-    // _3D_ppLink_add(ddat, 4, 1, 1);
-    // _3D_ppLink_add(ddat, 5, 3, 1, 2, 3);
-
-    //长方体 x2
+    //长方体
     if((ddat = _3D_pointArray_init(8+8, 
         30.00, 40.00, 50.00, 0xFF00FF, 
         30.00, -40.00, 50.00, 0xFFFF00, 
@@ -76,13 +45,41 @@ int main(void)
     _3D_ppLink_add(ddat, 5, 1, 6);
     _3D_ppLink_add(ddat, 6, 1, 7);
 
-    _3D_ppLink_add(ddat, 0+8, 3, 1+8, 3+8, 7+8);
-    _3D_ppLink_add(ddat, 1+8, 2, 2+8, 6+8);
-    _3D_ppLink_add(ddat, 2+8, 2, 3+8, 5+8);
-    _3D_ppLink_add(ddat, 3+8, 1, 4+8);
-    _3D_ppLink_add(ddat, 4+8, 2, 5+8, 7+8);
-    _3D_ppLink_add(ddat, 5+8, 1, 6+8);
-    _3D_ppLink_add(ddat, 6+8, 1, 7+8);
+    //棱形
+    if((ddat2 = _3D_pointArray_init(4, 
+        0.00, 0.00+100, 50.00, 0xFF00FF, 
+        -20.00, -30.00+100, 0.00, 0xFFFF00, 
+        -20.00, 30.00+100, 0.00, 0x00FFFF, 
+        40.00, 0.00+100, 0.00, 0xFF8000
+        )) == NULL)
+    {
+        printf("_3D_pointArray_init failed\r\n");
+        return -1;
+    }
+    _3D_ppLink_add(ddat2, 0, 3, 1, 2, 3);
+    _3D_ppLink_add(ddat2, 1, 1, 2);
+    _3D_ppLink_add(ddat2, 2, 1, 3);
+    _3D_ppLink_add(ddat2, 3, 1, 1);
+
+    //XYZ
+    if((ddat3 = _3D_pointArray_init(6, 
+        (VIEW_X_SIZE/2-20)*1.00, 0.00, 0.00, 0xFF0000, 
+        -(VIEW_X_SIZE/2-20)*1.00, 0.00, 0.00, 0xFF0000, 
+        0.00, (VIEW_X_SIZE/2-20)*1.00, 0.00, 0x00FFFF, 
+        0.00, -(VIEW_X_SIZE/2-20)*1.00, 0.00, 0x00FFFF, 
+        0.00, 0.00, (VIEW_Y_SIZE/2-20)*1.00, 0x00FF00, 
+        0.00, 0.00, -(VIEW_Y_SIZE/2-20)*1.00, 0x00FF00
+        )) == NULL)
+    {
+        printf("_3D_pointArray_init failed\r\n");
+        return -1;
+    }
+    _3D_ppLink_add(ddat3, 0, 1, 1);
+    _3D_ppLink_add(ddat3, 2, 1, 3);
+    _3D_ppLink_add(ddat3, 4, 1, 5);
+    _3D_comment_add(ddat3, VIEW_X_SIZE/2-20, 0, 0, "X", 0xFF0000);
+    _3D_comment_add(ddat3, 0, VIEW_X_SIZE/2-20, 0, "Y", 0x00FFFF);
+    _3D_comment_add(ddat3, 0, 0, VIEW_X_SIZE/2-20, "Z", 0x00FF00);
 
     //初始转角
     // ddat->raxyz[0] = _3D_PI/8;
@@ -92,9 +89,18 @@ int main(void)
     while(1)
     {
         //
-        // PRINT_CLEAR();
+        PRINT_CLEAR();
 
+        //
+        memcpy(ddat2->raxyz, ddat->raxyz, sizeof(ddat->raxyz));
+        memcpy(ddat3->raxyz, ddat->raxyz, sizeof(ddat->raxyz));
+
+        _3D_angle_to_xyz(ddat3);
+        _3D_angle_to_xyz(ddat2);
         _3D_angle_to_xyz(ddat);
+        
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat3);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat2);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat);
         
         //
@@ -102,32 +108,32 @@ int main(void)
 
         // ddat->raxyz[0] += _3D_PI/16;
         // ddat->raxyz[1] += _3D_PI/16;
-        ddat->raxyz[2] += _3D_PI/16;
+        // ddat->raxyz[2] += _3D_PI/16;
 
-        // if(scanf("%s", input))
-        // {
-        //     if(input[0] == '1')
-        //         ddat->raxyz[0] += _3D_PI/16;
-        //     else if(input[0] == 'q')
-        //         ddat->raxyz[0] -= _3D_PI/16;
+        if(scanf("%s", input))
+        {
+            if(input[0] == '1')
+                ddat->raxyz[0] += _3D_PI/16;
+            else if(input[0] == 'q')
+                ddat->raxyz[0] -= _3D_PI/16;
 
-        //     else if(input[0] == '2')
-        //         ddat->raxyz[1] += _3D_PI/16;
-        //     else if(input[0] == 'w')
-        //         ddat->raxyz[1] -= _3D_PI/16;
+            else if(input[0] == '2')
+                ddat->raxyz[1] += _3D_PI/16;
+            else if(input[0] == 'w')
+                ddat->raxyz[1] -= _3D_PI/16;
 
-        //     else if(input[0] == '3')
-        //         ddat->raxyz[2] += _3D_PI/16;
-        //     else if(input[0] == 'e')
-        //         ddat->raxyz[2] -= _3D_PI/16;
+            else if(input[0] == '3')
+                ddat->raxyz[2] += _3D_PI/16;
+            else if(input[0] == 'e')
+                ddat->raxyz[2] -= _3D_PI/16;
 
-        //     else if(input[0] == 'r')
-        //     {
-        //         memcpy(ddat->array, ddat->arrayCopy, ddat->memSize);
-        //         memset(ddat->out, 0, ddat->pointNum*2*sizeof(int));
-        //         memset(ddat->raxyz, 0, 3*sizeof(double));
-        //     }
-        // }
+            else if(input[0] == 'r')
+            {
+                _3D_reset(ddat);
+                _3D_reset(ddat2);
+                _3D_reset(ddat3);
+            }
+        }
 
         usleep(100000);
     }

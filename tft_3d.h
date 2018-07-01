@@ -22,6 +22,16 @@ typedef struct _3D_PPLink{
     struct _3D_PPLink *next;    //建立下一个连接关系
 }_3D_PPLink_Type;
 
+//comment
+typedef struct _3D_Comment{
+    double outXYZ[3];
+    double outXYZCopy[3];
+    int outXY[2];
+    char *out;
+    int color;
+    struct _3D_Comment *next;
+}_3D_Comment_Type;
+
 //管理多边形图像的结构体
 typedef struct{
     double raxyz[3];
@@ -33,14 +43,22 @@ typedef struct{
     int *outColor;  //col1;col2...
     //
     _3D_PPLink_Type *link;
+    _3D_Comment_Type *comment;
 }_3D_PointArray_Type;
 
 _3D_PointArray_Type *_3D_pointArray_init(
     int pointNum, ...);
 
+void _3D_reset(_3D_PointArray_Type *ddat);
+
 void _3D_ppLink_add(
     _3D_PointArray_Type *ddat, 
     int point, int targetNum, ...);
+
+void _3D_comment_add(
+    _3D_PointArray_Type *ddat, 
+    double x, double y, double z, 
+    char *str, int color);
 
 void _3D_xyz_to_xy(
     double _3D_XYZ[3], int _2D_XY[2]);

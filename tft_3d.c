@@ -11,6 +11,7 @@
 #define _3D_MODE_SWITCH  0
 
 #define _3D_DRAW_XYZ_BASE   0
+
 #define _3D_DRAW_PO_LINE  0    //point-origin connect
 #define _3D_DRAW_PP_LINK  0    //point-point connect
 #if(_3D_DRAW_PP_LINK)
@@ -18,6 +19,25 @@
 #endif
 
 #define _3D_LINE_SIZE   1
+
+//
+void _3D_reset(_3D_PointArray_Type *ddat)
+{
+    _3D_Comment_Type *dct;
+    //
+    memcpy(ddat->array, ddat->arrayCopy, ddat->memSize);
+    memset(ddat->out, 0, ddat->pointNum*2*sizeof(int));
+    memset(ddat->raxyz, 0, sizeof(ddat->raxyz));
+    //
+    dct = ddat->comment;
+    while(dct)
+    {
+        memcpy(dct->outXYZ, dct->outXYZCopy, sizeof(dct->outXYZ));
+        memset(dct->outXY, 0, sizeof(dct->outXY));
+        //
+        dct = dct->next;
+    }
+}
 
 //
 void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
@@ -29,14 +49,21 @@ void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
     if(ddat == NULL || point >= ddat->pointNum)
         return;
     //还没开辟内存
-    if((dpplt = ddat->link) == NULL)
+    if(ddat->link == NULL)
+    {
         dpplt = ddat->link = (_3D_PPLink_Type *)calloc(1, sizeof(_3D_PPLink_Type));
-    //移至末尾
-    while(dpplt->next)
+        dpplt = ddat->link;
+    }
+    else
+    {
+        dpplt = ddat->link;
+        //移至末尾
+        while(dpplt->next)
+            dpplt = dpplt->next;
+        //末尾新建
+        dpplt->next = (_3D_PPLink_Type *)calloc(1, sizeof(_3D_PPLink_Type));
         dpplt = dpplt->next;
-    //末尾新建
-    dpplt->next = (_3D_PPLink_Type *)calloc(1, sizeof(_3D_PPLink_Type));
-    dpplt = dpplt->next;
+    }
     //
     va_start(ap , targetNum);
     dpplt->point = point;
@@ -51,6 +78,36 @@ void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
         }
     }
     dpplt->targetNum = count;
+}
+
+//
+void _3D_comment_add(_3D_PointArray_Type *ddat, double x, double y, double z, char *str, int color)
+{
+    _3D_Comment_Type *dct;
+    //
+    if(ddat == NULL || str == NULL)
+        return;
+    //
+    if(ddat->comment == NULL)
+    {
+        ddat->comment = (_3D_Comment_Type *)calloc(1, sizeof(_3D_Comment_Type));
+        dct = ddat->comment;
+    }
+    else
+    {
+        dct = ddat->comment;
+        while(dct->next)
+            dct = dct->next;
+        dct->next = (_3D_Comment_Type *)calloc(1, sizeof(_3D_Comment_Type));
+        dct = dct->next;
+    }
+    //
+    dct->outXYZ[0] = dct->outXYZCopy[0] = x;
+    dct->outXYZ[1] = dct->outXYZCopy[1] = y;
+    dct->outXYZ[2] = dct->outXYZCopy[2] = z;
+    dct->out = (char *)calloc(strlen(str)+16, sizeof(char));
+    strcpy(dct->out, str);
+    dct->color = color;
 }
 
 //
@@ -183,6 +240,7 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
 void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)       
 {
     int i, j;
+    _3D_Comment_Type *dct;
     //
     if(ddat == NULL || 
         ddat->array == NULL || 
@@ -213,9 +271,15 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)
 #endif
         //
         _3D_angle_to_xyz0(ddat->raxyz, &ddat->array[j]);
-        // printf("raXYZ: %lf / %lf / %lf\r\n", ddat->array[j], ddat->array[j+1], ddat->array[j+2]);
         //
         j += 3;
+    }
+    //
+    dct = ddat->comment;
+    while(dct)
+    {
+        _3D_angle_to_xyz0(ddat->raxyz, dct->outXYZ);
+        dct = dct->next;
     }
 
 #if(!_3D_MODE_SWITCH)
@@ -236,6 +300,7 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     int i, j, k;
     _3D_PPLink_Type *dpplt;
     int mP, mT;
+    _3D_Comment_Type *dct;
     //
     if(ddat == NULL)
         return;
@@ -288,6 +353,7 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     }
 #endif
 
+    //点和点的连线
     if(ddat->pointNum > 1)
     {
 #if(_3D_DRAW_PP_LINK)
@@ -331,5 +397,18 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
         }
     }
 
+    //注释
+    dct = ddat->comment;
+    while(dct)
+    {
+        //三维坐标转二维
+        _3D_xyz_to_xy(dct->outXYZ, dct->outXY);
+        dct->outXY[0] = centreX - dct->outXY[0];
+        dct->outXY[1] = centreY - dct->outXY[1];
+        //
+        view_string(dct->color, -1, dct->out, dct->outXY[0], dct->outXY[1], 160, 0);
+        //
+        dct = dct->next;
+    }
 }
 
