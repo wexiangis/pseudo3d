@@ -20,6 +20,10 @@
 
 #define _3D_LINE_SIZE   1
 
+#define _3D_PD_X   0.6
+#define _3D_PD_Y   1.0
+#define _3D_PD_Z   1.0
+
 //
 void _3D_reset(_3D_PointArray_Type *ddat)
 {
@@ -157,7 +161,7 @@ _3D_PointArray_Type *_3D_pointArray_init(int pointNum, ...)
 //======================================================
 void _3D_xyz_to_xy(double _3D_XYZ[3], int _2D_XY[2])
 {
-    double temp;
+    double tempX, tempY;
     double x,y,z;
     //
     x = _3D_XYZ[0];
@@ -166,16 +170,20 @@ void _3D_xyz_to_xy(double _3D_XYZ[3], int _2D_XY[2])
     //
     if(_3D_Type == 0)
     {
-        //
-        _2D_XY[0] = (int)y;
-        _2D_XY[1] = (int)z;
-        //
+        // Y
+        _2D_XY[0] = y*_3D_PD_Y;
+
+        // Z
+        _2D_XY[1] = z*_3D_PD_Z;
+
+        // X
         if(x != 0)
         {
-            temp = x*_3D_Pd*sin(_3D_Angle);
-            _2D_XY[0] -= (int)temp;
-            _2D_XY[1] -= (int)temp;
-        
+            tempX = x*_3D_PD_X;
+            tempY = x*(1 - _3D_PD_X);
+            //
+            _2D_XY[0] -= (int)tempX;
+            _2D_XY[1] -= (int)tempY;
         }
     }
 }

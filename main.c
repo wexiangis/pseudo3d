@@ -15,14 +15,14 @@ int main(void)
 
     //长方体
     if((ddat = _3D_pointArray_init(8, 
-        30.00, 40.00, 50.00, 0xFF00FF, 
-        30.00, -40.00, 50.00, 0xFFFF00, 
-        -30.00, -40.00, 50.00, 0x00FFFF, 
-        -30.00, 40.00, 50.00, 0xFF8000, 
-        -30.00, 40.00, -50.00, 0xFF00FF, 
-        -30.00, -40.00, -50.00, 0xFFFF00, 
-        30.00, -40.00, -50.00, 0x00FFFF, 
-        30.00, 40.00, -50.00, 0xFF8000
+        40.00, 30.00, 50.00, 0xFF00FF, 
+        40.00, -30.00, 50.00, 0xFFFF00, 
+        -40.00, -30.00, 50.00, 0x00FFFF, 
+        -40.00, 30.00, 50.00, 0xFF8000, 
+        -40.00, 30.00, -50.00, 0xFF00FF, 
+        -40.00, -30.00, -50.00, 0xFFFF00, 
+        40.00, -30.00, -50.00, 0x00FFFF, 
+        40.00, 30.00, -50.00, 0xFF8000
         )) == NULL)
     {
         printf("_3D_pointArray_init failed\r\n");
@@ -54,12 +54,12 @@ int main(void)
 
     //XYZ
     if((ddat3 = _3D_pointArray_init(6, 
-        (VIEW_X_SIZE/2-20)*1.00, 0.00, 0.00, 0xFF0000, 
-        -(VIEW_X_SIZE/2-20)*1.00, 0.00, 0.00, 0xFF0000, 
-        0.00, (VIEW_X_SIZE/2-20)*1.00, 0.00, 0x00FFFF, 
-        0.00, -(VIEW_X_SIZE/2-20)*1.00, 0.00, 0x00FFFF, 
-        0.00, 0.00, (VIEW_Y_SIZE/2-20)*1.00, 0x00FF00, 
-        0.00, 0.00, -(VIEW_Y_SIZE/2-20)*1.00, 0x00FF00
+        _3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0xFF0000, 
+        -_3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0xFF0000, 
+        0.00, _3D_XYZ_ScanLen*1.00, 0.00, 0x00FFFF, 
+        0.00, -_3D_XYZ_ScanLen*1.00, 0.00, 0x00FFFF, 
+        0.00, 0.00, _3D_XYZ_ScanLen*1.00, 0x00FF00, 
+        0.00, 0.00, -_3D_XYZ_ScanLen*1.00, 0x00FF00
         )) == NULL)
     {
         printf("_3D_pointArray_init failed\r\n");
@@ -68,14 +68,14 @@ int main(void)
     _3D_ppLink_add(ddat3, 0, 1, 1);
     _3D_ppLink_add(ddat3, 2, 1, 3);
     _3D_ppLink_add(ddat3, 4, 1, 5);
-    _3D_comment_add(ddat3, VIEW_X_SIZE/2-20, 0, 0, "X", 0xFF0000);
-    _3D_comment_add(ddat3, 0, VIEW_X_SIZE/2-20, 0, "Y", 0x00FFFF);
-    _3D_comment_add(ddat3, 0, 0, VIEW_X_SIZE/2-20, "Z", 0x00FF00);
+    _3D_comment_add(ddat3, _3D_XYZ_ScanLen, 0, 0, "X", 0xFF0000);
+    _3D_comment_add(ddat3, 0, _3D_XYZ_ScanLen, 0, "Y", 0x00FFFF);
+    _3D_comment_add(ddat3, 0, 0, _3D_XYZ_ScanLen, "Z", 0x00FF00);
 
     //初始转角
     // ddat->raxyz[0] = _3D_PI/8;
-    // ddat->raxyz[1] = _3D_PI/2;
-    // ddat->raxyz[2] = -_3D_PI/4;
+    // ddat->raxyz[1] = _3D_PI/8;
+    // ddat->raxyz[2] = _3D_PI/8;
 
     while(1)
     {
@@ -134,7 +134,6 @@ int main(void)
                 ddat->mvxyz[0] += 2*strlen(input);
             else if(input[0] == 'a')
                 ddat->mvxyz[0] -= 2*strlen(input);
-
 
             else if(input[0] == 'r')
             {
