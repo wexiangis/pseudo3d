@@ -28,6 +28,7 @@ void _3D_reset(_3D_PointArray_Type *ddat)
     memcpy(ddat->array, ddat->arrayCopy, ddat->memSize);
     memset(ddat->out, 0, ddat->pointNum*2*sizeof(int));
     memset(ddat->raxyz, 0, sizeof(ddat->raxyz));
+    memset(ddat->mvxyz, 0, sizeof(ddat->mvxyz));
     //
     dct = ddat->comment;
     while(dct)
@@ -220,7 +221,7 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
 *          = |point[1]|
 *            |point[2]|
 *
-*   point[*] just like the following code
+*   point[*] just like the following ...
 */
 
     point[0] = 
@@ -272,6 +273,10 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)
         //
         _3D_angle_to_xyz0(ddat->raxyz, &ddat->array[j]);
         //
+        ddat->array[j] += ddat->mvxyz[0];
+        ddat->array[j+1] += ddat->mvxyz[1];
+        ddat->array[j+2] += ddat->mvxyz[2];
+        //
         j += 3;
     }
     //
@@ -279,12 +284,18 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)
     while(dct)
     {
         _3D_angle_to_xyz0(ddat->raxyz, dct->outXYZ);
+        //
+        dct->outXYZ[0] += ddat->mvxyz[0];
+        dct->outXYZ[1] += ddat->mvxyz[1];
+        dct->outXYZ[2] += ddat->mvxyz[2];
+        //
         dct = dct->next;
     }
 
 #if(!_3D_MODE_SWITCH)
     //mode/1: 每次转换都使用的上次转换的坐标,转角量使用过后清零
     memset(ddat->raxyz, 0, sizeof(ddat->raxyz));
+    memset(ddat->mvxyz, 0, sizeof(ddat->mvxyz));
 #endif
 
 }

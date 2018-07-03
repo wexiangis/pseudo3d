@@ -11,7 +11,7 @@
 
 #define  _3D_XYZ_ScanLen    (VIEW_X_SIZE/2-20)          //xyz坐标轴长度
 
-#define  _3D_Angle      (_3D_PI/4)       //空间直角坐标系的夹角      //这里为45度
+#define  _3D_Angle      (_3D_PI/5)       //空间直角坐标系的夹角      //这里为45度
 #define  _3D_Pd         0.71             //45度视角下斜线长度比例    //
 
 //管理多边形图像的point-point连接关系的结构体
@@ -35,6 +35,7 @@ typedef struct _3D_Comment{
 //管理多边形图像的结构体
 typedef struct{
     double raxyz[3];
+    double mvxyz[3];
     double *array;     //x1,y1,z1;x2,y2,z2;...
     double *arrayCopy; //x1,y1,z1;x2,y2,z2;...
     int pointNum;

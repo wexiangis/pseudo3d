@@ -103,20 +103,38 @@ int main(void)
 
         if(scanf("%s", input))
         {
+            //x scroll
             if(input[0] == '1')
-                ddat->raxyz[0] += _3D_PI/16;
+                ddat->raxyz[0] += _3D_PI/16*strlen(input);
             else if(input[0] == 'q')
-                ddat->raxyz[0] -= _3D_PI/16;
-
+                ddat->raxyz[0] -= _3D_PI/16*strlen(input);
+            //y scroll
             else if(input[0] == '2')
-                ddat->raxyz[1] += _3D_PI/16;
+                ddat->raxyz[1] += _3D_PI/16*strlen(input);
             else if(input[0] == 'w')
-                ddat->raxyz[1] -= _3D_PI/16;
-
+                ddat->raxyz[1] -= _3D_PI/16*strlen(input);
+            //z scroll
             else if(input[0] == '3')
-                ddat->raxyz[2] += _3D_PI/16;
+                ddat->raxyz[2] += _3D_PI/16*strlen(input);
             else if(input[0] == 'e')
-                ddat->raxyz[2] -= _3D_PI/16;
+                ddat->raxyz[2] -= _3D_PI/16*strlen(input);
+            
+            //z move
+            if(input[0] == 's')
+                ddat->mvxyz[2] += 2*strlen(input);
+            else if(input[0] == 'x')
+                ddat->mvxyz[2] -= 2*strlen(input);
+            //y move
+            else if(input[0] == 'z')
+                ddat->mvxyz[1] += 2*strlen(input);
+            else if(input[0] == 'c')
+                ddat->mvxyz[1] -= 2*strlen(input);
+            //x move
+            else if(input[0] == 'd')
+                ddat->mvxyz[0] += 2*strlen(input);
+            else if(input[0] == 'a')
+                ddat->mvxyz[0] -= 2*strlen(input);
+
 
             else if(input[0] == 'r')
             {
