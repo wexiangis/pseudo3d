@@ -38,6 +38,14 @@ int main(void)
     _3D_ppLink_add(ddat, 4, 2, 5, 7);
     _3D_ppLink_add(ddat, 5, 1, 6);
     _3D_ppLink_add(ddat, 6, 1, 7);
+    _3D_comment_add(ddat, 40.00, 30.00, 50.00, "A", 0xFFFF00);
+    _3D_comment_add(ddat, 40.00, -30.00, 50.00, "B", 0x00FF00);
+    _3D_comment_add(ddat, -40.00, -30.00, 50.00, "C", 0x8080FF);
+    _3D_comment_add(ddat, -40.00, 30.00, 50.00, "D", 0xFF0000);
+    _3D_comment_add(ddat, -40.00, 30.00, -50.00, "E", 0xFF00FF);
+    _3D_comment_add(ddat, -40.00, -30.00, -50.00, "F", 0x00FFFF);
+    _3D_comment_add(ddat, 40.00, -30.00, -50.00, "G", 0xFF8000);
+    _3D_comment_add(ddat, 40.00, 30.00, -50.00, "H", 0x0080FF);
 
     //棱形
     if((ddat2 = _3D_pointArray_init(4, 
