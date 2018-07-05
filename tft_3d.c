@@ -10,8 +10,6 @@
 // 1:每次都从原始坐标进行XYZ依次旋转,适合一次旋转
 #define _3D_MODE_SWITCH  0
 
-#define _3D_DRAW_XYZ_BASE   0
-
 #define _3D_DRAW_PO_LINE  0    //point-origin connect
 #define _3D_DRAW_PP_LINK  0    //point-point connect
 #if(_3D_DRAW_PP_LINK)
@@ -324,29 +322,6 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     if(ddat == NULL)
         return;
 
-#if(_3D_DRAW_XYZ_BASE)
-    //画基准坐标轴
-#if(_3D_Type == 0)
-    view_line(0x800000, 
-        centreX - _3D_XYZ_ScanLen, centreY - _3D_XYZ_ScanLen, 
-        centreX + _3D_XYZ_ScanLen, centreY + _3D_XYZ_ScanLen, 
-        1, 0);
-    view_string(0x800000, -1, "X", centreX + _3D_XYZ_ScanLen, centreY + _3D_XYZ_ScanLen, 160, 0);
-
-    view_line(0x008080, 
-        centreX - _3D_XYZ_ScanLen, centreY, 
-        centreX + _3D_XYZ_ScanLen, centreY, 
-        1, 0);
-    view_string(0x008080, -1, "Y", centreX + _3D_XYZ_ScanLen + 4, centreY - 8, 160, 0);
-
-    view_line(0x008000, 
-        centreX, centreY - _3D_XYZ_ScanLen, 
-        centreX, centreY + _3D_XYZ_ScanLen, 
-        1, 0);
-    view_string(0x008000, -1, "Z", centreX - 4, centreY - _3D_XYZ_ScanLen - 16, 160, 0);
-#endif
-#endif
-
     //三维坐标转二维
     for(i = 0, j = 0, k = 0; i < ddat->pointNum; i++)
     {
@@ -355,6 +330,7 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
         ddat->out[k] = centreX - ddat->out[k];
         ddat->out[k+1] = centreY - ddat->out[k+1];
         // printf("2DXY: %d / %d\r\n", ddat->out[k], ddat->out[k+1]);
+        view_dot(ddat->outColor[i], ddat->out[k], ddat->out[k+1], 2);
         //
         j += 3;
         k += 2;

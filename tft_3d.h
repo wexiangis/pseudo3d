@@ -9,7 +9,7 @@
 
 #define  _3D_Type       0   //建坐标的方式  0: x/ y| z-
 
-#define  _3D_XYZ_ScanLen  (VIEW_X_SIZE/2-20)  //xyz坐标轴长度
+#define  _3D_XYZ_ScanLen  (VIEW_X_SIZE/2)  //xyz坐标轴长度
 
 //管理多边形图像的point-point连接关系的结构体
 typedef struct _3D_PPLink{

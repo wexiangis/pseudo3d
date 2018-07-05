@@ -14,10 +14,30 @@ int main(void)
     char input[16];
 
     //初始化一个多边形
-    _3D_PointArray_Type *ddat, *ddat2, *ddat3;
+    _3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3, *dpat4;
+
+    //XYZ
+    if((dpat0 = _3D_pointArray_init(6, 
+        _3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0x800000, 
+        -_3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0x800000, 
+        0.00, _3D_XYZ_ScanLen*1.00, 0.00, 0x008080, 
+        0.00, -_3D_XYZ_ScanLen*1.00, 0.00, 0x008080, 
+        0.00, 0.00, _3D_XYZ_ScanLen*1.00, 0x008000, 
+        0.00, 0.00, -_3D_XYZ_ScanLen*1.00, 0x008000
+        )) == NULL)
+    {
+        printf("_3D_pointArray_init failed\r\n");
+        return -1;
+    }
+    _3D_ppLink_add(dpat0, 0, 1, 1);
+    _3D_ppLink_add(dpat0, 2, 1, 3);
+    _3D_ppLink_add(dpat0, 4, 1, 5);
+    _3D_comment_add(dpat0, _3D_XYZ_ScanLen, 0, 0, "X", 0x800000);
+    _3D_comment_add(dpat0, 0, _3D_XYZ_ScanLen, 0, "Y", 0x008080);
+    _3D_comment_add(dpat0, 0, 0, _3D_XYZ_ScanLen, "Z", 0x008000);
 
     //长方体
-    if((ddat = _3D_pointArray_init(8, 
+    if((dpat1 = _3D_pointArray_init(8, 
         40.00, 30.00, 50.00, 0xFF00FF, 
         40.00, -30.00, 50.00, 0xFFFF00, 
         -40.00, -30.00, 50.00, 0x00FFFF, 
@@ -31,24 +51,24 @@ int main(void)
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(ddat, 0, 3, 1, 3, 7);
-    _3D_ppLink_add(ddat, 1, 2, 2, 6);
-    _3D_ppLink_add(ddat, 2, 2, 3, 5);
-    _3D_ppLink_add(ddat, 3, 1, 4);
-    _3D_ppLink_add(ddat, 4, 2, 5, 7);
-    _3D_ppLink_add(ddat, 5, 1, 6);
-    _3D_ppLink_add(ddat, 6, 1, 7);
-    _3D_comment_add(ddat, 40.00, 30.00, 50.00, "A", 0xFFFF00);
-    _3D_comment_add(ddat, 40.00, -30.00, 50.00, "B", 0x00FF00);
-    _3D_comment_add(ddat, -40.00, -30.00, 50.00, "C", 0x8080FF);
-    _3D_comment_add(ddat, -40.00, 30.00, 50.00, "D", 0xFF0000);
-    _3D_comment_add(ddat, -40.00, 30.00, -50.00, "E", 0xFF00FF);
-    _3D_comment_add(ddat, -40.00, -30.00, -50.00, "F", 0x00FFFF);
-    _3D_comment_add(ddat, 40.00, -30.00, -50.00, "G", 0xFF8000);
-    _3D_comment_add(ddat, 40.00, 30.00, -50.00, "H", 0x0080FF);
+    _3D_ppLink_add(dpat1, 0, 3, 1, 3, 7);
+    _3D_ppLink_add(dpat1, 1, 2, 2, 6);
+    _3D_ppLink_add(dpat1, 2, 2, 3, 5);
+    _3D_ppLink_add(dpat1, 3, 1, 4);
+    _3D_ppLink_add(dpat1, 4, 2, 5, 7);
+    _3D_ppLink_add(dpat1, 5, 1, 6);
+    _3D_ppLink_add(dpat1, 6, 1, 7);
+    _3D_comment_add(dpat1, 40.00, 30.00, 50.00, "A", 0xFFFF00);
+    _3D_comment_add(dpat1, 40.00, -30.00, 50.00, "B", 0x00FF00);
+    _3D_comment_add(dpat1, -40.00, -30.00, 50.00, "C", 0x8080FF);
+    _3D_comment_add(dpat1, -40.00, 30.00, 50.00, "D", 0xFF0000);
+    _3D_comment_add(dpat1, -40.00, 30.00, -50.00, "E", 0xFF00FF);
+    _3D_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0x00FFFF);
+    _3D_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0xFF8000);
+    _3D_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0x0080FF);
 
     //棱形
-    if((ddat2 = _3D_pointArray_init(4, 
+    if((dpat2 = _3D_pointArray_init(4, 
         0.00, 0.00+100, 50.00, 0xFF00FF, 
         -20.00, -30.00+100, 0.00, 0xFFFF00, 
         -20.00, 30.00+100, 0.00, 0x00FFFF, 
@@ -58,35 +78,82 @@ int main(void)
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(ddat2, 0, 3, 1, 2, 3);
-    _3D_ppLink_add(ddat2, 1, 1, 2);
-    _3D_ppLink_add(ddat2, 2, 1, 3);
-    _3D_ppLink_add(ddat2, 3, 1, 1);
+    _3D_ppLink_add(dpat2, 0, 3, 1, 2, 3);
+    _3D_ppLink_add(dpat2, 1, 1, 2);
+    _3D_ppLink_add(dpat2, 2, 1, 3);
+    _3D_ppLink_add(dpat2, 3, 1, 1);
 
-    //XYZ
-    if((ddat3 = _3D_pointArray_init(6, 
-        _3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0xFF0000, 
-        -_3D_XYZ_ScanLen*1.00, 0.00, 0.00, 0xFF0000, 
-        0.00, _3D_XYZ_ScanLen*1.00, 0.00, 0x00FFFF, 
-        0.00, -_3D_XYZ_ScanLen*1.00, 0.00, 0x00FFFF, 
-        0.00, 0.00, _3D_XYZ_ScanLen*1.00, 0x00FF00, 
-        0.00, 0.00, -_3D_XYZ_ScanLen*1.00, 0x00FF00
+    //target point
+    if((dpat3 = _3D_pointArray_init(2, 
+        80.00, 80.00, 0.00, 0xFFFFFF, 
+        0.00, 0.00, 0.00, 0xFFFFFF
         )) == NULL)
     {
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(ddat3, 0, 1, 1);
-    _3D_ppLink_add(ddat3, 2, 1, 3);
-    _3D_ppLink_add(ddat3, 4, 1, 5);
-    _3D_comment_add(ddat3, _3D_XYZ_ScanLen, 0, 0, "X", 0xFF0000);
-    _3D_comment_add(ddat3, 0, _3D_XYZ_ScanLen, 0, "Y", 0x00FFFF);
-    _3D_comment_add(ddat3, 0, 0, _3D_XYZ_ScanLen, "Z", 0x00FF00);
+    _3D_ppLink_add(dpat3, 0, 1, 1);
+    _3D_comment_add(dpat3, 80, 80, 0, "target", 0x808080);
+    
+    //machine
+    if((dpat4 = _3D_pointArray_init(24, 
+        -4.00*2, 16.00*2, 25.00*2, 0x008080, 
+        -4.00*2, 8.00*2, 25.00*2, 0x008080, 
+        -4.00*2, 16.00*2, 17.00*2, 0x008080, 
+        -4.00*2, 8.00*2, 17.00*2, 0x008080, 
+        -4.00*2, -17.00*2, 17.00*2, 0x008080, 
+        -4.00*2, 4.00*2, 13.00*2, 0x008080, 
+        -4.00*2, -13.00*2, 13.00*2, 0x008080, 
+        -4.00*2, 4.00*2, -5.00*2, 0x008080, 
+        -4.00*2, -13.00*2, -5.00*2, 0x008080, 
+        -4.00*2, 16.00*2, -24.00*2, 0x008080, 
+        -4.00*2, 8.00*2, -24.00*2, 0x008080, 
+        -4.00*2, -17.00*2, -24.00*2, 0x008080,
+
+        4.00*2, 16.00*2, 25.00*2, 0xD0D000, 
+        4.00*2, 8.00*2, 25.00*2, 0xD0D000, 
+        4.00*2, 16.00*2, 17.00*2, 0xD0D000, 
+        4.00*2, 8.00*2, 17.00*2, 0xD0D000, 
+        4.00*2, -17.00*2, 17.00*2, 0xD0D000, 
+        4.00*2, 4.00*2, 13.00*2, 0xD0D000, 
+        4.00*2, -13.00*2, 13.00*2, 0xD0D000, 
+        4.00*2, 4.00*2, -5.00*2, 0xD0D000, 
+        4.00*2, -13.00*2, -5.00*2, 0xD0D000, 
+        4.00*2, 16.00*2, -24.00*2, 0xD0D000, 
+        4.00*2, 8.00*2, -24.00*2, 0xD0D000, 
+        4.00*2, -17.00*2, -24.00*2, 0xD0D000
+        )) == NULL)
+    {
+        printf("_3D_pointArray_init failed\r\n");
+        return -1;
+    }
+    _3D_ppLink_add(dpat4, 0, 3, 1, 2, 12);
+    _3D_ppLink_add(dpat4, 1, 2, 3, 13);
+    _3D_ppLink_add(dpat4, 2, 3, 3, 9, 14);
+    _3D_ppLink_add(dpat4, 3, 3, 4, 10, 15);
+    _3D_ppLink_add(dpat4, 4, 2, 11, 16);
+    _3D_ppLink_add(dpat4, 5, 3, 6, 7, 17);
+    _3D_ppLink_add(dpat4, 6, 2, 8, 18);
+    _3D_ppLink_add(dpat4, 7, 2, 8, 19);
+    _3D_ppLink_add(dpat4, 8, 1, 20);
+    _3D_ppLink_add(dpat4, 9, 2, 10, 21);
+    _3D_ppLink_add(dpat4, 10, 2, 11, 22);
+    _3D_ppLink_add(dpat4, 11, 1, 23);
+    _3D_ppLink_add(dpat4, 12, 2, 13, 14);
+    _3D_ppLink_add(dpat4, 13, 1, 15);
+    _3D_ppLink_add(dpat4, 14, 2, 15, 21);
+    _3D_ppLink_add(dpat4, 15, 2, 16, 22);
+    _3D_ppLink_add(dpat4, 16, 1, 23);
+    _3D_ppLink_add(dpat4, 17, 2, 18, 19);
+    _3D_ppLink_add(dpat4, 18, 1, 20);
+    _3D_ppLink_add(dpat4, 19, 1, 20);
+    _3D_ppLink_add(dpat4, 21, 1, 22);
+    _3D_ppLink_add(dpat4, 22, 1, 23);
 
     //初始转角
-    // ddat->raxyz[0] = _3D_PI/8;
-    // ddat->raxyz[1] = _3D_PI/8;
-    // ddat->raxyz[2] = _3D_PI/8;
+    // dpat1->raxyz[0] = _3D_PI/8;
+    // dpat1->raxyz[1] = _3D_PI/8;
+    // dpat1->raxyz[2] = _3D_PI/8;
 
     while(1)
     {
@@ -94,63 +161,73 @@ int main(void)
         PRINT_CLEAR();
 
         //
-        memcpy(ddat2->raxyz, ddat->raxyz, sizeof(ddat->raxyz));
-        memcpy(ddat3->raxyz, ddat->raxyz, sizeof(ddat->raxyz));
+        memcpy(dpat2->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+        memcpy(dpat3->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+        memcpy(dpat4->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+        //
+        memcpy(dpat2->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
+        memcpy(dpat3->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
+        memcpy(dpat4->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
 
-        _3D_angle_to_xyz(ddat3);
-        _3D_angle_to_xyz(ddat2);
-        _3D_angle_to_xyz(ddat);
+        _3D_angle_to_xyz(dpat4);
+        _3D_angle_to_xyz(dpat3);
+        _3D_angle_to_xyz(dpat2);
+        _3D_angle_to_xyz(dpat1);
         
-        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat3);
-        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat2);
-        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, ddat);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat0);
+
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat4);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
+        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
+        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
         
         //
         PRINT_EN();
 
-        // ddat->raxyz[0] += SCROLL_DIV;
-        // ddat->raxyz[1] += SCROLL_DIV;
-        // ddat->raxyz[2] += SCROLL_DIV;
+        // dpat1->raxyz[0] += SCROLL_DIV;
+        // dpat1->raxyz[1] += SCROLL_DIV;
+        // dpat1->raxyz[2] += SCROLL_DIV;
 
         if(scanf("%s", input))
         {
             //x scroll
             if(input[0] == '3')
-                ddat->raxyz[0] += SCROLL_DIV*strlen(input);
+                dpat1->raxyz[0] += SCROLL_DIV*strlen(input);
             else if(input[0] == '1')
-                ddat->raxyz[0] -= SCROLL_DIV*strlen(input);
+                dpat1->raxyz[0] -= SCROLL_DIV*strlen(input);
             //y scroll
             else if(input[0] == 'w')
-                ddat->raxyz[1] += SCROLL_DIV*strlen(input);
+                dpat1->raxyz[1] += SCROLL_DIV*strlen(input);
             else if(input[0] == '2')
-                ddat->raxyz[1] -= SCROLL_DIV*strlen(input);
+                dpat1->raxyz[1] -= SCROLL_DIV*strlen(input);
             //z scroll
             else if(input[0] == 'q')
-                ddat->raxyz[2] += SCROLL_DIV*strlen(input);
+                dpat1->raxyz[2] += SCROLL_DIV*strlen(input);
             else if(input[0] == 'e')
-                ddat->raxyz[2] -= SCROLL_DIV*strlen(input);
+                dpat1->raxyz[2] -= SCROLL_DIV*strlen(input);
             
             //z move
             if(input[0] == 's')
-                ddat->mvxyz[2] += MOVE_DIV*strlen(input);
+                dpat1->mvxyz[2] += MOVE_DIV*strlen(input);
             else if(input[0] == 'x')
-                ddat->mvxyz[2] -= MOVE_DIV*strlen(input);
+                dpat1->mvxyz[2] -= MOVE_DIV*strlen(input);
             //y move
             else if(input[0] == 'z')
-                ddat->mvxyz[1] += MOVE_DIV*strlen(input);
+                dpat1->mvxyz[1] += MOVE_DIV*strlen(input);
             else if(input[0] == 'c')
-                ddat->mvxyz[1] -= MOVE_DIV*strlen(input);
+                dpat1->mvxyz[1] -= MOVE_DIV*strlen(input);
             //x move
             else if(input[0] == 'd')
-                ddat->mvxyz[0] += MOVE_DIV*strlen(input);
+                dpat1->mvxyz[0] += MOVE_DIV*strlen(input);
             else if(input[0] == 'a')
-                ddat->mvxyz[0] -= MOVE_DIV*strlen(input);
+                dpat1->mvxyz[0] -= MOVE_DIV*strlen(input);
 
             else if(input[0] == 'r')
             {
-                _3D_reset(ddat);
-                _3D_reset(ddat2);
-                _3D_reset(ddat3);
+                _3D_reset(dpat1);
+                _3D_reset(dpat2);
+                _3D_reset(dpat3);
+                _3D_reset(dpat4);
             }
         }
 
