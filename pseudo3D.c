@@ -1,5 +1,5 @@
 
-#include "tft_3d.h"
+#include "pseudo3D.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,43 +23,43 @@
 #define _3D_PD_Z   1.0
 
 //
-void _3D_reset(_3D_PointArray_Type *ddat)
+void _3D_reset(_3D_PointArray_Type *dpat)
 {
     _3D_Comment_Type *dct;
     //
-    memcpy(ddat->array, ddat->arrayCopy, ddat->memSize);
-    memset(ddat->out, 0, ddat->pointNum*2*sizeof(int));
-    memset(ddat->raxyz, 0, sizeof(ddat->raxyz));
-    memset(ddat->mvxyz, 0, sizeof(ddat->mvxyz));
+    memcpy(dpat->xyzArray, dpat->xyzArrayCopy, dpat->xyzArrayMemSize);
+    memset(dpat->xyArray, 0, dpat->pointNum*2*sizeof(int));
+    memset(dpat->raxyz, 0, sizeof(dpat->raxyz));
+    memset(dpat->mvxyz, 0, sizeof(dpat->mvxyz));
     //
-    dct = ddat->comment;
+    dct = dpat->comment;
     while(dct)
     {
-        memcpy(dct->outXYZ, dct->outXYZCopy, sizeof(dct->outXYZ));
-        memset(dct->outXY, 0, sizeof(dct->outXY));
+        memcpy(dct->xyz, dct->xyzCopy, sizeof(dct->xyz));
+        memset(dct->xy, 0, sizeof(dct->xy));
         //
         dct = dct->next;
     }
 }
 
 //
-void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
+void _3D_ppLink_add(_3D_PointArray_Type *dpat, int color, int point, int targetNum, ...)
 {
     int i, count, tempTarget;
     _3D_PPLink_Type *dpplt;
     va_list ap;
     //
-    if(ddat == NULL || point >= ddat->pointNum)
+    if(dpat == NULL || point >= dpat->pointNum)
         return;
     //还没开辟内存
-    if(ddat->link == NULL)
+    if(dpat->link == NULL)
     {
-        dpplt = ddat->link = (_3D_PPLink_Type *)calloc(1, sizeof(_3D_PPLink_Type));
-        dpplt = ddat->link;
+        dpplt = dpat->link = (_3D_PPLink_Type *)calloc(1, sizeof(_3D_PPLink_Type));
+        dpplt = dpat->link;
     }
     else
     {
-        dpplt = ddat->link;
+        dpplt = dpat->link;
         //移至末尾
         while(dpplt->next)
             dpplt = dpplt->next;
@@ -69,89 +69,95 @@ void _3D_ppLink_add(_3D_PointArray_Type *ddat, int point, int targetNum, ...)
     }
     //
     va_start(ap , targetNum);
-    dpplt->point = point;
-    dpplt->target = (int *)calloc(targetNum + 1, sizeof(int));
+    dpplt->order = point;
+    dpplt->targetOrderArray = (int *)calloc(targetNum + 1, sizeof(int));
+    dpplt->color = color;
     for(i = 0, count = 0; i < targetNum; i++)
     {
         tempTarget = va_arg(ap , int);
-        if(tempTarget < ddat->pointNum)
+        if(tempTarget < dpat->pointNum)
         {
-            dpplt->target[count] = tempTarget;
+            dpplt->targetOrderArray[count] = tempTarget;
             count += 1;
         }
     }
-    dpplt->targetNum = count;
+    dpplt->targetOrderNum = count;
 }
 
 //
-void _3D_comment_add(_3D_PointArray_Type *ddat, double x, double y, double z, char *str, int color)
+void _3D_comment_add(_3D_PointArray_Type *dpat, double x, double y, double z, char *comment, int type, int color)
 {
     _3D_Comment_Type *dct;
     //
-    if(ddat == NULL || str == NULL)
+    if(dpat == NULL || comment == NULL)
         return;
     //
-    if(ddat->comment == NULL)
+    if(dpat->comment == NULL)
     {
-        ddat->comment = (_3D_Comment_Type *)calloc(1, sizeof(_3D_Comment_Type));
-        dct = ddat->comment;
+        dpat->comment = (_3D_Comment_Type *)calloc(1, sizeof(_3D_Comment_Type));
+        dct = dpat->comment;
     }
     else
     {
-        dct = ddat->comment;
+        dct = dpat->comment;
         while(dct->next)
             dct = dct->next;
         dct->next = (_3D_Comment_Type *)calloc(1, sizeof(_3D_Comment_Type));
         dct = dct->next;
     }
     //
-    dct->outXYZ[0] = dct->outXYZCopy[0] = x;
-    dct->outXYZ[1] = dct->outXYZCopy[1] = y;
-    dct->outXYZ[2] = dct->outXYZCopy[2] = z;
-    dct->out = (char *)calloc(strlen(str)+16, sizeof(char));
-    strcpy(dct->out, str);
+    dct->xyz[0] = dct->xyzCopy[0] = x;
+    dct->xyz[1] = dct->xyzCopy[1] = y;
+    dct->xyz[2] = dct->xyzCopy[2] = z;
+    dct->type = type;
+    if(dct->type == 0)
+    {
+        dct->comment = (char *)calloc(strlen(comment)+16, sizeof(char));
+        strcpy(dct->comment, comment);
+    }
+    else
+        dct->comment = comment;
     dct->color = color;
 }
 
 //
-_3D_PointArray_Type *_3D_pointArray_init(int pointNum, ...)
+_3D_PointArray_Type *_3D_pointArray_init(int pointNum, double x, double y, double z, int color, ...)
 {
     int i, j;
-    _3D_PointArray_Type *ddat;
+    _3D_PointArray_Type *dpat;
     va_list ap;
     //
-    if(pointNum <= 0)
+    if(pointNum < 1)
         return NULL;
     //
-    ddat = (_3D_PointArray_Type *)calloc(1, sizeof(_3D_PointArray_Type));
+    dpat = (_3D_PointArray_Type *)calloc(1, sizeof(_3D_PointArray_Type));
     //
-    ddat->pointNum = pointNum;
-    ddat->memSize = pointNum*3*sizeof(double);
+    dpat->pointNum = pointNum;
+    dpat->xyzArrayMemSize = pointNum*3*sizeof(double);
     //
-    ddat->array = (double *)calloc(pointNum*3 + 3, sizeof(double));
-    ddat->arrayCopy = (double *)calloc(pointNum*3 + 3, sizeof(double));
+    dpat->xyzArray = (double *)calloc(pointNum*3 + 3, sizeof(double));
+    dpat->xyzArrayCopy = (double *)calloc(pointNum*3 + 3, sizeof(double));
     //
-    ddat->out = (int *)calloc(pointNum*2 + 2, sizeof(int));
-    ddat->outColor = (int *)calloc(pointNum + 1, sizeof(int));
+    dpat->xyArray = (int *)calloc(pointNum*2 + 2, sizeof(int));
+    dpat->color = (int *)calloc(pointNum + 1, sizeof(int));
     //
-    va_start(ap , pointNum);
-    for(i = 0, j = 0; i < pointNum; i++)
+    dpat->xyzArray[0] = x;
+    dpat->xyzArray[1] = y;
+    dpat->xyzArray[2] = z;
+    dpat->color[0] = color;
+    va_start(ap , color);
+    for(i = 1, j = 3; i < pointNum; i++)
     {
-        ddat->array[j] = va_arg(ap , double);
-        ddat->array[j+1] = va_arg(ap , double);
-        ddat->array[j+2] = va_arg(ap , double);
-        ddat->outColor[i] = va_arg(ap , int);
-        // printf("input : %lf / %lf / %lf : %d\r\n", 
-        //     ddat->array[j], 
-        //     ddat->array[j+1], 
-        //     ddat->array[j+2], 
-        //     ddat->outColor[i]);
+        dpat->xyzArray[j] = va_arg(ap , double);
+        dpat->xyzArray[j+1] = va_arg(ap , double);
+        dpat->xyzArray[j+2] = va_arg(ap , double);
+        dpat->color[i] = va_arg(ap , int);
         j += 3;
     }
     va_end(ap);
-    memcpy(ddat->arrayCopy, ddat->array, ddat->memSize);
+    memcpy(dpat->xyzArrayCopy, dpat->xyzArray, dpat->xyzArrayMemSize);
     //
-    return ddat;
+    return dpat;
 }
 
 //======================================================
@@ -244,64 +250,64 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
         z*cos(Xrad)*cos(Yrad);
 }
 
-void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)       
+void _3D_angle_to_xyz(_3D_PointArray_Type *dpat)       
 {
     int i, j;
     _3D_Comment_Type *dct;
     //
-    if(ddat == NULL || 
-        ddat->array == NULL || 
-        ddat->arrayCopy == NULL)
+    if(dpat == NULL || 
+        dpat->xyzArray == NULL || 
+        dpat->xyzArrayCopy == NULL)
         return;
     //
-    if(ddat->raxyz[0] >= 2*_3D_PI)
-        ddat->raxyz[0] -= 2*_3D_PI;
-    else if(ddat->raxyz[0] < 0)
-        ddat->raxyz[0] += 2*_3D_PI;
+    if(dpat->raxyz[0] >= 2*_3D_PI)
+        dpat->raxyz[0] -= 2*_3D_PI;
+    else if(dpat->raxyz[0] < 0)
+        dpat->raxyz[0] += 2*_3D_PI;
 
-    if(ddat->raxyz[1] >= 2*_3D_PI)
-        ddat->raxyz[1] -= 2*_3D_PI;
-    else if(ddat->raxyz[1] < 0)
-        ddat->raxyz[1] += 2*_3D_PI;
+    if(dpat->raxyz[1] >= 2*_3D_PI)
+        dpat->raxyz[1] -= 2*_3D_PI;
+    else if(dpat->raxyz[1] < 0)
+        dpat->raxyz[1] += 2*_3D_PI;
 
-    if(ddat->raxyz[2] >= 2*_3D_PI)
-        ddat->raxyz[2] -= 2*_3D_PI;
-    else if(ddat->raxyz[2] < 0)
-        ddat->raxyz[2] += 2*_3D_PI;
+    if(dpat->raxyz[2] >= 2*_3D_PI)
+        dpat->raxyz[2] -= 2*_3D_PI;
+    else if(dpat->raxyz[2] < 0)
+        dpat->raxyz[2] += 2*_3D_PI;
 
     //
-    for(i = 0, j = 0; i < ddat->pointNum; i++)
+    for(i = 0, j = 0; i < dpat->pointNum; i++)
     {
 #if(_3D_MODE_SWITCH)
         //mode/0: 使用原始的坐标和累积的转角量,一次转换到目标坐标
-        memcpy(&ddat->array[j], &ddat->arrayCopy[j], 3*sizeof(double));
+        memcpy(&dpat->xyzArray[j], &dpat->xyzArrayCopy[j], 3*sizeof(double));
 #endif
         //
-        _3D_angle_to_xyz0(ddat->raxyz, &ddat->array[j]);
+        _3D_angle_to_xyz0(dpat->raxyz, &dpat->xyzArray[j]);
         //
-        ddat->array[j] += ddat->mvxyz[0];
-        ddat->array[j+1] += ddat->mvxyz[1];
-        ddat->array[j+2] += ddat->mvxyz[2];
+        dpat->xyzArray[j] += dpat->mvxyz[0];
+        dpat->xyzArray[j+1] += dpat->mvxyz[1];
+        dpat->xyzArray[j+2] += dpat->mvxyz[2];
         //
         j += 3;
     }
     //
-    dct = ddat->comment;
+    dct = dpat->comment;
     while(dct)
     {
-        _3D_angle_to_xyz0(ddat->raxyz, dct->outXYZ);
+        _3D_angle_to_xyz0(dpat->raxyz, dct->xyz);
         //
-        dct->outXYZ[0] += ddat->mvxyz[0];
-        dct->outXYZ[1] += ddat->mvxyz[1];
-        dct->outXYZ[2] += ddat->mvxyz[2];
+        dct->xyz[0] += dpat->mvxyz[0];
+        dct->xyz[1] += dpat->mvxyz[1];
+        dct->xyz[2] += dpat->mvxyz[2];
         //
         dct = dct->next;
     }
 
 #if(!_3D_MODE_SWITCH)
     //mode/1: 每次转换都使用的上次转换的坐标,转角量使用过后清零
-    memset(ddat->raxyz, 0, sizeof(ddat->raxyz));
-    memset(ddat->mvxyz, 0, sizeof(ddat->mvxyz));
+    memset(dpat->raxyz, 0, sizeof(dpat->raxyz));
+    memset(dpat->mvxyz, 0, sizeof(dpat->mvxyz));
 #endif
 
 }
@@ -312,25 +318,25 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *ddat)
 //      centreX/centreY : 设定原点在屏幕的坐标
 //      m*[3] : 动态X\Y\Z轴的空间坐标
 //======================================================
-void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
+void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *dpat)
 {
     int i, j, k;
     _3D_PPLink_Type *dpplt;
     int mP, mT;
     _3D_Comment_Type *dct;
     //
-    if(ddat == NULL)
+    if(dpat == NULL)
         return;
 
     //三维坐标转二维
-    for(i = 0, j = 0, k = 0; i < ddat->pointNum; i++)
+    for(i = 0, j = 0, k = 0; i < dpat->pointNum; i++)
     {
-        _3D_xyz_to_xy(&ddat->array[j], &ddat->out[k]);
+        _3D_xyz_to_xy(&dpat->xyzArray[j], &dpat->xyArray[k]);
 
-        ddat->out[k] = centreX - ddat->out[k];
-        ddat->out[k+1] = centreY - ddat->out[k+1];
-        // printf("2DXY: %d / %d\r\n", ddat->out[k], ddat->out[k+1]);
-        view_dot(ddat->outColor[i], ddat->out[k], ddat->out[k+1], 2);
+        dpat->xyArray[k] = centreX - dpat->xyArray[k];
+        dpat->xyArray[k+1] = centreY - dpat->xyArray[k+1];
+        // printf("2DXY: %d / %d\r\n", dpat->xyArray[k], dpat->xyArray[k+1]);
+        view_dot(dpat->color[i], dpat->xyArray[k], dpat->xyArray[k+1], 2);
         //
         j += 3;
         k += 2;
@@ -338,52 +344,52 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
 
     //原点和各个点连线
 #if(_3D_DRAW_PO_LINE)
-    for(i = 0, j = 0; i < ddat->pointNum; i++)
+    for(i = 0, j = 0; i < dpat->pointNum; i++)
     {
-        view_line(ddat->outColor[i], 
+        view_line(dpat->color[i], 
             centreX, centreY, 
-            ddat->out[j], ddat->out[j+1], 
+            dpat->xyArray[j], dpat->xyArray[j+1], 
             _3D_LINE_SIZE, 0);
         j += 2;
     }
 #endif
 
     //点和点的连线
-    if(ddat->pointNum > 1)
+    if(dpat->pointNum > 1)
     {
 #if(_3D_DRAW_PP_LINK)
         //前一点和下一点连线
-        for(i = 0, j = 0; i < ddat->pointNum - 1; i++)
+        for(i = 0, j = 0; i < dpat->pointNum - 1; i++)
         {
             view_line(
-                (ddat->outColor[i]+ddat->outColor[i+1])/2, 
-                ddat->out[j], ddat->out[j+1], 
-                ddat->out[j+2], ddat->out[j+3], 
+                (dpat->color[i]+dpat->color[i+1])/2, 
+                dpat->xyArray[j], dpat->xyArray[j+1], 
+                dpat->xyArray[j+2], dpat->xyArray[j+3], 
                 _3D_LINE_SIZE, 0);
             j += 2;
         }
 #if(_3D_DRAW_PP_LINK_LAST)
         //最后一点和第一点连线
         view_line(
-            (ddat->outColor[0]+ddat->outColor[ddat->pointNum-1])/2, 
-            ddat->out[0], ddat->out[1], 
-            ddat->out[(ddat->pointNum-1)*2], ddat->out[(ddat->pointNum-1)*2+1], 
+            (dpat->color[0]+dpat->color[dpat->pointNum-1])/2, 
+            dpat->xyArray[0], dpat->xyArray[1], 
+            dpat->xyArray[(dpat->pointNum-1)*2], dpat->xyArray[(dpat->pointNum-1)*2+1], 
             _3D_LINE_SIZE, 0);
 #endif
 #endif
         //根据ppLink关系连线
-        if((dpplt = ddat->link))
+        if((dpplt = dpat->link))
         {
             while(dpplt)
             {
-                mP = dpplt->point*2;
-                for(i = 0; i < dpplt->targetNum; i++)
+                mP = dpplt->order*2;
+                for(i = 0; i < dpplt->targetOrderNum; i++)
                 {
-                    mT = dpplt->target[i]*2;
+                    mT = dpplt->targetOrderArray[i]*2;
                     view_line(
-                        (ddat->outColor[dpplt->point]+ddat->outColor[dpplt->target[i]])/2, 
-                        ddat->out[mP], ddat->out[mP+1], 
-                        ddat->out[mT], ddat->out[mT+1], 
+                        dpplt->color, 
+                        dpat->xyArray[mP], dpat->xyArray[mP+1], 
+                        dpat->xyArray[mT], dpat->xyArray[mT+1], 
                         _3D_LINE_SIZE, 0); 
                 }
                 //
@@ -393,15 +399,15 @@ void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *ddat)
     }
 
     //注释
-    dct = ddat->comment;
+    dct = dpat->comment;
     while(dct)
     {
         //三维坐标转二维
-        _3D_xyz_to_xy(dct->outXYZ, dct->outXY);
-        dct->outXY[0] = centreX - dct->outXY[0];
-        dct->outXY[1] = centreY - dct->outXY[1];
+        _3D_xyz_to_xy(dct->xyz, dct->xy);
+        dct->xy[0] = centreX - dct->xy[0];
+        dct->xy[1] = centreY - dct->xy[1];
         //
-        view_string(dct->color, -1, dct->out, dct->outXY[0], dct->outXY[1], 160, 0);
+        view_string(dct->color, -1, dct->comment, dct->xy[0], dct->xy[1], 160, 0);
         //
         dct = dct->next;
     }
