@@ -51,13 +51,13 @@ int main(void)
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(dpat1, 0, 3, 1, 3, 7);
-    _3D_ppLink_add(dpat1, 1, 2, 2, 6);
-    _3D_ppLink_add(dpat1, 2, 2, 3, 5);
-    _3D_ppLink_add(dpat1, 3, 1, 4);
-    _3D_ppLink_add(dpat1, 4, 2, 5, 7);
-    _3D_ppLink_add(dpat1, 5, 1, 6);
-    _3D_ppLink_add(dpat1, 6, 1, 7);
+    _3D_ppLink_add(dpat1, 0xFF0000, 0, 3, 1, 3, 7);
+    _3D_ppLink_add(dpat1, 0x00FF00, 1, 2, 2, 6);
+    _3D_ppLink_add(dpat1, 0x0000FF, 2, 2, 3, 5);
+    _3D_ppLink_add(dpat1, 0xFFFF00, 3, 1, 4);
+    _3D_ppLink_add(dpat1, 0xFF00FF, 4, 2, 5, 7);
+    _3D_ppLink_add(dpat1, 0x00FFFF, 5, 1, 6);
+    _3D_ppLink_add(dpat1, 0xFF8000, 6, 1, 7);
     _3D_comment_add(dpat1, 40.00, 30.00, 50.00, "A", 0, 0xFFFF00);
     _3D_comment_add(dpat1, 40.00, -30.00, 50.00, "B", 0, 0x00FF00);
     _3D_comment_add(dpat1, -40.00, -30.00, 50.00, "C", 0, 0x8080FF);
@@ -78,10 +78,10 @@ int main(void)
         printf("_3D_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(dpat2, 0, 3, 1, 2, 3);
-    _3D_ppLink_add(dpat2, 1, 1, 2);
-    _3D_ppLink_add(dpat2, 2, 1, 3);
-    _3D_ppLink_add(dpat2, 3, 1, 1);
+    _3D_ppLink_add(dpat2, 0xFF0000, 0, 3, 1, 2, 3);
+    _3D_ppLink_add(dpat2, 0x00FF00, 1, 1, 2);
+    _3D_ppLink_add(dpat2, 0x0000FF, 2, 1, 3);
+    _3D_ppLink_add(dpat2, 0xFFFF00, 3, 1, 1);
 
     //target point
     if((dpat3 = _3D_pointArray_init(2, 
@@ -176,10 +176,10 @@ int main(void)
         
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat0);
 
-        _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
+        // _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
-        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
-        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
+        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
         
         //
         PRINT_EN();
