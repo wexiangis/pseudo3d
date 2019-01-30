@@ -176,7 +176,7 @@ int main(void)
         
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat0);
 
-        // _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
+        _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
