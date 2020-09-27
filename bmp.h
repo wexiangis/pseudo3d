@@ -6,4 +6,3 @@ unsigned char *bmp_get(char *filePath, int *picMaxSize, int *width, int *height,
 int bmp_create(char *filePath, unsigned char *data, int width, int height, int per);
 
 #endif
-

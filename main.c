@@ -5,9 +5,20 @@
 
 #include "pseudo3D.h"
 #include "view.h"
+#include "mpu6050.h"
 
 #define SCROLL_DIV  (_3D_PI/16)
 #define MOVE_DIV  10
+
+/* 稍微精准的延时 */
+#include <sys/time.h>
+void delayus(unsigned int us)
+{
+    struct timeval delay;
+    delay.tv_sec = us / 1000000;
+    delay.tv_usec = us % 1000000;
+    select(0, NULL, NULL, NULL, &delay);
+}
 
 int main(void)
 {
@@ -155,8 +166,15 @@ int main(void)
     // dpat1->raxyz[1] = _3D_PI/8;
     // dpat1->raxyz[2] = _3D_PI/8;
 
+    //初始化mpu6050
+    mpu6050_init("/dev/i2c-1");
+
     while(1)
     {
+        printf("GX/%d GY/%d GZ/%d AX/%d AY/%d AZ/%d \r\n",
+            getGyro(0), getGyro(1), getGyro(2),
+            getAccel(0), getAccel(1), getAccel(2));
+
         //
         PRINT_CLEAR();
 
@@ -176,9 +194,9 @@ int main(void)
         
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat0);
 
-        _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
-        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
-        _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
+        // _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
+        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
+        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
         
         //
@@ -188,7 +206,7 @@ int main(void)
         // dpat1->raxyz[1] += SCROLL_DIV;
         // dpat1->raxyz[2] += SCROLL_DIV;
 
-        if(scanf("%s", input))
+        if(0)//scanf("%s", input))
         {
             //x scroll
             if(input[0] == '3')
@@ -231,7 +249,7 @@ int main(void)
             }
         }
 
-        usleep(100000);
+        delayus(500000);
     }
 }
 
