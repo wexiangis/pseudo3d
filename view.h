@@ -5,6 +5,8 @@
 #include "bmp.h"
 #include "gbk2312.h"
 
+#define VIEW_ENABLE_FB
+
 #define VIEW_X_SIZE 320
 #define VIEW_Y_SIZE 320
 #define VIEW_PICTURE_PERW 3
