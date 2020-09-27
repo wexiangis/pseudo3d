@@ -20,11 +20,11 @@
 #define GYRO_ZOUT_L 0x48
 #define PWR_MGMT_1 0x6B //电源管理，典型值：0x00(正常启用)
 #define WHO_AM_I 0x75   //IIC地址寄存器(默认数值0x68，只读)
-#define SLAVE_ADDR 0xD0 //IIC写入时的地址字节数据，+1为读取
+#define SLAVE_ADDR 0x68 //IIC写入时的地址字节数据，+1为读取
 
-#define GX_Offset -65
-#define GY_Offset 14
-#define GZ_Offset -23
+#define GX_Offset (23)
+#define GY_Offset (-10)
+#define GZ_Offset (14)
 
 /*
  *  i2c operation
@@ -107,9 +107,9 @@ short getAccel(unsigned char xyz)
 short getGyro(unsigned char xyz)
 {
     if (xyz == 0)
-        return mpu6050_getData(GYRO_XOUT_H) - GX_Offset;
+        return mpu6050_getData(GYRO_XOUT_H) + GX_Offset;
     else if (xyz == 1)
-        return mpu6050_getData(GYRO_YOUT_H) - GY_Offset;
+        return mpu6050_getData(GYRO_YOUT_H) + GY_Offset;
     else
-        return mpu6050_getData(GYRO_ZOUT_H) - GZ_Offset;
+        return mpu6050_getData(GYRO_ZOUT_H) + GZ_Offset;
 }

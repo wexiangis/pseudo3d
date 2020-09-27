@@ -7,6 +7,8 @@
 #include "view.h"
 #include "mpu6050.h"
 
+#define INTERVALUS 200000
+
 #define SCROLL_DIV  (_3D_PI/16)
 #define MOVE_DIV  10
 
@@ -171,7 +173,7 @@ int main(void)
 
     while(1)
     {
-        printf("GX/%d GY/%d GZ/%d AX/%d AY/%d AZ/%d \r\n",
+        printf("GX/%05d GY/%05d GZ/%05d AX/%05d AY/%05d AZ/%05d \r\n",
             getGyro(0), getGyro(1), getGyro(2),
             getAccel(0), getAccel(1), getAccel(2));
 
@@ -249,7 +251,7 @@ int main(void)
             }
         }
 
-        delayus(500000);
+        delayus(INTERVALUS);
     }
 }
 
