@@ -26,14 +26,19 @@ void delayus(unsigned int us)
     select(0, NULL, NULL, NULL, &delay);
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
     //初始化一个多边形
     _3D_PointArray_Type *dpat0, *dpat1;
 
     char input[16];
-    int fd = open("/dev/console", O_RDONLY);
+    int fd;
 
+    // open console
+    if(argc > 1)
+        fd = open(argv[1], O_RDONLY);
+    else
+        fd = open("/dev/console", O_RDONLY);
     //非阻塞设置
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 
