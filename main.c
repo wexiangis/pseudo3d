@@ -8,7 +8,7 @@
 #include "mpu6050.h"
 #include "wave.h"
 
-#define INTERVALUS 200000
+#define INTERVALUS 50000
 
 #define SCROLL_DIV  (_3D_PI/16)
 #define MOVE_DIV  10

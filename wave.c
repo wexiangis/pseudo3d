@@ -4,7 +4,7 @@
 #include "fbmap.h"
 
 #define WAVE_CHN 6
-#define WAVE_Y_OFFSET 240
+#define WAVE_Y_OFFSET 320
 
 static FbMap *fbmap;
 
@@ -36,7 +36,7 @@ static void wav_init()
     if (!fbmap)
         return;
     wave_width = fbmap->fbInfo.xres;
-    wave_height = fbmap->fbInfo.yoffset - WAVE_Y_OFFSET;
+    wave_height = fbmap->fbInfo.yres - WAVE_Y_OFFSET;
     wave_height_half = wave_height / 2;
     wave_data_size = wave_width * wave_height * 3;
 
@@ -69,6 +69,11 @@ void wave_refresh(void)
         return;
 
     memset(wave_data, 0, wave_data_size);
+
+    // base line
+    memset(wave_data + wave_height_half * wave_width * 3, 0xFF, wave_width * 3);
+
+    // chn line
     for (i = 0; i < WAVE_CHN; i++)
     {
         for (j = 0; j <= wave_refresh_count; j++)
