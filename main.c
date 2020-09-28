@@ -28,7 +28,7 @@ int main(void)
     char input[16];
 
     //初始化一个多边形
-    _3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3, *dpat4;
+    _3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
 
     //XYZ
     if((dpat0 = _3D_pointArray_init(6, 
@@ -108,61 +108,6 @@ int main(void)
     }
     _3D_ppLink_add(dpat3, 0xFFFFFF, 0, 1, 1);
     _3D_comment_add(dpat3, 80, 0, 0, "target", 0, 0x808080);
-    
-    //machine
-    if((dpat4 = _3D_pointArray_init(24, 
-        -4.00*2, 16.00*2, 25.00*2, 0x008080, 
-        -4.00*2, 8.00*2, 25.00*2, 0x008080, 
-        -4.00*2, 16.00*2, 17.00*2, 0x008080, 
-        -4.00*2, 8.00*2, 17.00*2, 0x008080, 
-        -4.00*2, -17.00*2, 17.00*2, 0x008080, 
-        -4.00*2, 4.00*2, 13.00*2, 0x008080, 
-        -4.00*2, -13.00*2, 13.00*2, 0x008080, 
-        -4.00*2, 4.00*2, -5.00*2, 0x008080, 
-        -4.00*2, -13.00*2, -5.00*2, 0x008080, 
-        -4.00*2, 16.00*2, -24.00*2, 0x008080, 
-        -4.00*2, 8.00*2, -24.00*2, 0x008080, 
-        -4.00*2, -17.00*2, -24.00*2, 0x008080,
-
-        4.00*2, 16.00*2, 25.00*2, 0xD0D000, 
-        4.00*2, 8.00*2, 25.00*2, 0xD0D000, 
-        4.00*2, 16.00*2, 17.00*2, 0xD0D000, 
-        4.00*2, 8.00*2, 17.00*2, 0xD0D000, 
-        4.00*2, -17.00*2, 17.00*2, 0xD0D000, 
-        4.00*2, 4.00*2, 13.00*2, 0xD0D000, 
-        4.00*2, -13.00*2, 13.00*2, 0xD0D000, 
-        4.00*2, 4.00*2, -5.00*2, 0xD0D000, 
-        4.00*2, -13.00*2, -5.00*2, 0xD0D000, 
-        4.00*2, 16.00*2, -24.00*2, 0xD0D000, 
-        4.00*2, 8.00*2, -24.00*2, 0xD0D000, 
-        4.00*2, -17.00*2, -24.00*2, 0xD0D000
-        )) == NULL)
-    {
-        printf("_3D_pointArray_init failed\r\n");
-        return -1;
-    }
-    _3D_ppLink_add(dpat4, 0x008080, 0, 3, 1, 2, 12);
-    _3D_ppLink_add(dpat4, 0x008080, 1, 2, 3, 13);
-    _3D_ppLink_add(dpat4, 0x008080, 2, 3, 3, 9, 14);
-    _3D_ppLink_add(dpat4, 0x008080, 3, 3, 4, 10, 15);
-    _3D_ppLink_add(dpat4, 0x008080, 4, 2, 11, 16);
-    _3D_ppLink_add(dpat4, 0x008080, 5, 3, 6, 7, 17);
-    _3D_ppLink_add(dpat4, 0x008080, 6, 2, 8, 18);
-    _3D_ppLink_add(dpat4, 0x008080, 7, 2, 8, 19);
-    _3D_ppLink_add(dpat4, 0x008080, 8, 1, 20);
-    _3D_ppLink_add(dpat4, 0x008080, 9, 2, 10, 21);
-    _3D_ppLink_add(dpat4, 0x008080, 10, 2, 11, 22);
-    _3D_ppLink_add(dpat4, 0x008080, 11, 1, 23);
-    _3D_ppLink_add(dpat4, 0xD0D000, 12, 2, 13, 14);
-    _3D_ppLink_add(dpat4, 0xD0D000, 13, 1, 15);
-    _3D_ppLink_add(dpat4, 0xD0D000, 14, 2, 15, 21);
-    _3D_ppLink_add(dpat4, 0xD0D000, 15, 2, 16, 22);
-    _3D_ppLink_add(dpat4, 0xD0D000, 16, 1, 23);
-    _3D_ppLink_add(dpat4, 0xD0D000, 17, 2, 18, 19);
-    _3D_ppLink_add(dpat4, 0xD0D000, 18, 1, 20);
-    _3D_ppLink_add(dpat4, 0xD0D000, 19, 1, 20);
-    _3D_ppLink_add(dpat4, 0xD0D000, 21, 1, 22);
-    _3D_ppLink_add(dpat4, 0xD0D000, 22, 1, 23);
 
     //初始转角
     // dpat1->raxyz[0] = _3D_PI/8;
@@ -192,20 +137,16 @@ int main(void)
         //
         memcpy(dpat2->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
         memcpy(dpat3->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
-        memcpy(dpat4->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
         //
         memcpy(dpat2->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
         memcpy(dpat3->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
-        memcpy(dpat4->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
 
-        _3D_angle_to_xyz(dpat4);
         _3D_angle_to_xyz(dpat3);
         _3D_angle_to_xyz(dpat2);
         _3D_angle_to_xyz(dpat1);
         
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat0);
 
-        // _3D_draw(VIEW_X_SIZE/4, VIEW_Y_SIZE/4, dpat4);
         // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat3);
         // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
@@ -257,7 +198,6 @@ int main(void)
                 _3D_reset(dpat1);
                 _3D_reset(dpat2);
                 _3D_reset(dpat3);
-                _3D_reset(dpat4);
             }
         }
 
