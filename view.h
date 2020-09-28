@@ -20,11 +20,10 @@ void amoled_print_clear(void);
 #define PRINT_DOT2(x, y, data) amoled_print_dot2(x - 1, y - 1, data)
 #define PRINT_EN() amoled_print_en()       //使能输出
 #define PRINT_CLEAR() amoled_print_clear() //清屏
-#define VIEW_DIR(x) ;                      //amoled_displayDir(x)                //屏幕方向重设   0/正  1/右  2/倒  3/左  其它/正
-#define VIEW_MODE(x) ;                     //amoled_modeSet(x)        //0/初始化(亮屏), 1/亮屏, 2/灭屏, 3/wakeup, 4/sleep, 5/powerOff, 6/刷新屏幕
-#define VIEW_BRIGHT(x) ;                   //amoled_brightSet(x)       // 0 ~ 0xFF
+#define VIEW_DIR(x) ;                      //amoled_displayDir(x) // 屏幕方向重设   0/正  1/右  2/倒  3/左  其它/正
+#define VIEW_MODE(x) ;                     //amoled_modeSet(x)    // 0/初始化(亮屏), 1/亮屏, 2/灭屏, 3/wakeup, 4/sleep, 5/powerOff, 6/刷新屏幕
+#define VIEW_BRIGHT(x) ;                   //amoled_brightSet(x)  // 0 ~ 0xFF
 
-//view common
 //view common
 void view_dot(long color, int xStart, int yStart, int size);
 void view_line(long color, int xStart, int yStart, int xEnd, int yEnd, int size, int space);
@@ -69,5 +68,8 @@ int view_string_rectangleMultiLine(
     int *xStart, int *yStart,
     int *strWidth, int *strHight,
     int type, int space, int lineNum, int *retLineCharNum, int printMode);
+
+//else
+void view_display(int chn, short value, int color);
 
 #endif

@@ -9,6 +9,8 @@ obj-c += pseudo3D.c
 
 obj-c += i2c_transfer.c
 obj-c += mpu6050.c
+obj-c += fbmap.c
+obj-c += wave.c
 
 target:
 	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -lm

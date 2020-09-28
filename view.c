@@ -6,107 +6,13 @@
 #include <stdlib.h>
 
 //---------------------------------------------------------------------------------------------------------------------------
-#include <fcntl.h>
-#include <unistd.h>
-#include <signal.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/mman.h>
-#include <linux/fb.h>
 
-typedef struct
-{
-    char *fbPath;
-    int fd;
-    unsigned char *fb;
-    size_t fbSize;
-    struct fb_var_screeninfo fbInfo;
-    //bytes per point
-    int bpp;
-    //bytes width, height
-    int bw, bh;
-    //draw offset
-    int xOffset, yOffset;
-} Fb_Struct;
+#ifdef VIEW_ENABLE_FB
+#include "fbmap.h"
+static FbMap *fbmap = NULL;
+#endif
 
-static Fb_Struct *fb_struct = NULL;
-
-void fb_release()
-{
-    if (!fb_struct)
-        return;
-    if (fb_struct->fb)
-        munmap(fb_struct->fb, fb_struct->fbSize);
-    if (fb_struct->fd > 0)
-        close(fb_struct->fd);
-    free(fb_struct);
-    fb_struct = NULL;
-}
-
-void fb_init(char *fbPath, int xOffset, int yOffset)
-{
-    if (!fb_struct)
-        fb_struct = (Fb_Struct *)calloc(1, sizeof(Fb_Struct));
-
-    fb_struct->fbPath = fbPath;
-    fb_struct->xOffset = xOffset;
-    fb_struct->yOffset = yOffset;
-
-    fb_struct->fd = open(fbPath, O_RDWR);
-    if (fb_struct->fd < 1)
-    {
-        fprintf(stderr, "fb_init: open %s err \r\n", fbPath);
-        fb_release();
-        return;
-    }
-
-    if (ioctl(fb_struct->fd, FBIOGET_VSCREENINFO, &fb_struct->fbInfo) < 0)
-    {
-        fprintf(stderr, "fb_init: ioctl FBIOGET_VSCREENINFO err \r\n");
-        fb_release();
-        return;
-    }
-    printf("frameBuffer: %s, %d x %d, %dbytes / %dbpp\r\n",
-           fb_struct->fbPath, fb_struct->fbInfo.xres, fb_struct->fbInfo.yres, fb_struct->fbInfo.bits_per_pixel / 8, fb_struct->fbInfo.bits_per_pixel);
-
-    fb_struct->bpp = fb_struct->fbInfo.bits_per_pixel / 8;
-    fb_struct->bw = fb_struct->bpp * fb_struct->fbInfo.xres;
-    fb_struct->bh = fb_struct->bpp * fb_struct->fbInfo.yres;
-    fb_struct->fbSize = fb_struct->fbInfo.xres * fb_struct->fbInfo.yres * fb_struct->bpp;
-
-    fb_struct->fb = (unsigned char *)mmap(0, fb_struct->fbSize, PROT_READ | PROT_WRITE, MAP_SHARED, fb_struct->fd, 0);
-    if (!fb_struct->fb)
-    {
-        fprintf(stderr, "fb_init: mmap size %ld err \r\n", fb_struct->fbSize);
-        fb_release();
-        return;
-    }
-}
-
-void refresh_fb(unsigned char *data, int width, int height, int per)
-{
-    int x, y, offset, bmpCount;
-
-    if (!fb_struct)
-        fb_init("/dev/fb0", 0, 0);
-
-    bmpCount = 0;
-    for(y = 0; y < height; y++){
-        offset = (y + fb_struct->yOffset) * fb_struct->bw + (0 + fb_struct->xOffset) * fb_struct->bpp;
-        for(x = 0; x < width; x++){
-            fb_struct->fb[offset + 3] = 0x00; //A
-            fb_struct->fb[offset + 2] = data[bmpCount++]; //R
-            fb_struct->fb[offset + 1] = data[bmpCount++]; //G
-            fb_struct->fb[offset + 0] = data[bmpCount++]; //B
-            offset += fb_struct->bpp;
-        }
-    }
-}
-
-//---------------------------------------------------------------------------------------------------------------------------
-
-unsigned char amoled_data[VIEW_Y_SIZE][VIEW_X_SIZE][VIEW_PICTURE_PERW];
+static unsigned char amoled_data[VIEW_Y_SIZE][VIEW_X_SIZE][VIEW_PICTURE_PERW];
 
 void amoled_print_dot(int x, int y, const unsigned char *data)
 {
@@ -129,7 +35,9 @@ void amoled_print_dot2(int x, int y, const unsigned char *data)
 void amoled_print_en(void)
 {
 #ifdef VIEW_ENABLE_FB
-    refresh_fb((unsigned char *)amoled_data, VIEW_X_SIZE, VIEW_Y_SIZE, VIEW_PICTURE_PERW);
+    if (!fbmap)
+        fbmap = fb_init(0, 0);
+    fb_refresh(fbmap, (unsigned char *)amoled_data, VIEW_X_SIZE, VIEW_Y_SIZE, VIEW_PICTURE_PERW);
 #else
     bmp_create("./test.bmp", (unsigned char *)amoled_data, VIEW_X_SIZE, VIEW_Y_SIZE, VIEW_PICTURE_PERW);
 #endif
@@ -139,6 +47,8 @@ void amoled_print_clear(void)
 {
     memset(amoled_data, 0, VIEW_Y_SIZE * VIEW_X_SIZE * VIEW_PICTURE_PERW);
 }
+
+//---------------------------------------------------------------------------------------------------------------------------示波器
 
 //---------------------------------------------------------------------------------------------------------------------------
 

@@ -6,6 +6,7 @@
 #include "pseudo3D.h"
 #include "view.h"
 #include "mpu6050.h"
+#include "wave.h"
 
 #define INTERVALUS 200000
 
@@ -173,9 +174,17 @@ int main(void)
 
     while(1)
     {
+        /*
         printf("GX/%05d GY/%05d GZ/%05d AX/%05d AY/%05d AZ/%05d \r\n",
             getGyro(0), getGyro(1), getGyro(2),
             getAccel(0), getAccel(1), getAccel(2));
+        */
+        wave_load(0, getGyro(0));
+        wave_load(1, getGyro(1));
+        wave_load(2, getGyro(2));
+        wave_load(3, getAccel(0));
+        wave_load(4, getAccel(1));
+        wave_load(5, getAccel(2));
 
         //
         PRINT_CLEAR();
@@ -203,6 +212,7 @@ int main(void)
         
         //
         PRINT_EN();
+        wave_refresh();
 
         // dpat1->raxyz[0] += SCROLL_DIV;
         // dpat1->raxyz[1] += SCROLL_DIV;
