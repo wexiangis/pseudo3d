@@ -87,9 +87,9 @@ void wave_line(int xStart, int yStart, int xEnd, int yEnd, char *rgb)
     for (t = 0; t <= distance + 1; t++) //画线输出
     {
         offset = (yCount * wave_width + xCount) * 3;
-        wave_data[offset + 0] = rgb[0];
-        wave_data[offset + 1] = rgb[1];
-        wave_data[offset + 2] = rgb[2];
+        wave_data[offset + 0] = (wave_data[offset + 0] + rgb[0]) >> 1;
+        wave_data[offset + 1] = (wave_data[offset + 1] + rgb[1]) >> 1;
+        wave_data[offset + 2] = (wave_data[offset + 2] + rgb[2]) >> 1;
 
         xerr += delta_x;
         yerr += delta_y;

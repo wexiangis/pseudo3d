@@ -152,7 +152,7 @@ int main(void)
         _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat1);
         
         //
-        PRINT_EN();
+        //PRINT_EN();
         wave_refresh();
 
         // dpat1->raxyz[0] += SCROLL_DIV;
