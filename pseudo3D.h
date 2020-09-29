@@ -8,7 +8,7 @@
 #include "view.h"
 #include <stdarg.h> //变长参数
 
-#define _3D_PI 3.14159265358979323846
+#define _3D_PI 3.14159265358979323846 //位数越多 精度越高
 
 #define _3D_Type 0 //建坐标的方式  0: x/ y| z-
 

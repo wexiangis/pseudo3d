@@ -11,7 +11,7 @@
 
 #include "pseudo3D.h"
 #include "view.h"
-#include "mpu6050.h"
+#include "posture.h"
 #include "wave.h"
 
 #define INTERVALUS 50000
@@ -21,7 +21,7 @@
 
 /* 稍微精准的延时 */
 #include <sys/time.h>
-void delayus(unsigned int us)
+static void delayus(unsigned int us)
 {
     struct timeval delay;
     delay.tv_sec = us / 1000000;
@@ -99,22 +99,21 @@ int main(int argc, char **argv)
     // dpat1->raxyz[1] = _3D_PI/8;
     // dpat1->raxyz[2] = _3D_PI/8;
 
-    //初始化mpu6050
-    mpu6050_init("/dev/i2c-1");
+    //初始化姿态计算器
+    posture_init(INTERVALUS / 1000);
 
     while (1)
     {
-        /*
-        printf("GX/%05d GY/%05d GZ/%05d AX/%05d AY/%05d AZ/%05d \r\n",
-            getGyro(0), getGyro(1), getGyro(2),
-            getAccel(0), getAccel(1), getAccel(2));
-        */
-        wave_load(0, getGyro(0));
-        wave_load(1, getGyro(1));
-        wave_load(2, getGyro(2));
-        wave_load(3, getAccel(0));
-        wave_load(4, getAccel(1));
-        wave_load(5, getAccel(2));
+        wave_load(0, posture_getGyroX());
+        wave_load(1, posture_getGyroY());
+        wave_load(2, posture_getGyroZ());
+        // wave_load(3, getAccel(0));
+        // wave_load(4, getAccel(1));
+        // wave_load(5, getAccel(2));
+
+        dpat1->raxyz[0] = posture_getGyroX();
+        dpat1->raxyz[1] = posture_getGyroY();
+        dpat1->raxyz[2] = posture_getGyroZ();
 
         PRINT_CLEAR();
 
@@ -177,6 +176,7 @@ int main(int argc, char **argv)
             {
                 _3D_reset(dpat1);
                 // _3D_reset(dpat2);
+                posture_reset();
             }
         }
 

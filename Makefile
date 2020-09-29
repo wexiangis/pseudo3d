@@ -23,7 +23,7 @@ obj-c += wave.c
 obj-c += posture.c
 
 target:
-	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -lm
+	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -lm -lpthread
 
 clean:
 	@rm -rf out
