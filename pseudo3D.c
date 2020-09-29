@@ -13,19 +13,27 @@
 // 1:每次都从原始坐标进行XYZ依次旋转,适合一次旋转
 #define _3D_MODE_SWITCH 1
 
+//三维坐标轴的原点和三维图形的各个顶点连线
 #define _3D_DRAW_PO_LINE 0 //point-origin connect
+
+//自动把输入的各个点依次连线
 #define _3D_DRAW_PP_LINK 0 //point-point connect
 #if (_3D_DRAW_PP_LINK)
+//自动把最后一个点和第一个点连线
 #define _3D_DRAW_PP_LINK_LAST 0 //last point-first point connect
 #endif
 
+//画线的线宽
 #define _3D_LINE_SIZE 1
 
+//三维投影二维时各轴向长度的缩放比例
 #define _3D_PD_X 0.6
 #define _3D_PD_Y 1.0
 #define _3D_PD_Z 1.0
 
-//
+/*
+ *  重置三维图形到初始化时的状态
+ */
 void _3D_reset(_3D_PointArray_Type *dpat)
 {
     _3D_Comment_Type *dct;
@@ -45,7 +53,14 @@ void _3D_reset(_3D_PointArray_Type *dpat)
     }
 }
 
-//
+/*
+ *  添加三维坐标点连线关系
+ *  参数:
+ *      color: 线颜色
+ *      point: 顶点所在序号,从0数起
+ *      targetNum: 和顶点相连的点的数量
+ *      ...: 输入要和顶点连接的点所在序号,从0数起
+ */
 void _3D_ppLink_add(_3D_PointArray_Type *dpat, int color, int point, int targetNum, ...)
 {
     int i, count, tempTarget;
@@ -87,7 +102,14 @@ void _3D_ppLink_add(_3D_PointArray_Type *dpat, int color, int point, int targetN
     dpplt->targetOrderNum = count;
 }
 
-//
+/*
+ *  对图形添加注释信息
+ *  参数:
+ *      x, y, z: 注释在三维空间中的位置
+ *      comment: 注释内容
+ *      type: 注释类型,0/普通字符串(添加后固定不变)  1/传入指针
+ *      color: 文字颜色
+ */
 void _3D_comment_add(_3D_PointArray_Type *dpat, double x, double y, double z, char *comment, int type, int color)
 {
     _3D_Comment_Type *dct;
@@ -123,7 +145,13 @@ void _3D_comment_add(_3D_PointArray_Type *dpat, double x, double y, double z, ch
     dct->color = color;
 }
 
-//
+/*
+ *  图形建模
+ *  参数:
+ *      pointNum: 三维坐标点数量
+ *      x, y, z， color: 循环填入三维坐标点和点的颜色
+ *  说明: 
+ */
 _3D_PointArray_Type *_3D_pointArray_init(int pointNum, double x, double y, double z, int color, ...)
 {
     int i, j;
@@ -163,9 +191,9 @@ _3D_PointArray_Type *_3D_pointArray_init(int pointNum, double x, double y, doubl
     return dpat;
 }
 
-//======================================================
-//      将空间xyz坐标转换为平面xy坐标
-//======================================================
+/*
+ *  把三维坐标点投影到二维坐标点上
+ */
 void _3D_xyz_to_xy(double _3D_XYZ[3], int _2D_XY[2])
 {
     double tempX, tempY;
@@ -196,10 +224,12 @@ void _3D_xyz_to_xy(double _3D_XYZ[3], int _2D_XY[2])
 }
 
 /*
- *  将3轴转角转换为3组xyz坐标,输出坐标复写到point[3]中
- *
- *  raxyz[3] : 绕X/Y/Z轴的转角(rad)
- *  point[3] : 要修正的空间向量的坐标
+ *  point[3]绕自身坐标轴旋转raxyz[3]量,输出坐标复写到point[3]中
+ *  参数:
+ *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
+ *      point[3] : 要修正的空间向量的坐标
+ * 
+ *  备注: 绕自身旋转使用左乘, 绕大地坐标旋转使用右乘, 这里为左乘
  */
 void _3D_angle_to_xyz0(double raxyz[3], double point[3])
 {
@@ -252,6 +282,9 @@ void _3D_angle_to_xyz0(double raxyz[3], double point[3])
         z * cos(Xrad) * cos(Yrad);
 }
 
+/*
+ *  根据当前 dpat 中的 raxyz[3] 和 mvxyz[3] 对当前的图形进行旋转和平移
+ */
 void _3D_angle_to_xyz(_3D_PointArray_Type *dpat)
 {
     int i, j;
@@ -318,19 +351,19 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *dpat)
 #endif
 }
 
-//======================================================
-//      绘制基准X\Y\Z轴 和 动态X\Y\Z轴
-//
-//      centreX/centreY : 设定原点在屏幕的坐标
-//      m*[3] : 动态X\Y\Z轴的空间坐标
-//======================================================
+
+/*
+ *  输出当前图形到屏幕
+ *  参数:
+ *      centreX, centreY: 绘制原点在屏幕中的位置,一般为(屏幕宽/2, 屏幕高/2)
+ */
 void _3D_draw(int centreX, int centreY, _3D_PointArray_Type *dpat)
 {
     int i, j, k;
     _3D_PPLink_Type *dpplt;
     int mP, mT;
     _3D_Comment_Type *dct;
-    //
+
     if (dpat == NULL)
         return;
 

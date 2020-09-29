@@ -24,32 +24,32 @@ typedef struct _3D_PPLink
     struct _3D_PPLink *next; //建立下一个连接关系
 } _3D_PPLink_Type;
 
-//comment
+//注释信息结构体
 typedef struct _3D_Comment
 {
-    double xyz[3];
-    double xyzCopy[3];
-    int xy[2];
-    char *comment;
-    int type; //0/普通字符串(添加后固定不变)  1/传入指针
+    double xyz[3];     //所在三维坐标
+    double xyzCopy[3]; //备份数组
+    int xy[2];         //二维投影点坐标
+    char *comment;     //注释内容
+    int type;          //0/普通字符串(添加后固定不变)  1/传入指针
     int color;
-    struct _3D_Comment *next;
+    struct _3D_Comment *next; //链表
 } _3D_Comment_Type;
 
 //管理多边形图像的结构体
 typedef struct
 {
-    double raxyz[3];
-    double mvxyz[3];
-    double *xyzArray;     //x1,y1,z1;x2,y2,z2;...
-    double *xyzArrayCopy; //x1,y1,z1;x2,y2,z2;...
-    int pointNum;
-    int xyzArrayMemSize;
-    int *xyArray; //x1,y1;x2,y2;...
-    int *color;   //col1;col2...
-    //
-    _3D_PPLink_Type *link;
-    _3D_Comment_Type *comment;
+    double raxyz[3];      //xyz轴旋转量(0~2pi)
+    double mvxyz[3];      //xyz轴的平移量
+    double *xyzArray;     //3元数组 x1,y1,z1;x2,y2,z2;...
+    double *xyzArrayCopy; //3元数组 x1,y1,z1;x2,y2,z2;... 备份数组
+    int pointNum;         //上面两数组的点数量
+    int xyzArrayMemSize;  //上面两数组的实际内存长度(字节数)
+    int *xyArray;         //2元数组 x1,y1;x2,y2;... 三维坐标投影到二维后的坐标
+    int *color;           //1元数组 col1;col2... 二维投影点的颜色
+
+    _3D_PPLink_Type *link;     //各三维点的连线关系
+    _3D_Comment_Type *comment; //注释信息
 } _3D_PointArray_Type;
 
 _3D_PointArray_Type *_3D_pointArray_init(
