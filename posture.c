@@ -26,7 +26,7 @@ static PostureStruct ps = {
     .flagRun = 0,
     .intervalMs = 50,
     //角速度、中立加速度除去的倍数
-    .agPowReduce = 32,
+    .agPowReduce = 5500, //relate to intervalMs
     .acPowReduce = 1,
     //角速度原始数据
     .agXVal = 0,
@@ -54,6 +54,7 @@ static void delayms(unsigned int ms)
 
 void *posture_thread(void *argv)
 {
+    double val2p = POSTURE_PI * 2;
     mpu6050_init("/dev/i2c-1");
     while (ps.flagRun)
     {
@@ -67,9 +68,16 @@ void *posture_thread(void *argv)
         ps.acYVal = mpu6050_getAccel(1);
         ps.acZVal = mpu6050_getAccel(2);
         //累加角度值
-        ps.agX += (double)ps.agXVal / ps.agPowReduce;
-        ps.agY += (double)ps.agYVal / ps.agPowReduce;
-        ps.agZ += (double)ps.agZVal / ps.agPowReduce;
+        ps.agX += (double)(ps.agXVal) / ps.agPowReduce / POSTURE_PI;
+        ps.agY += (double)(ps.agYVal) / ps.agPowReduce / POSTURE_PI;
+        ps.agZ += (double)(ps.agZVal) / ps.agPowReduce / POSTURE_PI;
+        //
+        if(ps.agX > POSTURE_PI) ps.agX -= val2p;
+        else if(ps.agX < -POSTURE_PI) ps.agX += val2p;
+        if(ps.agY > POSTURE_PI) ps.agY -= val2p;
+        else if(ps.agY < -POSTURE_PI) ps.agY += val2p;
+        if(ps.agZ > POSTURE_PI) ps.agZ -= val2p;
+        else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
     }
     mpu6050_release();
     return NULL;
@@ -100,15 +108,15 @@ void posture_get(int *xyzo)
 }
 
 //获取转角
-short posture_getX(void)
+double posture_getX(void)
 {
     return ps.agX;
 }
-short posture_getY(void)
+double posture_getY(void)
 {
     return ps.agY;
 }
-short posture_getZ(void)
+double posture_getZ(void)
 {
     return ps.agZ;
 }

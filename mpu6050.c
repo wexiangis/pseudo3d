@@ -25,9 +25,9 @@
 #define WHO_AM_I 0x75   //IIC地址寄存器(默认数值0x68，只读)
 #define SLAVE_ADDR 0x68 //IIC写入时的地址字节数据，+1为读取
 
-#define GX_Offset (23)
-#define GY_Offset (-10)
-#define GZ_Offset (14)
+#define GX_Offset (24)
+#define GY_Offset (-14)
+#define GZ_Offset (16)
 
 /*
  *  i2c operation

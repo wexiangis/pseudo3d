@@ -11,7 +11,7 @@
 
 // 0:增量式,适合连续变化的旋转(会累积误差)
 // 1:每次都从原始坐标进行XYZ依次旋转,适合一次旋转
-#define _3D_MODE_SWITCH 0
+#define _3D_MODE_SWITCH 1
 
 #define _3D_DRAW_PO_LINE 0 //point-origin connect
 #define _3D_DRAW_PP_LINK 0 //point-point connect
@@ -297,6 +297,11 @@ void _3D_angle_to_xyz(_3D_PointArray_Type *dpat)
     dct = dpat->comment;
     while (dct)
     {
+#if (_3D_MODE_SWITCH)
+        //mode/0: 使用原始的坐标和累积的转角量,一次转换到目标坐标
+        memcpy(dct->xyz, dct->xyzCopy, 3 * sizeof(double));
+#endif
+        //
         _3D_angle_to_xyz0(dpat->raxyz, dct->xyz);
         //
         dct->xyz[0] += dpat->mvxyz[0];

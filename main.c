@@ -104,16 +104,21 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        wave_load(0, posture_getGyroX());
-        wave_load(1, posture_getGyroY());
-        wave_load(2, posture_getGyroZ());
-        // wave_load(3, getAccel(0));
-        // wave_load(4, getAccel(1));
-        // wave_load(5, getAccel(2));
+        wave_load(0, posture_getGyroX() * 5);
+        wave_load(1, posture_getGyroY() * 5);
+        wave_load(2, posture_getGyroZ() * 5);
+        wave_load(3, posture_getAccelX());
+        wave_load(4, posture_getAccelY());
+        wave_load(5, posture_getAccelZ());
 
         dpat1->raxyz[0] = posture_getX();
         dpat1->raxyz[1] = posture_getY();
         dpat1->raxyz[2] = posture_getZ();
+/*
+        printf("x/%04d y/%04d z/%04d -- x/%.4lf y/%.4lf z/%.4lf\r\n",
+            posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
+            posture_getX(), posture_getY(), posture_getZ());
+*/
 
         PRINT_CLEAR();
 
