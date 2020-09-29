@@ -99,6 +99,20 @@ void posture_get(int *xyzo)
     ;
 }
 
+//获取转角
+short posture_getX(void)
+{
+    return ps.agX;
+}
+short posture_getY(void)
+{
+    return ps.agY;
+}
+short posture_getZ(void)
+{
+    return ps.agZ;
+}
+
 //复位
 void posture_reset(void)
 {

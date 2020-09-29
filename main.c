@@ -111,9 +111,9 @@ int main(int argc, char **argv)
         // wave_load(4, getAccel(1));
         // wave_load(5, getAccel(2));
 
-        dpat1->raxyz[0] = posture_getGyroX();
-        dpat1->raxyz[1] = posture_getGyroY();
-        dpat1->raxyz[2] = posture_getGyroZ();
+        dpat1->raxyz[0] = posture_getX();
+        dpat1->raxyz[1] = posture_getY();
+        dpat1->raxyz[2] = posture_getZ();
 
         PRINT_CLEAR();
 
