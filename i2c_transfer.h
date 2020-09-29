@@ -1,3 +1,6 @@
+/*
+ *  I2C通用总线驱动
+ */
 #ifndef _I2C_TRANSFER_H_
 #define _I2C_TRANSFER_H_
 

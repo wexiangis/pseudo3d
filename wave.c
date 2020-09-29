@@ -1,3 +1,6 @@
+/*
+ *  自制简易版示波器,图像输出到fb0
+ */
 #include <stdlib.h>
 #include <string.h>
 

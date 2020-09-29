@@ -1,3 +1,6 @@
+/*
+ *  MPU6050 I2C 驱动
+ */
 #include <stdio.h>
 
 #define SMPLRT_DIV 0x19   //陀螺仪采样率，典型值：0x07(125Hz)

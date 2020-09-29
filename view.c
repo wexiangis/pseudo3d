@@ -1,4 +1,7 @@
 
+/*
+ *  图像输出到fb0
+ */
 #include "view.h"
 
 #include <stdio.h>

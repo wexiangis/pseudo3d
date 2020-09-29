@@ -1,3 +1,6 @@
+/*
+ *  I2C通用总线驱动
+ */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

@@ -1,4 +1,7 @@
 
+/*
+ *  自制乞丐版3D引擎
+ */
 #ifndef _PSEUDO3D_H
 #define _PSEUDO3D_H
 

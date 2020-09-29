@@ -1,4 +1,7 @@
 
+/*
+ *  图像输出到fb0
+ */
 #ifndef _VIEW_H
 #define _VIEW_H
 

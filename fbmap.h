@@ -1,3 +1,6 @@
+/*
+ *  fb矩阵输出
+ */
 #ifndef _FBMAP_H_
 #define _FBMAP_H_
 

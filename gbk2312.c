@@ -1,4 +1,7 @@
 
+/*
+ *  根据utf8字符串获取文字点阵
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -1,4 +1,7 @@
 
+/*
+ *  根据utf8字符串获取文字点阵
+ */
 #ifndef _GBK2312_H
 #define _GBK2312_H
 

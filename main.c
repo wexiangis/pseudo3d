@@ -1,4 +1,7 @@
 
+/*
+ *  通过mpu6050计算姿态信息，并输出成3D图像显示
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

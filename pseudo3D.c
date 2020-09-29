@@ -1,4 +1,7 @@
 
+/*
+ *  自制乞丐版3D引擎
+ */
 #include "pseudo3D.h"
 
 #include <stdio.h>
