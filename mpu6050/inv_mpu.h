@@ -21,16 +21,15 @@
 #ifndef _INV_MPU_H_
 #define _INV_MPU_H_
 
-//定义输出速度
-#define DEFAULT_MPU_HZ  (100)		//100Hz
+//采样频率
+#define DEFAULT_MPU_HZ  (100)
 
-//自行添加的一些函数
-void mget_ms(unsigned long *time);
-unsigned short inv_row_2_scale(const signed char *row);
-unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx);
-int run_self_test(void);
+//主要的对外接口
 int mpu_dmp_init(void);
-int mpu_dmp_get_data(float *pitch,float *roll,float *yaw);
+int mpu_dmp_get_data(
+    float *pitch, float *roll, float *yaw,
+    short *gX, short *gY, short *gZ,
+    short *aX, short *aY, short *aZ);
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)

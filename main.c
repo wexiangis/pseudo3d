@@ -105,8 +105,9 @@ int main(int argc, char **argv)
         dpat1->raxyz[0] = posture_getX();
         dpat1->raxyz[1] = posture_getY();
         dpat1->raxyz[2] = posture_getZ();
+
 /*
-        printf("x/%04d y/%04d z/%04d -- x/%.4lf y/%.4lf z/%.4lf\r\n",
+        printf("x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
             posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
             posture_getX(), posture_getY(), posture_getZ());
 */

@@ -2971,26 +2971,6 @@ int run_self_test(void)
         return 1;
 }
 
-//陀螺仪方向控制
-unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
-{
-    unsigned short scalar;
-    /*
-       XYZ  010_001_000 Identity Matrix
-       XZY  001_010_000
-       YXZ  010_000_001
-       YZX  000_010_001
-       ZXY  001_000_010
-       ZYX  000_001_010
-     */
-
-    scalar = inv_row_2_scale(mtx);
-    scalar |= inv_row_2_scale(mtx + 3) << 3;
-    scalar |= inv_row_2_scale(mtx + 6) << 6;
-
-    return scalar;
-}
-
 //方向转换
 unsigned short inv_row_2_scale(const signed char *row)
 {
@@ -3011,6 +2991,26 @@ unsigned short inv_row_2_scale(const signed char *row)
     else
         b = 7; // error
     return b;
+}
+
+//陀螺仪方向控制
+unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
+{
+    unsigned short scalar;
+    /*
+       XYZ  010_001_000 Identity Matrix
+       XZY  001_010_000
+       YXZ  010_000_001
+       YZX  000_010_001
+       ZXY  001_000_010
+       ZYX  000_001_010
+     */
+
+    scalar = inv_row_2_scale(mtx);
+    scalar |= inv_row_2_scale(mtx + 3) << 3;
+    scalar |= inv_row_2_scale(mtx + 6) << 6;
+
+    return scalar;
 }
 
 //返回值: 0/正常
@@ -3034,9 +3034,10 @@ int mpu_dmp_init(void)
         res = dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation)); //设置陀螺仪方向
         if (res)
             return 5;
-        res = dmp_enable_feature(DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP | //设置dmp功能
-                                 DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL | DMP_FEATURE_SEND_CAL_GYRO |
-                                 DMP_FEATURE_GYRO_CAL);
+        res = dmp_enable_feature(
+            DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP | //设置dmp功能
+            DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL |
+            DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
         if (res)
             return 6;
         res = dmp_set_fifo_rate(DEFAULT_MPU_HZ); //设置DMP输出速率(最大不超过200Hz)
@@ -3061,15 +3062,27 @@ int mpu_dmp_init(void)
  *  yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
  *  返回值: 0/正常
  */
-int mpu_dmp_get_data(float *pitch, float *roll, float *yaw)
+int mpu_dmp_get_data(
+    float *pitch, float *roll, float *yaw,
+    short *gX, short *gY, short *gZ,
+    short *aX, short *aY, short *aZ)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
     short gyro[3], accel[3], sensors;
     unsigned char more;
     long quat[4];
+
     if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more))
         return 1;
+    
+    *gX = gyro[0];
+    *gY = gyro[1];
+    *gZ = gyro[2];
+    *aX = accel[0];
+    *aY = accel[1];
+    *aZ = accel[2];
+
     /* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
 	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.
 	**/
@@ -3089,7 +3102,7 @@ int mpu_dmp_get_data(float *pitch, float *roll, float *yaw)
         //计算得到俯仰角/横滚角/航向角
         *pitch = asin(-2 * q1 * q3 + 2 * q0 * q2) * 57.3;                                    // pitch
         *roll = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1) * 57.3;     // roll
-        *yaw = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) * 57.3; //yaw
+        *yaw = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) * 57.3; // yaw
     }
     else
         return 2;

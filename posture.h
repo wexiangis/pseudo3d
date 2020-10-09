@@ -15,9 +15,9 @@ void posture_get(int *xyzo);
 void posture_reset(void);
 
 //获取转角
-double posture_getX(void);
-double posture_getY(void);
-double posture_getZ(void);
+float posture_getX(void);
+float posture_getY(void);
+float posture_getZ(void);
 
 //获取加速度计数据
 short posture_getAccelX(void);
