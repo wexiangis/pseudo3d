@@ -13,21 +13,12 @@
 #include "view.h"
 #include "posture.h"
 #include "wave.h"
+#include "delayus.h"
 
 #define INTERVALUS 50000
 
 #define SCROLL_DIV (_3D_PI / 16)
 #define MOVE_DIV 10
-
-/* 稍微精准的延时 */
-#include <sys/time.h>
-static void delayus(unsigned int us)
-{
-    struct timeval delay;
-    delay.tv_sec = us / 1000000;
-    delay.tv_usec = us % 1000000;
-    select(0, NULL, NULL, NULL, &delay);
-}
 
 int main(int argc, char **argv)
 {

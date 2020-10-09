@@ -24,9 +24,6 @@
 #include <math.h>
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
-#include "mpu6050.h"
-#include "delay.h"
-#include "usart.h"
 
 #define MPU6050           //定义我们使用的传感器为MPU6050
 #define EMPL_TARGET_LINUX //定义驱动部分,采用MSP430的驱动(移植到STM32F1)
@@ -44,18 +41,17 @@
  * min(int a, int b)
  */
 #if defined EMPL_TARGET_LINUX
-
-#define i2c_write MPU_Write_Len
-#define i2c_read MPU_Read_Len
-#define delay_ms delay_ms
-#define get_ms mget_ms
-//static inline int reg_int_cb(struct int_param_s *int_param)
-//{
-//    return msp430_reg_int_cb(int_param->cb, int_param->pin, int_param->lp_exit,
-//        int_param->active_low);
-//}
-#define log_i printf //打印信息
-#define log_e printf //打印信息
+#include "delayus.h"
+#include "i2c_transfer.h"
+#define i2c_write(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 1)
+#define i2c_read(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 0)
+#define delay_ms(ms) delayms(ms)
+#define get_ms(timestamp) //没用到
+/*static inline int reg_int_cb(struct int_param_s *int_param) {
+   return msp430_reg_int_cb(int_param->cb, int_param->pin, int_param->lp_exit, int_param->active_low);
+}*/
+#define log_i printf
+#define log_e printf
 /* labs is already defined by TI's toolchain. */
 /* fabs is for doubles. fabsf is for floats. */
 #define fabs fabsf
@@ -875,8 +871,8 @@ int mpu_init(void)
     if (mpu_configure_fifo(0))
         return -1;
 
-    // if (int_param)
-    //     reg_int_cb(int_param);
+        // if (int_param)
+        //     reg_int_cb(int_param);
 
 #ifdef AK89xx_SECONDARY
     setup_compass();
@@ -2936,35 +2932,20 @@ lp_int_restore:
     st.chip_cfg.int_motion_only = 0;
     return 0;
 }
-//////////////////////////////////////////////////////////////////////////////////
-//添加的代码部分
-//////////////////////////////////////////////////////////////////////////////////
-//本程序只供学习使用，未经作者许可，不得用于其它任何用途
-//ALIENTEK战舰STM32开发板V3
-//MPU6050 DMP 驱动代码
-//正点原子@ALIENTEK
-//技术论坛:www.openedv.com
-//创建日期:2015/1/17
-//版本：V1.0
-//版权所有，盗版必究。
-//Copyright(C) 广州市星翼电子科技有限公司 2009-2019
-//All rights reserved
-//////////////////////////////////////////////////////////////////////////////////
 
 //q30格式,long转float时的除数.
 #define q30 1073741824.0f
 
 //陀螺仪方向设置
-static signed char gyro_orientation[9] = {1, 0, 0,
-                                          0, 1, 0,
-                                          0, 0, 1};
-//MPU6050自测试
-//返回值:0,正常
-//    其他,失败
-u8 run_self_test(void)
+static signed char gyro_orientation[9] = {
+    1, 0, 0,
+    0, 1, 0,
+    0, 0, 1};
+
+//返回值: 0/正常
+int run_self_test(void)
 {
     int result;
-    //char test_packet[4] = {0};
     long gyro[3], accel[3];
     result = mpu_run_self_test(gyro, accel);
     if (result == 0x3)
@@ -2989,9 +2970,9 @@ u8 run_self_test(void)
     else
         return 1;
 }
+
 //陀螺仪方向控制
-unsigned short inv_orientation_matrix_to_scalar(
-    const signed char *mtx)
+unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 {
     unsigned short scalar;
     /*
@@ -3009,6 +2990,7 @@ unsigned short inv_orientation_matrix_to_scalar(
 
     return scalar;
 }
+
 //方向转换
 unsigned short inv_row_2_scale(const signed char *row)
 {
@@ -3030,18 +3012,12 @@ unsigned short inv_row_2_scale(const signed char *row)
         b = 7; // error
     return b;
 }
-//空函数,未用到.
-void mget_ms(unsigned long *time)
+
+//返回值: 0/正常
+int mpu_dmp_init(void)
 {
-}
-//mpu6050,dmp初始化
-//返回值:0,正常
-//    其他,失败
-u8 mpu_dmp_init(void)
-{
-    u8 res = 0;
-    MPU_IIC_Init();      //初始化IIC总线
-    if (mpu_init() == 0) //初始化MPU6050
+    int res = 0;
+    if (mpu_init() == 0)
     {
         res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置所需要的传感器
         if (res)
@@ -3077,13 +3053,15 @@ u8 mpu_dmp_init(void)
         return 10;
     return 0;
 }
-//得到dmp处理后的数据(注意,本函数需要比较多堆栈,局部变量有点多)
-//pitch:俯仰角 精度:0.1°   范围:-90.0° <---> +90.0°
-//roll:横滚角  精度:0.1°   范围:-180.0°<---> +180.0°
-//yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
-//返回值:0,正常
-//    其他,失败
-u8 mpu_dmp_get_data(float *pitch, float *roll, float *yaw)
+
+/*
+ *  得到dmp处理后的数据(注意,本函数需要比较多堆栈,局部变量有点多)
+ *  pitch:俯仰角 精度:0.1°   范围:-90.0° <---> +90.0°
+ *  roll:横滚角  精度:0.1°   范围:-180.0°<---> +180.0°
+ *  yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
+ *  返回值: 0/正常
+ */
+int mpu_dmp_get_data(float *pitch, float *roll, float *yaw)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;

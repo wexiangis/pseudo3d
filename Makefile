@@ -2,6 +2,7 @@
 CROSS_COMPILE=
 
 obj-c += main.c
+obj-c += delayus.c
 
 # 图像输出到fb0
 obj-c += view.c
@@ -26,7 +27,7 @@ obj-c += mpu6050/inv_mpu.c
 obj-c += mpu6050/inv_mpu_dmp_motion_driver.c
 
 target:
-	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./mpu6050 -lm -lpthread
+	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./mpu6050 -lm -lpthread
 
 clean:
 	@rm -rf out

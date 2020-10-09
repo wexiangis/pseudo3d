@@ -18,7 +18,13 @@
 /*
  *  返回: 0/正常
  */
-int i2c_transfer_write(int fd, unsigned short slave_addr, unsigned char *data_buf, unsigned int data_len, unsigned char *reg_addr, unsigned int reg_size)
+int i2c_transfer_write(
+    int fd,
+    unsigned short slave_addr,
+    unsigned char *data_buf,
+    unsigned int data_len,
+    unsigned char *reg_addr,
+    unsigned int reg_size)
 {
     int ret;
     struct i2c_rdwr_ioctl_data write_opt;
@@ -59,7 +65,13 @@ int i2c_transfer_write(int fd, unsigned short slave_addr, unsigned char *data_bu
 /*
  *  返回: 0/正常
  */
-int i2c_transfer_read(int fd, unsigned short slave_addr, unsigned char *data_buf, unsigned int data_len, unsigned char *reg_addr, unsigned int reg_size)
+int i2c_transfer_read(
+    int fd,
+    unsigned short slave_addr,
+    unsigned char *data_buf,
+    unsigned int data_len,
+    unsigned char *reg_addr,
+    unsigned int reg_size)
 {
     int ret;
     struct i2c_rdwr_ioctl_data read_opt;
@@ -107,4 +119,25 @@ int i2c_transfer_open(char *i2cPath)
 void i2c_transfer_close(int fd)
 {
     close(fd);
+}
+
+//用于STM32等设备,省去open和close操作,参数结构简化,返回0正常
+static int _i2c_default_fd = 0;
+int i2c_default_rw(
+    unsigned char slave_addr,
+    unsigned char reg_addr,
+    unsigned char length,
+    unsigned char *data,
+    char isWrite)
+{
+    unsigned char reg[1] = {0};
+    if(_i2c_default_fd < 1)
+        _i2c_default_fd = i2c_transfer_open("/dev/i2c-1");
+    if(_i2c_default_fd < 1)
+        return -1;
+    reg[0] = reg_addr;
+    if(isWrite)
+        return i2c_transfer_write(_i2c_default_fd, slave_addr, data, length, reg, 1);
+    else
+        return i2c_transfer_read(_i2c_default_fd, slave_addr, data, length, reg, 1);
 }

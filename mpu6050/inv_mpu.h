@@ -28,9 +28,9 @@
 void mget_ms(unsigned long *time);
 unsigned short inv_row_2_scale(const signed char *row);
 unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx);
-u8 run_self_test(void);
-u8 mpu_dmp_init(void);
-u8 mpu_dmp_get_data(float *pitch,float *roll,float *yaw);
+int run_self_test(void);
+int mpu_dmp_init(void);
+int mpu_dmp_get_data(float *pitch,float *roll,float *yaw);
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)

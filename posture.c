@@ -3,6 +3,7 @@
  */
 #include <pthread.h>
 #include "mpu6050.h"
+#include "delayus.h"
 
 #define POSTURE_PI 3.14159265358979323846 //位数越多 精度越高
 
@@ -41,16 +42,6 @@ static PostureStruct ps = {
     .agY = 0,
     .agZ = 0,
 };
-
-/* 稍微精准的延时 */
-#include <sys/time.h>
-static void delayms(unsigned int ms)
-{
-    struct timeval delay;
-    delay.tv_sec = ms / 1000;
-    delay.tv_usec = ms % 1000 * 1000;
-    select(0, NULL, NULL, NULL, &delay);
-}
 
 void *posture_thread(void *argv)
 {

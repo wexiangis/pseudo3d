@@ -38,11 +38,11 @@
 
 //根据开发板类型,实现以下接口
 #if defined EMPL_TARGET_LINUX
-
-#define delay_ms    delay_ms
-#define get_ms      mget_ms
-#define log_i 		printf
-#define log_e  		printf
+#include "delayus.h"
+#define delay_ms(ms) delayms(ms)
+#define get_ms(timestamp) //没用到
+#define log_i printf
+#define log_e printf
 
 #elif defined EMPL_TARGET_MSP430
 #include "msp430.h"
