@@ -744,7 +744,7 @@ void view_rectangle(long color, int xStart, int yStart, int xEnd, int yEnd, int 
             continue;
         if (mode == 1)
         {
-            for (j = 0, xC = xS, k; j < xSize; j++, xC++)
+            for (j = 0, xC = xS; j < xSize; j++, xC++)
             {
                 if (xC < minX || xC > maxX)
                     continue;
@@ -754,7 +754,7 @@ void view_rectangle(long color, int xStart, int yStart, int xEnd, int yEnd, int 
         }
         else
         {
-            for (j = 0, xC = xS, k; j < xSize; j++, xC++)
+            for (j = 0, xC = xS; j < xSize; j++, xC++)
             {
                 if (xC < minX || xC > maxX)
                     continue;
