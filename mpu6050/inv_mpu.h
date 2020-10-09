@@ -26,10 +26,7 @@
 
 //主要的对外接口
 int mpu_dmp_init(void);
-int mpu_dmp_get_data(
-    float *pitch, float *roll, float *yaw,
-    short *gX, short *gY, short *gZ,
-    short *aX, short *aY, short *aZ);
+int mpu_dmp_get_data(float *pry, short *gyro, short *accel);
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)

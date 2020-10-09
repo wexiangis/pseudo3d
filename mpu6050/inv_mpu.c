@@ -3062,26 +3062,16 @@ int mpu_dmp_init(void)
  *  yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
  *  返回值: 0/正常
  */
-int mpu_dmp_get_data(
-    float *pitch, float *roll, float *yaw,
-    short *gX, short *gY, short *gZ,
-    short *aX, short *aY, short *aZ)
+int mpu_dmp_get_data(float *pry, short *gyro, short *accel)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
-    short gyro[3], accel[3], sensors;
+    short sensors;
     unsigned char more;
     long quat[4];
 
     if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more))
         return 1;
-    
-    *gX = gyro[0];
-    *gY = gyro[1];
-    *gZ = gyro[2];
-    *aX = accel[0];
-    *aY = accel[1];
-    *aZ = accel[2];
 
     /* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
 	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.
@@ -3100,9 +3090,9 @@ int mpu_dmp_get_data(
         q2 = quat[2] / q30;
         q3 = quat[3] / q30;
         //计算得到俯仰角/横滚角/航向角
-        *pitch = asin(-2 * q1 * q3 + 2 * q0 * q2) * 57.3;                                    // pitch
-        *roll = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1) * 57.3;     // roll
-        *yaw = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) * 57.3; // yaw
+        pry[0] = asin(-2 * q1 * q3 + 2 * q0 * q2) * 57.3;                                      // pitch
+        pry[1] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1) * 57.3;      // roll
+        pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) * 57.3; // yaw
     }
     else
         return 2;

@@ -52,14 +52,23 @@ static PostureStruct ps = {
 void *posture_thread(void *argv)
 {
 #if(POSTURE_WORK_MODE == 1)
+    float fVal[3];
+    short sVal[6];
     mpu_dmp_init();
     while (ps.flagRun)
     {
         delayms(ps.intervalMs);
-        mpu_dmp_get_data(
-            &ps.agX, &ps.agY, &ps.agZ,
-            &ps.agXVal, &ps.agYVal, &ps.agZVal,
-            &ps.acXVal, &ps.acYVal, &ps.acZVal);
+        if(mpu_dmp_get_data(fVal, sVal, &sVal[3]) == 0) {
+            ps.agX = fVal[0];
+            ps.agY = fVal[1];
+            ps.agZ = fVal[2];
+            ps.agXVal = sVal[0];
+            ps.agYVal = sVal[1];
+            ps.agZVal = sVal[2];
+            ps.acXVal = sVal[3];
+            ps.acYVal = sVal[4];
+            ps.acZVal = sVal[5];
+        }
     }
 #else
     //2倍pi值
