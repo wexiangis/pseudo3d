@@ -102,14 +102,14 @@ int main(int argc, char **argv)
         wave_load(4, posture_getAccelY());
         wave_load(5, posture_getAccelZ());
 
-        dpat1->raxyz[0] = posture_getX();
-        dpat1->raxyz[1] = posture_getY();
-        dpat1->raxyz[2] = posture_getZ();
+        dpat1->raxyz[0] = posture_getACX();
+        dpat1->raxyz[1] = posture_getACY();
+        dpat1->raxyz[2] = posture_getACZ();
 
 /*
         printf("x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
             posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
-            posture_getX(), posture_getY(), posture_getZ());
+            posture_getAGX(), posture_getAGY(), posture_getAGZ());
 */
 
         PRINT_CLEAR();

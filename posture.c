@@ -1,10 +1,11 @@
 /*
  *  根据MPU6050数据计算姿态
  */
+#include <math.h>
 #include <pthread.h>
 #include "delayus.h"
 
-#define POSTURE_WORK_MODE 1 // 0/原始数据模式 1/使用dmp库
+#define POSTURE_WORK_MODE 0 // 0/原始数据模式 1/使用dmp库
 
 #if(POSTURE_WORK_MODE == 1)
 #include "inv_mpu.h"
@@ -27,6 +28,8 @@ typedef struct
     short acXVal, acYVal, acZVal;
     //角速度累加得到的角度值(rad:0.0~2pi)
     float agX, agY, agZ;
+    //重力加速度得到的角度值(rad:0.0~2pi)
+    float acX, acY, acZ;
 } PostureStruct;
 
 static PostureStruct ps = {
@@ -47,6 +50,10 @@ static PostureStruct ps = {
     .agX = 0,
     .agY = 0,
     .agZ = 0,
+    //重力加速度得到的角度值
+    .acX = 0,
+    .acY = 0,
+    .acZ = 0,
 };
 
 void *posture_thread(void *argv)
@@ -85,17 +92,23 @@ void *posture_thread(void *argv)
         ps.acXVal = mpu6050_getAccel(0);
         ps.acYVal = mpu6050_getAccel(1);
         ps.acZVal = mpu6050_getAccel(2);
+
         //倍数转换 累加角度值
         ps.agX += (float)(ps.agXVal) / ps.agPowReduce / POSTURE_PI;
         ps.agY += (float)(ps.agYVal) / ps.agPowReduce / POSTURE_PI;
         ps.agZ += (float)(ps.agZVal) / ps.agPowReduce / POSTURE_PI;
-        //
+        //范围限制
         if(ps.agX > POSTURE_PI) ps.agX -= val2p;
         else if(ps.agX < -POSTURE_PI) ps.agX += val2p;
         if(ps.agY > POSTURE_PI) ps.agY -= val2p;
         else if(ps.agY < -POSTURE_PI) ps.agY += val2p;
         if(ps.agZ > POSTURE_PI) ps.agZ -= val2p;
         else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
+
+        //计算重力加速度的姿态
+        ps.acX = -atanf((float)ps.acXVal / sqrt(ps.acYVal * ps.acYVal + ps.acZVal * ps.acZVal));
+        ps.acY = atanf((float)ps.acYVal / ps.acZVal);
+        ps.acZ = ps.agZ;
     }
     mpu6050_release();
 #endif
@@ -127,18 +140,44 @@ void posture_get(int *xyzo)
     ;
 }
 
-//获取转角
-float posture_getX(void)
+//获取角速度计算的转角
+float posture_getAGX(void)
 {
     return ps.agX;
 }
-float posture_getY(void)
+float posture_getAGY(void)
 {
     return ps.agY;
 }
-float posture_getZ(void)
+float posture_getAGZ(void)
 {
     return ps.agZ;
+}
+//获取重力加速度计算的转角
+float posture_getACX(void)
+{
+    return ps.acX;
+}
+float posture_getACY(void)
+{
+    return ps.acY;
+}
+float posture_getACZ(void)
+{
+    return ps.acZ;
+}
+//最终输出转角
+float posture_getX(void)
+{
+    return ps.agX * 0.5 + ps.acX * 0.5;
+}
+float posture_getY(void)
+{
+    return ps.agY * 0.5 + ps.acY * 0.5;
+}
+float posture_getZ(void)
+{
+    return ps.agZ * 0.5 + ps.acZ * 0.5;
 }
 
 //复位

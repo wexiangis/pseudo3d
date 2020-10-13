@@ -14,7 +14,15 @@ void posture_get(int *xyzo);
 //复位
 void posture_reset(void);
 
-//获取转角
+//获取角速度计算的转角
+float posture_getAGX(void);
+float posture_getAGY(void);
+float posture_getAGZ(void);
+//获取重力加速度计算的转角
+float posture_getACX(void);
+float posture_getACY(void);
+float posture_getACZ(void);
+//最终输出转角
 float posture_getX(void);
 float posture_getY(void);
 float posture_getZ(void);
