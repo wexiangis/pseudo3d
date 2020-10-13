@@ -80,6 +80,7 @@ void *posture_thread(void *argv)
 #else
     //2倍pi值
     float val2p = POSTURE_PI * 2;
+    float tmp1, tmp2;
     mpu6050_init("/dev/i2c-1");
     while (ps.flagRun)
     {
@@ -106,15 +107,34 @@ void *posture_thread(void *argv)
         else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
 
         //计算重力加速度的姿态
-        ps.acX = atanf((float)ps.acYVal / ps.acZVal);
-        ps.acY = -atanf((float)ps.acXVal / sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal));
-        ps.acZ = ps.agZ;
-        //方向控制
-        if(ps.acZ > 0)
-        {
-            ps.acX = -ps.acX;
-            ps.acY = -ps.acY;
-        }
+        tmp1 = (float)ps.acYVal;
+        tmp2 = (float)ps.acZVal;
+        ps.acX = atanf(tmp1 / tmp2);
+        //四象限对角度的调整
+        if(tmp1 >= 0 && tmp2 >= 0)//象限1
+            ;
+        else if(tmp1 >= 0 && tmp2 <= 0)//象限2
+            ps.acX = POSTURE_PI + ps.acX;
+        else if(tmp1 <= 0 && tmp2 <= 0)//象限3
+            ps.acX = POSTURE_PI - ps.acX;
+        else//象限4
+            ;
+
+        //计算重力加速度的姿态
+        tmp1 = (float)ps.acXVal;
+        tmp2 = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
+        ps.acY = -atanf(tmp1 / tmp2);
+        //四象限对角度的调整
+        if(tmp1 >= 0 && tmp2 >= 0)//象限1
+            ;
+        else if(tmp1 >= 0 && tmp2 <= 0)//象限2
+            ps.acY = POSTURE_PI + ps.acY;
+        else if(tmp1 <= 0 && tmp2 <= 0)//象限3
+            ps.acY = POSTURE_PI - ps.acY;
+        else//象限4
+            ;
+
+        ps.acZ = 0;
     }
     mpu6050_release();
 #endif
