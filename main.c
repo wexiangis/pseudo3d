@@ -95,9 +95,9 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        wave_load(0, posture_getGyroX() * 5);
-        wave_load(1, posture_getGyroY() * 5);
-        wave_load(2, posture_getGyroZ() * 5);
+        wave_load(0, (short)(posture_getACX() * 10000));
+        wave_load(1, (short)(posture_getACY() * 10000));
+        wave_load(2, (short)(posture_getACZ() * 10000));
         wave_load(3, posture_getAccelX());
         wave_load(4, posture_getAccelY());
         wave_load(5, posture_getAccelZ());
@@ -109,7 +109,7 @@ int main(int argc, char **argv)
         printf("x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
             posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
             posture_getAccelX(), posture_getAccelY(), posture_getAccelZ(),
-            posture_getX(), posture_getY(), posture_getZ());
+            posture_getACX(), posture_getACY(), posture_getACZ());
 
         PRINT_CLEAR();
 

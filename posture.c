@@ -109,7 +109,8 @@ void *posture_thread(void *argv)
         //计算重力加速度的姿态
         tmp1 = (float)ps.acYVal;
         tmp2 = (float)ps.acZVal;
-        ps.acX = atanf(tmp1 / tmp2);
+        ps.acX = atan2(tmp1, tmp2);
+#if 0
         //四象限对角度的调整
         if(tmp1 >= 0 && tmp2 >= 0)//象限1
             ;
@@ -119,11 +120,12 @@ void *posture_thread(void *argv)
             ps.acX = POSTURE_PI - ps.acX;
         else//象限4
             ;
-
+#endif
         //计算重力加速度的姿态
         tmp1 = (float)ps.acXVal;
         tmp2 = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
-        ps.acY = -atanf(tmp1 / tmp2);
+        ps.acY = -atan2(tmp1, tmp2);
+#if 0
         //四象限对角度的调整
         if(tmp1 >= 0 && tmp2 >= 0)//象限1
             ;
@@ -133,7 +135,7 @@ void *posture_thread(void *argv)
             ps.acY = POSTURE_PI - ps.acY;
         else//象限4
             ;
-
+#endif
         ps.acZ = 0;
     }
     mpu6050_release();
