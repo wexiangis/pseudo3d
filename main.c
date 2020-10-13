@@ -106,11 +106,10 @@ int main(int argc, char **argv)
         dpat1->raxyz[1] = posture_getACY();
         dpat1->raxyz[2] = posture_getACZ();
 
-/*
-        printf("x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
+        printf("x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
             posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
-            posture_getAGX(), posture_getAGY(), posture_getAGZ());
-*/
+            posture_getAccelX(), posture_getAccelY(), posture_getAccelZ(),
+            posture_getX(), posture_getY(), posture_getZ());
 
         PRINT_CLEAR();
 

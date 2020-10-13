@@ -106,9 +106,15 @@ void *posture_thread(void *argv)
         else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
 
         //计算重力加速度的姿态
-        ps.acX = -atanf((float)ps.acXVal / sqrt(ps.acYVal * ps.acYVal + ps.acZVal * ps.acZVal));
-        ps.acY = atanf((float)ps.acYVal / ps.acZVal);
+        ps.acX = atanf((float)ps.acYVal / ps.acZVal);
+        ps.acY = -atanf((float)ps.acXVal / sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal));
         ps.acZ = ps.agZ;
+        //方向控制
+        if(ps.acZ > 0)
+        {
+            ps.acX = -ps.acX;
+            ps.acY = -ps.acY;
+        }
     }
     mpu6050_release();
 #endif
