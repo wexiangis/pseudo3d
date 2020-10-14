@@ -56,6 +56,11 @@ static PostureStruct ps = {
     .acZ = 0,
 };
 
+short myabs(short v)
+{
+    return v > 0 ? v : (-v);
+}
+
 void *posture_thread(void *argv)
 {
 #if(POSTURE_WORK_MODE == 1)
@@ -110,32 +115,22 @@ void *posture_thread(void *argv)
         tmp1 = (float)ps.acYVal;
         tmp2 = (float)ps.acZVal;
         ps.acX = atan2(tmp1, tmp2);
-#if 0
-        //四象限对角度的调整
-        if(tmp1 >= 0 && tmp2 >= 0)//象限1
-            ;
-        else if(tmp1 >= 0 && tmp2 <= 0)//象限2
-            ps.acX = POSTURE_PI + ps.acX;
-        else if(tmp1 <= 0 && tmp2 <= 0)//象限3
-            ps.acX = POSTURE_PI - ps.acX;
-        else//象限4
-            ;
-#endif
+
         //计算重力加速度的姿态
         tmp1 = (float)ps.acXVal;
         tmp2 = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
+
+        if(ps.acZVal < 0)
+            tmp2 = -tmp2;
         ps.acY = -atan2(tmp1, tmp2);
-#if 0
-        //四象限对角度的调整
-        if(tmp1 >= 0 && tmp2 >= 0)//象限1
-            ;
-        else if(tmp1 >= 0 && tmp2 <= 0)//象限2
-            ps.acY = POSTURE_PI + ps.acY;
-        else if(tmp1 <= 0 && tmp2 <= 0)//象限3
-            ps.acY = POSTURE_PI - ps.acY;
-        else//象限4
-            ;
-#endif
+
+        if(0)//ps.acZVal > 0)
+        {
+            if(myabs(ps.acXVal) > myabs(ps.acYVal))
+                ps.acX -= POSTURE_PI;
+            else
+                ps.acY -= POSTURE_PI;
+        }
         ps.acZ = 0;
     }
     mpu6050_release();
