@@ -56,7 +56,12 @@ static PostureStruct ps = {
     .acZ = 0,
 };
 
-short myabs(short v)
+static short s16abs(short v)
+{
+    return v > 0 ? v : (-v);
+}
+
+static float f32abs(float v)
 {
     return v > 0 ? v : (-v);
 }
@@ -84,12 +89,12 @@ void *posture_thread(void *argv)
     }
 #else
     //2倍pi值
-    float val2p = POSTURE_PI * 2;
-    float tmp1, tmp2;
+    float tmp, val2p = POSTURE_PI * 2;
     mpu6050_init("/dev/i2c-1");
     while (ps.flagRun)
     {
         delayms(ps.intervalMs);
+
         //取角速度原始数据
         ps.agXVal = mpu6050_getGyro(0);
         ps.agYVal = mpu6050_getGyro(1);
@@ -98,7 +103,7 @@ void *posture_thread(void *argv)
         ps.acXVal = mpu6050_getAccel(0);
         ps.acYVal = mpu6050_getAccel(1);
         ps.acZVal = mpu6050_getAccel(2);
-
+    
         //倍数转换 累加角度值
         ps.agX += (float)(ps.agXVal) / ps.agPowReduce / POSTURE_PI;
         ps.agY += (float)(ps.agYVal) / ps.agPowReduce / POSTURE_PI;
@@ -112,25 +117,31 @@ void *posture_thread(void *argv)
         else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
 
         //计算重力加速度的姿态
-        tmp1 = (float)ps.acYVal;
-        tmp2 = (float)ps.acZVal;
-        ps.acX = atan2(tmp1, tmp2);
-
+        ps.acX = atan2((float)ps.acYVal, (float)ps.acZVal);
         //计算重力加速度的姿态
-        tmp1 = (float)ps.acXVal;
-        tmp2 = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
-
-        if(ps.acZVal < 0)
-            tmp2 = -tmp2;
-        ps.acY = -atan2(tmp1, tmp2);
-
+        tmp = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
+        if(ps.acZVal < 0)//由于tmp为绝对值,需要引入z轴作为其值方向的参考
+            tmp = -tmp;
+        ps.acY = -atan2((float)ps.acXVal, tmp);
         if(0)//ps.acZVal > 0)
         {
-            if(myabs(ps.acXVal) > myabs(ps.acYVal))
+            if(s16abs(ps.acXVal) > s16abs(ps.acYVal))
                 ps.acX -= POSTURE_PI;
             else
                 ps.acY -= POSTURE_PI;
         }
+#if 1
+        //八象限判定(以坐标(0, 0, 1)所在位置为准)
+        if(ps.acZVal >= 0)//z轴正半球
+        {
+            ;
+        }
+        else//z轴负半球
+        {
+            ;
+        }
+#endif
+        //计算重力加速度的姿态
         ps.acZ = 0;
     }
     mpu6050_release();
