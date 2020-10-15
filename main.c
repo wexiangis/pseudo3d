@@ -9,27 +9,34 @@
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-#include "pseudo3D.h"
+#include "delayus.h"
+#include "pseudo3d.h"
 #include "view.h"
+
+//使用陀螺仪模块
+#define ENABLE_MPU6050 0
+#if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
-#include "delayus.h"
+#endif
 
+//采样间隔
 #define INTERVALUS 50000
-
-#define SCROLL_DIV (_3D_PI / 16)
-#define MOVE_DIV 10
+//旋转分度值
+#define DIV_SCROLL (P3D_PI / 16)
+//平移分度值
+#define DIV_MOVE 10
 
 int main(int argc, char **argv)
 {
     //初始化一个多边形
-    _3D_PointArray_Type *dpat0, *dpat1;
+    P3D_PointArray_Type *dpat0, *dpat1;
 
     char input[16];
     int fd;
 
     // open console
-    if(argc > 1)
+    if (argc > 1)
         fd = open(argv[1], O_RDONLY);
     else
         fd = open("/dev/console", O_RDONLY);
@@ -37,79 +44,87 @@ int main(int argc, char **argv)
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 
     //XYZ
-    if ((dpat0 = _3D_pointArray_init(6,
-        _3D_XYZ_ScanLen * 1.00, 0.00, 0.00, 0x800000,
-        -_3D_XYZ_ScanLen * 1.00, 0.00, 0.00, 0x800000,
-        0.00, _3D_XYZ_ScanLen * 1.00, 0.00, 0x008080,
-        0.00, -_3D_XYZ_ScanLen * 1.00, 0.00, 0x008080,
-        0.00, 0.00, _3D_XYZ_ScanLen * 1.00, 0x008000,
-        0.00, 0.00, -_3D_XYZ_ScanLen * 1.00, 0x008000)) == NULL)
+    if ((dpat0 = p3d_pointArray_init(6,
+                                     P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
+                                     -P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
+                                     0.00, P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
+                                     0.00, -P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
+                                     0.00, 0.00, P3D_XYZ_LEN * 1.00, 0x008000,
+                                     0.00, 0.00, -P3D_XYZ_LEN * 1.00, 0x008000)) == NULL)
     {
-        printf("_3D_pointArray_init failed\r\n");
+        printf("p3d_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(dpat0, 0x800000, 0, 1, 1);
-    _3D_ppLink_add(dpat0, 0x008000, 2, 1, 3);
-    _3D_ppLink_add(dpat0, 0x008080, 4, 1, 5);
-    _3D_comment_add(dpat0, _3D_XYZ_ScanLen, 0, 0, "X", 0, 0x800000);
-    _3D_comment_add(dpat0, 0, _3D_XYZ_ScanLen, 0, "Y", 0, 0x008080);
-    _3D_comment_add(dpat0, 0, 0, _3D_XYZ_ScanLen, "Z", 0, 0x008000);
+    p3d_ppLink_add(dpat0, 0x800000, 0, 1, 1);
+    p3d_ppLink_add(dpat0, 0x008000, 2, 1, 3);
+    p3d_ppLink_add(dpat0, 0x008080, 4, 1, 5);
+    p3d_comment_add(dpat0, P3D_XYZ_LEN, 0, 0, "X", 0, 0x800000);
+    p3d_comment_add(dpat0, 0, P3D_XYZ_LEN, 0, "Y", 0, 0x008080);
+    p3d_comment_add(dpat0, 0, 0, P3D_XYZ_LEN, "Z", 0, 0x008000);
 
     //长方体
-    if ((dpat1 = _3D_pointArray_init(8,
-        40.00, 30.00, 50.00, 0xFF00FF,
-        40.00, -30.00, 50.00, 0xFFFF00,
-        -40.00, -30.00, 50.00, 0x00FFFF,
-        -40.00, 30.00, 50.00, 0xFF8000,
-        -40.00, 30.00, -50.00, 0xFF00FF,
-        -40.00, -30.00, -50.00, 0xFFFF00,
-        40.00, -30.00, -50.00, 0x00FFFF,
-        40.00, 30.00, -50.00, 0xFF8000)) == NULL)
+    if ((dpat1 = p3d_pointArray_init(8,
+                                     40.00, 30.00, 50.00, 0xFF00FF,
+                                     40.00, -30.00, 50.00, 0xFFFF00,
+                                     -40.00, -30.00, 50.00, 0x00FFFF,
+                                     -40.00, 30.00, 50.00, 0xFF8000,
+                                     -40.00, 30.00, -50.00, 0xFF00FF,
+                                     -40.00, -30.00, -50.00, 0xFFFF00,
+                                     40.00, -30.00, -50.00, 0x00FFFF,
+                                     40.00, 30.00, -50.00, 0xFF8000)) == NULL)
     {
-        printf("_3D_pointArray_init failed\r\n");
+        printf("p3d_pointArray_init failed\r\n");
         return -1;
     }
-    _3D_ppLink_add(dpat1, 0xFF0000, 0, 3, 1, 3, 7);
-    _3D_ppLink_add(dpat1, 0x00FF00, 1, 2, 2, 6);
-    _3D_ppLink_add(dpat1, 0x0000FF, 2, 2, 3, 5);
-    _3D_ppLink_add(dpat1, 0xFFFF00, 3, 1, 4);
-    _3D_ppLink_add(dpat1, 0xFF00FF, 4, 2, 5, 7);
-    _3D_ppLink_add(dpat1, 0x00FFFF, 5, 1, 6);
-    _3D_ppLink_add(dpat1, 0xFF8000, 6, 1, 7);
-    _3D_comment_add(dpat1, 40.00, 30.00, 50.00, "A", 0, 0xFFFF00);
-    _3D_comment_add(dpat1, 40.00, -30.00, 50.00, "B", 0, 0x00FF00);
-    _3D_comment_add(dpat1, -40.00, -30.00, 50.00, "C", 0, 0x8080FF);
-    _3D_comment_add(dpat1, -40.00, 30.00, 50.00, "D", 0, 0xFF0000);
-    _3D_comment_add(dpat1, -40.00, 30.00, -50.00, "E", 0, 0xFF00FF);
-    _3D_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
-    _3D_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
-    _3D_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
+    p3d_ppLink_add(dpat1, 0xFF0000, 0, 3, 1, 3, 7);
+    p3d_ppLink_add(dpat1, 0x00FF00, 1, 2, 2, 6);
+    p3d_ppLink_add(dpat1, 0x0000FF, 2, 2, 3, 5);
+    p3d_ppLink_add(dpat1, 0xFFFF00, 3, 1, 4);
+    p3d_ppLink_add(dpat1, 0xFF00FF, 4, 2, 5, 7);
+    p3d_ppLink_add(dpat1, 0x00FFFF, 5, 1, 6);
+    p3d_ppLink_add(dpat1, 0xFF8000, 6, 1, 7);
+    p3d_comment_add(dpat1, 40.00, 30.00, 50.00, "A", 0, 0xFFFF00);
+    p3d_comment_add(dpat1, 40.00, -30.00, 50.00, "B", 0, 0x00FF00);
+    p3d_comment_add(dpat1, -40.00, -30.00, 50.00, "C", 0, 0x8080FF);
+    p3d_comment_add(dpat1, -40.00, 30.00, 50.00, "D", 0, 0xFF0000);
+    p3d_comment_add(dpat1, -40.00, 30.00, -50.00, "E", 0, 0xFF00FF);
+    p3d_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
+    p3d_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
+    p3d_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
 
     //初始转角
-    // dpat1->raxyz[0] = _3D_PI/8;
-    // dpat1->raxyz[1] = _3D_PI/8;
-    // dpat1->raxyz[2] = _3D_PI/8;
+    // dpat1->raxyz[0] = P3D_PI/8;
+    // dpat1->raxyz[1] = P3D_PI/8;
+    // dpat1->raxyz[2] = P3D_PI/8;
 
+#if (ENABLE_MPU6050)
     //初始化姿态计算器
     posture_init(INTERVALUS / 1000);
+#endif
 
     while (1)
     {
+
+#if (ENABLE_MPU6050)
+
         wave_load(0, (short)(posture_getACX() * 10000));
         wave_load(1, (short)(posture_getACY() * 10000));
         wave_load(2, (short)(posture_getACZ() * 10000));
         wave_load(3, posture_getAccelX());
         wave_load(4, posture_getAccelY());
         wave_load(5, posture_getAccelZ());
+        wave_refresh();
 
         dpat1->raxyz[0] = posture_getACX();
         dpat1->raxyz[1] = posture_getACY();
         dpat1->raxyz[2] = posture_getACZ();
 
         printf("x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d -- x/%.4f y/%.4f z/%.4f\r\n",
-            posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
-            posture_getAccelX(), posture_getAccelY(), posture_getAccelZ(),
-            posture_getACX(), posture_getACY(), posture_getACZ());
+               posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
+               posture_getAccelX(), posture_getAccelY(), posture_getAccelZ(),
+               posture_getACX(), posture_getACY(), posture_getACZ());
+
+#endif
 
         PRINT_CLEAR();
 
@@ -117,20 +132,19 @@ int main(int argc, char **argv)
 
         // memcpy(dpat2->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
 
-        // _3D_angle_to_xyz(dpat2);
-        _3D_angle_to_xyz(dpat1);
+        // p3d_angle_to_xyz(dpat2);
+        p3d_angle_to_xyz(dpat1);
 
-        _3D_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
+        p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
 
-        // _3D_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
-        _3D_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat1);
+        // p3d_draw(VIEW_X_SIZE/2, VIEW_Y_SIZE/2, dpat2);
+        p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat1);
 
         PRINT_EN();
-        wave_refresh();
 
-        // dpat1->raxyz[0] += SCROLL_DIV;
-        // dpat1->raxyz[1] += SCROLL_DIV;
-        // dpat1->raxyz[2] += SCROLL_DIV;
+        // dpat1->raxyz[0] += DIV_SCROLL;
+        // dpat1->raxyz[1] += DIV_SCROLL;
+        // dpat1->raxyz[2] += DIV_SCROLL;
 
         // if(scanf("%s", input))
         memset(input, 0, sizeof(input));
@@ -138,41 +152,43 @@ int main(int argc, char **argv)
         {
             //x scroll
             if (input[0] == '3')
-                dpat1->raxyz[0] += SCROLL_DIV * strlen(input);
+                dpat1->raxyz[0] += DIV_SCROLL * strlen(input);
             else if (input[0] == '1')
-                dpat1->raxyz[0] -= SCROLL_DIV * strlen(input);
+                dpat1->raxyz[0] -= DIV_SCROLL * strlen(input);
             //y scroll
             else if (input[0] == 'w')
-                dpat1->raxyz[1] += SCROLL_DIV * strlen(input);
+                dpat1->raxyz[1] += DIV_SCROLL * strlen(input);
             else if (input[0] == '2')
-                dpat1->raxyz[1] -= SCROLL_DIV * strlen(input);
+                dpat1->raxyz[1] -= DIV_SCROLL * strlen(input);
             //z scroll
             else if (input[0] == 'q')
-                dpat1->raxyz[2] += SCROLL_DIV * strlen(input);
+                dpat1->raxyz[2] += DIV_SCROLL * strlen(input);
             else if (input[0] == 'e')
-                dpat1->raxyz[2] -= SCROLL_DIV * strlen(input);
+                dpat1->raxyz[2] -= DIV_SCROLL * strlen(input);
 
             //z move
             if (input[0] == 's')
-                dpat1->mvxyz[2] += MOVE_DIV * strlen(input);
+                dpat1->mvxyz[2] += DIV_MOVE * strlen(input);
             else if (input[0] == 'x')
-                dpat1->mvxyz[2] -= MOVE_DIV * strlen(input);
+                dpat1->mvxyz[2] -= DIV_MOVE * strlen(input);
             //y move
             else if (input[0] == 'z')
-                dpat1->mvxyz[1] += MOVE_DIV * strlen(input);
+                dpat1->mvxyz[1] += DIV_MOVE * strlen(input);
             else if (input[0] == 'c')
-                dpat1->mvxyz[1] -= MOVE_DIV * strlen(input);
+                dpat1->mvxyz[1] -= DIV_MOVE * strlen(input);
             //x move
             else if (input[0] == 'd')
-                dpat1->mvxyz[0] += MOVE_DIV * strlen(input);
+                dpat1->mvxyz[0] += DIV_MOVE * strlen(input);
             else if (input[0] == 'a')
-                dpat1->mvxyz[0] -= MOVE_DIV * strlen(input);
+                dpat1->mvxyz[0] -= DIV_MOVE * strlen(input);
 
             else if (input[0] == 'r')
             {
-                _3D_reset(dpat1);
-                // _3D_reset(dpat2);
+                p3d_reset(dpat1);
+                // p3d_reset(dpat2);
+#if (ENABLE_MPU6050)
                 posture_reset();
+#endif
             }
         }
 

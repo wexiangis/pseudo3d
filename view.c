@@ -158,7 +158,7 @@ void view_circleLoop(long color, int xStart, int yStart, int rad, int size, int 
     //
     int angleCount, arrayCount;
     float rangeArray[8][2];
-    float divTemp, divStartTemp, divEndTemp;
+    float divStartTemp, divEndTemp;
     //
     int **intArray = NULL, sumCount, sumCount2;
     //
@@ -179,7 +179,6 @@ void view_circleLoop(long color, int xStart, int yStart, int rad, int size, int 
     //
     if (div > 1)
     {
-        divTemp = 360.00 / div;                       //一分量对应的度数
         divStartTemp = (divStart - 1) * 360.00 / div; //开始度数
         divEndTemp = divEnd * 360.00 / div;           //结束度数
         //用来记录一圈原始数据的缓冲区

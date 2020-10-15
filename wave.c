@@ -150,7 +150,7 @@ void wave_refresh(void)
                 y = wave_height - 1;
             x = j;
 
-            wave_line(ox, oy, x, y, (char*)wave_color[i]);
+            wave_line(ox, oy, x, y, (char *)wave_color[i]);
 
             ox = x;
             oy = y;

@@ -4,6 +4,9 @@
 #ifndef _WAVE_H_
 #define _WAVE_H_
 
+/*
+ *  chn: 0~5
+ */
 void wave_load(int chn, short value);
 
 void wave_refresh(void);

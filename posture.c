@@ -11,7 +11,8 @@
 #include "inv_mpu.h"
 #else
 #include "mpu6050.h"
-#define POSTURE_PI 3.14159265358979323846 //位数越多 精度越高
+#define PE_PI 3.14159265358979323846 //位数越多 精度越高
+#define PE_2PI (PE_PI * 2)
 #endif
 
 typedef struct
@@ -56,16 +57,6 @@ static PostureStruct ps = {
     .acZ = 0,
 };
 
-static short s16abs(short v)
-{
-    return v > 0 ? v : (-v);
-}
-
-static float f32abs(float v)
-{
-    return v > 0 ? v : (-v);
-}
-
 void *posture_thread(void *argv)
 {
 #if(POSTURE_WORK_MODE == 1)
@@ -89,11 +80,12 @@ void *posture_thread(void *argv)
     }
 #else
     //2倍pi值
-    float tmp, val2p = POSTURE_PI * 2;
     mpu6050_init("/dev/i2c-1");
     while (ps.flagRun)
     {
         delayms(ps.intervalMs);
+
+        // ----- 采样 -----
 
         //取角速度原始数据
         ps.agXVal = mpu6050_getGyro(0);
@@ -103,45 +95,26 @@ void *posture_thread(void *argv)
         ps.acXVal = mpu6050_getAccel(0);
         ps.acYVal = mpu6050_getAccel(1);
         ps.acZVal = mpu6050_getAccel(2);
-    
-        //倍数转换 累加角度值
-        ps.agX += (float)(ps.agXVal) / ps.agPowReduce / POSTURE_PI;
-        ps.agY += (float)(ps.agYVal) / ps.agPowReduce / POSTURE_PI;
-        ps.agZ += (float)(ps.agZVal) / ps.agPowReduce / POSTURE_PI;
-        //范围限制
-        if(ps.agX > POSTURE_PI) ps.agX -= val2p;
-        else if(ps.agX < -POSTURE_PI) ps.agX += val2p;
-        if(ps.agY > POSTURE_PI) ps.agY -= val2p;
-        else if(ps.agY < -POSTURE_PI) ps.agY += val2p;
-        if(ps.agZ > POSTURE_PI) ps.agZ -= val2p;
-        else if(ps.agZ < -POSTURE_PI) ps.agZ += val2p;
 
-        //计算重力加速度的姿态
+        // ----- 角速度计算姿态 -----
+
+        //倍数转换 累加角度值
+        ps.agX += (float)(ps.agXVal) / ps.agPowReduce / PE_PI;
+        ps.agY += (float)(ps.agYVal) / ps.agPowReduce / PE_PI;
+        ps.agZ += (float)(ps.agZVal) / ps.agPowReduce / PE_PI;
+        //范围限制
+        if(ps.agX > PE_PI) ps.agX -= PE_2PI;
+        else if(ps.agX < -PE_PI) ps.agX += PE_2PI;
+        if(ps.agY > PE_PI) ps.agY -= PE_2PI;
+        else if(ps.agY < -PE_PI) ps.agY += PE_2PI;
+        if(ps.agZ > PE_PI) ps.agZ -= PE_2PI;
+        else if(ps.agZ < -PE_PI) ps.agZ += PE_2PI;
+
+        // ----- 重力加速度计算姿态 -----
+
         ps.acX = atan2((float)ps.acYVal, (float)ps.acZVal);
-        //计算重力加速度的姿态
-        tmp = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
-        if(ps.acZVal < 0)//由于tmp为绝对值,需要引入z轴作为其值方向的参考
-            tmp = -tmp;
-        ps.acY = -atan2((float)ps.acXVal, tmp);
-        if(0)//ps.acZVal > 0)
-        {
-            if(s16abs(ps.acXVal) > s16abs(ps.acYVal))
-                ps.acX -= POSTURE_PI;
-            else
-                ps.acY -= POSTURE_PI;
-        }
-#if 1
-        //八象限判定(以坐标(0, 0, 1)所在位置为准)
-        if(ps.acZVal >= 0)//z轴正半球
-        {
-            ;
-        }
-        else//z轴负半球
-        {
-            ;
-        }
-#endif
-        //计算重力加速度的姿态
+        ps.acY = -atan2((float)ps.acXVal,
+            (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal));
         ps.acZ = 0;
     }
     mpu6050_release();

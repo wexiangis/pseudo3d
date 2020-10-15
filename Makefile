@@ -11,7 +11,7 @@ obj-c += bmp.c
 # 根据utf8字符串获取文字点阵
 obj-c += gbk2312.c
 # 自制乞丐版3D引擎
-obj-c += pseudo3D.c
+obj-c += pseudo3d.c
 # I2C通用总线驱动
 obj-c += i2c_transfer.c
 # fb矩阵输出
