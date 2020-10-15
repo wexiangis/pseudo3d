@@ -150,7 +150,8 @@ void _3D_comment_add(_3D_PointArray_Type *dpat, double x, double y, double z, ch
  *  参数:
  *      pointNum: 三维坐标点数量
  *      x, y, z， color: 循环填入三维坐标点和点的颜色
- *  说明: 
+ * 
+ *  注意: x, y, z 必须用 0.00 的格式赋值, 例如: 3 写成 3.00, -13 写成 -13.00
  */
 _3D_PointArray_Type *_3D_pointArray_init(int pointNum, double x, double y, double z, int color, ...)
 {
