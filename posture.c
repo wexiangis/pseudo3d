@@ -141,13 +141,7 @@ void posture_exit(void)
     }
 }
 
-//读取物体自身坐标系下的4个点(0,0,0),(1,0,0),(0,1,0),(0,0,1)在大地坐标系下的坐标
-void posture_get(int *xyzo)
-{
-    ;
-}
-
-//获取角速度计算的转角
+//获取角速度计算的转角(相对于空间坐标系)
 float posture_getAGX(void)
 {
     return ps.agX;
@@ -160,7 +154,7 @@ float posture_getAGZ(void)
 {
     return ps.agZ;
 }
-//获取重力加速度计算的转角
+//获取重力加速度计算的转角(相对于空间坐标系)
 float posture_getACX(void)
 {
     return ps.acX;
@@ -187,10 +181,11 @@ float posture_getZ(void)
     return ps.agZ * 0.5 + ps.acZ * 0.5;
 }
 
-//复位
+//复位(重置计算值)
 void posture_reset(void)
 {
     ps.agX = ps.agY = ps.agZ = 0;
+    ps.acX = ps.acY = ps.acZ = 0;
 }
 
 //获取加速度计数据

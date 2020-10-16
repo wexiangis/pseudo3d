@@ -182,6 +182,7 @@ int main(int argc, char **argv)
             else if (input[0] == 'a')
                 dpat1->mvxyz[0] -= DIV_MOVE * strlen(input);
 
+            //reset
             else if (input[0] == 'r')
             {
                 p3d_reset(dpat1);
@@ -190,6 +191,17 @@ int main(int argc, char **argv)
                 posture_reset();
 #endif
             }
+
+            //switch matrix mode
+            else if (input[0] == 'm')
+            {
+                if(dpat1->_matrix_mode == 1)
+                    dpat1->_matrix_mode = 0;
+                else
+                    dpat1->_matrix_mode = 1;
+            }
+
+            printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", dpat1->raxyz[0], dpat1->raxyz[1], dpat1->raxyz[2]);
         }
 
         delayus(INTERVALUS);

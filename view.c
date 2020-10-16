@@ -38,8 +38,11 @@ void amoled_print_dot2(int x, int y, const unsigned char *data)
 void amoled_print_en(void)
 {
 #ifdef VIEW_ENABLE_FB
-    if (!fbmap)
+    if (!fbmap) {
         fbmap = fb_init(0, 0);
+        if(fbmap)
+            fbmap->xOffset = fbmap->fbInfo.xres - VIEW_X_SIZE - 1;
+    }
     fb_refresh(fbmap, (unsigned char *)amoled_data, VIEW_X_SIZE, VIEW_Y_SIZE, VIEW_PICTURE_PERW);
 #else
     bmp_create("./test.bmp", (unsigned char *)amoled_data, VIEW_X_SIZE, VIEW_Y_SIZE, VIEW_PICTURE_PERW);

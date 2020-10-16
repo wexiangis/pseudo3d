@@ -10,7 +10,7 @@
 #include <math.h>
 
 //传入旋转角度的矩阵模式: 0/左乘(相对自身坐标系旋转) 1/右乘(相对空间坐标系旋转)
-#define P3D_MATRIX_MODE 1
+#define P3D_MATRIX_MODE 0
 
 //传入旋转和平移数值模式: 0/固定值 1/增量值
 #define P3D_INPUT_MODE 0
@@ -195,6 +195,7 @@ P3D_PointArray_Type *p3d_pointArray_init(int pointNum, double x, double y, doubl
     va_end(ap);
     memcpy(dpat->xyzArrayCopy, dpat->xyzArray, dpat->xyzArrayMemSize);
 
+    dpat->_matrix_mode = P3D_MATRIX_MODE;
     return dpat;
 }
 
@@ -261,11 +262,10 @@ void p3d_angle_to_xyz(P3D_PointArray_Type *dpat)
         memcpy(&dpat->xyzArray[j], &dpat->xyzArrayCopy[j], 3 * sizeof(double));
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyzArray[3]
-#if (P3D_MATRIX_MODE == 1)
-        p3d_matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
-#else
-        p3d_matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
-#endif
+        if(dpat->_matrix_mode == 1)
+            p3d_matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
+        else
+            p3d_matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
         //平移量(相对于绝对坐标系)
         dpat->xyzArray[j] += dpat->mvxyz[0];
         dpat->xyzArray[j + 1] += dpat->mvxyz[1];
@@ -282,11 +282,10 @@ void p3d_angle_to_xyz(P3D_PointArray_Type *dpat)
         memcpy(dct->xyz, dct->xyzCopy, 3 * sizeof(double));
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyz[3]
-#if (P3D_MATRIX_MODE == 1)
-        p3d_matrix_zyx(dpat->raxyz, dct->xyz);
-#else
-        p3d_matrix_xyz(dpat->raxyz, dct->xyz);
-#endif
+        if(dpat->_matrix_mode == 1)
+            p3d_matrix_zyx(dpat->raxyz, dct->xyz);
+        else
+            p3d_matrix_xyz(dpat->raxyz, dct->xyz);
         //平移量(相对于绝对坐标系)
         dct->xyz[0] += dpat->mvxyz[0];
         dct->xyz[1] += dpat->mvxyz[1];
@@ -401,7 +400,7 @@ void p3d_draw(int centreX, int centreY, P3D_PointArray_Type *dpat)
     }
 }
 
-// ---------- 而外提供的数学方法 ----------
+// ---------- 额外提供的数学方法 ----------
 
 /*
  *  旋转矩阵左乘
@@ -499,7 +498,7 @@ void p3d_matrix_zyx(double raxyz[3], double point[3])
     *                                   |z|
     *
     *           |cB*cC, -sC, sB*cC|        |x|
-    *         = |cB*sC, cC,  sB*sC|[roll Z]|y|
+    *         = |cB*sC, cC,  sB*sC|[roll X]|y|
     *           |-sB,   0,   cB   |        |z|
     * 
     *           |cB*cC, -cA*sC + sA*sB*cC, sA*sC + cA*sB*cC ||x|
