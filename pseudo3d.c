@@ -10,7 +10,7 @@
 #include <math.h>
 
 //传入旋转角度的矩阵模式: 0/左乘(相对自身坐标系旋转) 1/右乘(相对空间坐标系旋转)
-#define P3D_MATRIX_MODE 0
+#define P3D_MATRIX_MODE 1
 
 //传入旋转和平移数值模式: 0/固定值 1/增量值
 #define P3D_INPUT_MODE 0

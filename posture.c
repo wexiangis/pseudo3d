@@ -57,6 +57,13 @@ static PostureStruct ps = {
     .acZ = 0,
 };
 
+short absInt16(short v)
+{
+    if (v < 0)
+        return -v;
+    return v;
+}
+
 void *posture_thread(void *argv)
 {
 #if(POSTURE_WORK_MODE == 1)
@@ -116,6 +123,9 @@ void *posture_thread(void *argv)
         ps.acY = -atan2((float)ps.acXVal,
             (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal));
         ps.acZ = 0;
+
+        //ps.agX = ps.acX;
+        //ps.acZ = ps.agZ;
     }
     mpu6050_release();
 #endif
