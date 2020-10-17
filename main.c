@@ -137,9 +137,9 @@ int main(int argc, char **argv)
         wave_load(0, (short)(posture_getACX() * 10000));
         wave_load(1, (short)(posture_getACY() * 10000));
         wave_load(2, (short)(posture_getACZ() * 10000));
-        wave_load(3, posture_getAccelX());
-        wave_load(4, posture_getAccelY());
-        wave_load(5, posture_getAccelZ());
+        wave_load(3, (short)(posture_getAccelX()));
+        wave_load(4, (short)(posture_getAccelY()));
+        wave_load(5, (short)(posture_getAccelZ()));
         wave_refresh();
 
         dpat1->raxyz[0] = posture_getACX();
