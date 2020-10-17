@@ -14,7 +14,7 @@
 #include "view.h"
 
 //使用陀螺仪模块
-#define ENABLE_MPU6050 1
+#define ENABLE_MPU6050 0
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
@@ -30,7 +30,7 @@
 int main(int argc, char **argv)
 {
     //初始化一个多边形
-    P3D_PointArray_Type *dpat0, *dpat1, *dpat2;
+    P3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
 
     char input[16];
     int fd;
@@ -124,6 +124,37 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat2, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
     dpat2->_matrix_mode = 1;//使用右乘
 
+    //长方体3
+    if ((dpat3 = p3d_pointArray_init(8,
+                                     40.00, 30.00, 50.00, 0xFF00FF,
+                                     40.00, -30.00, 50.00, 0xFFFF00,
+                                     -40.00, -30.00, 50.00, 0x00FFFF,
+                                     -40.00, 30.00, 50.00, 0xFF8000,
+                                     -40.00, 30.00, -50.00, 0xFF00FF,
+                                     -40.00, -30.00, -50.00, 0xFFFF00,
+                                     40.00, -30.00, -50.00, 0x00FFFF,
+                                     40.00, 30.00, -50.00, 0xFF8000)) == NULL)
+    {
+        printf("p3d_pointArray_init failed\r\n");
+        return -1;
+    }
+    p3d_ppLink_add(dpat3, 0xFF0000, 0, 3, 1, 3, 7);
+    p3d_ppLink_add(dpat3, 0x00FF00, 1, 2, 2, 6);
+    p3d_ppLink_add(dpat3, 0x0000FF, 2, 2, 3, 5);
+    p3d_ppLink_add(dpat3, 0xFFFF00, 3, 1, 4);
+    p3d_ppLink_add(dpat3, 0xFF00FF, 4, 2, 5, 7);
+    p3d_ppLink_add(dpat3, 0x00FFFF, 5, 1, 6);
+    p3d_ppLink_add(dpat3, 0xFF8000, 6, 1, 7);
+    p3d_comment_add(dpat3, 40.00, 30.00, 50.00, "A", 0, 0xFFFF00);
+    p3d_comment_add(dpat3, 40.00, -30.00, 50.00, "B", 0, 0x00FF00);
+    p3d_comment_add(dpat3, -40.00, -30.00, 50.00, "C", 0, 0x8080FF);
+    p3d_comment_add(dpat3, -40.00, 30.00, 50.00, "D", 0, 0xFF0000);
+    p3d_comment_add(dpat3, -40.00, 30.00, -50.00, "E", 0, 0xFF00FF);
+    p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
+    p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
+    p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
+    dpat3->_matrix_mode = 1;//使用右乘
+
 #if (ENABLE_MPU6050)
     //初始化姿态计算器
     posture_init(INTERVALUS / 1000);
@@ -137,23 +168,29 @@ int main(int argc, char **argv)
         wave_load(0, (short)(posture_getACX() * 10000));
         wave_load(1, (short)(posture_getACY() * 10000));
         wave_load(2, (short)(posture_getACZ() * 10000));
-        wave_load(3, (short)(posture_getAccelX()));
-        wave_load(4, (short)(posture_getAccelY()));
-        wave_load(5, (short)(posture_getAccelZ()));
+        wave_load(3, (short)(posture_getAGX() * 10000));
+        wave_load(4, (short)(posture_getAGY() * 10000));
+        wave_load(5, (short)(posture_getAGZ() * 10000));
+
         wave_refresh();
 
         dpat1->raxyz[0] = posture_getACX();
         dpat1->raxyz[1] = posture_getACY();
         dpat1->raxyz[2] = posture_getACZ();
-
         dpat2->raxyz[0] = posture_getAGX();
         dpat2->raxyz[1] = posture_getAGY();
         dpat2->raxyz[2] = posture_getAGZ();
+        dpat3->raxyz[0] = posture_getX();
+        dpat3->raxyz[1] = posture_getY();
+        dpat3->raxyz[2] = posture_getZ();
 
-        printf("x/%.4f y/%.4f z/%.4f -- x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d\r\n",
+        printf("x/%.4f y/%.4f z/%.4f -- x/%.4f y/%.4f z/%.4f -- x/%.4f y/%.4f z/%.4f"
+               " -- x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d\r\n",
                posture_getACX(), posture_getACY(), posture_getACZ(),
-               posture_getGyroX(), posture_getGyroY(), posture_getGyroZ(),
-               posture_getAccelX(), posture_getAccelY(), posture_getAccelZ());
+               posture_getAGX(), posture_getAGY(), posture_getAGZ(),
+               posture_getX(), posture_getY(), posture_getZ(),
+               posture_getAGXVal(), posture_getAGYVal(), posture_getAGZVal(),
+               posture_getACXVal(), posture_getACYVal(), posture_getACZVal());
 
 #endif
 
@@ -161,10 +198,12 @@ int main(int argc, char **argv)
 
         p3d_angle_to_xyz(dpat1);
         p3d_angle_to_xyz(dpat2);
+        p3d_angle_to_xyz(dpat3);
 
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
-        p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4 * 3, dpat2);
+        p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
+        p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
 
         PRINT_EN();
 
@@ -213,23 +252,17 @@ int main(int argc, char **argv)
             {
                 p3d_reset(dpat1);
                 p3d_reset(dpat2);
+                p3d_reset(dpat3);
 #if (ENABLE_MPU6050)
                 posture_reset();
 #endif
             }
-            //switch matrix mode
-            else if (input[0] == 'm')
-            {
-                if(dpat1->_matrix_mode == 1)
-                    dpat1->_matrix_mode = 0;
-                else
-                    dpat1->_matrix_mode = 1;
-                
-                dpat2->_matrix_mode = dpat1->_matrix_mode;
-            }
 
             memcpy(dpat2->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+            memcpy(dpat3->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+
             memcpy(dpat2->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
+            memcpy(dpat3->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
 
             printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", dpat1->raxyz[0], dpat1->raxyz[1], dpat1->raxyz[2]);
         }

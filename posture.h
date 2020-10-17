@@ -27,13 +27,13 @@ float posture_getY(void);
 float posture_getZ(void);
 
 //获取加速度计数据
-short posture_getAccelX(void);
-short posture_getAccelY(void);
-short posture_getAccelZ(void);
+short posture_getACXVal(void);
+short posture_getACYVal(void);
+short posture_getACZVal(void);
 
 //获取陀螺仪数据
-short posture_getGyroX(void);
-short posture_getGyroY(void);
-short posture_getGyroZ(void);
+short posture_getAGXVal(void);
+short posture_getAGYVal(void);
+short posture_getAGZVal(void);
 
 #endif

@@ -22,10 +22,10 @@
 #define _INV_MPU_H_
 
 //采样频率
-#define DEFAULT_MPU_HZ  (100)
+#define DEFAULT_MPU_HZ  (20)
 
 //主要的对外接口
-int mpu_dmp_init(void);
+int mpu_dmp_init(char enableTest);
 int mpu_dmp_get_data(float *pry, short *gyro, short *accel);
 
 #define INV_X_GYRO      (0x40)

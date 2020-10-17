@@ -15,3 +15,11 @@ void delayms(unsigned int ms)
 {
     delayus(ms * 1000);
 }
+
+long getTickUs(void)
+{
+    // struct timespec tp={0};
+    struct timeval tv = {0};
+    gettimeofday(&tv, NULL);
+    return (long)(tv.tv_sec * 1000000u + tv.tv_usec);
+}

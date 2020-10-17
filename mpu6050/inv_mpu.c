@@ -3014,7 +3014,7 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 }
 
 //返回值: 0/正常
-int mpu_dmp_init(void)
+int mpu_dmp_init(char enableTest)
 {
     int res = 0;
     if (mpu_init() == 0)
@@ -3043,9 +3043,11 @@ int mpu_dmp_init(void)
         res = dmp_set_fifo_rate(DEFAULT_MPU_HZ); //设置DMP输出速率(最大不超过200Hz)
         if (res)
             return 7;
-        res = run_self_test(); //自检
-        if (res)
-            return 8;
+        if(enableTest) {
+            res = run_self_test(); //自检
+            if (res)
+                return 8;
+        }
         res = mpu_set_dmp_state(1); //使能DMP
         if (res)
             return 9;
