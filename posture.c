@@ -86,6 +86,7 @@ void *posture_thread(void *argv)
         }
     }
 #else
+    float tmp;
     //2倍pi值
     mpu6050_init("/dev/i2c-1");
     while (ps.flagRun)
@@ -120,8 +121,8 @@ void *posture_thread(void *argv)
         // ----- 重力加速度计算姿态 -----
 
         ps.acX = atan2((float)ps.acYVal, (float)ps.acZVal);
-        ps.acY = -atan2((float)ps.acXVal,
-            (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal));
+        tmp = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
+        ps.acY = -atan2((float)ps.acXVal, tmp);
         ps.acZ = 0;
 
         //ps.agX = ps.acX;

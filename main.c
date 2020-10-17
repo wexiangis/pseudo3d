@@ -14,7 +14,7 @@
 #include "view.h"
 
 //使用陀螺仪模块
-#define ENABLE_MPU6050 0
+#define ENABLE_MPU6050 1
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
@@ -91,6 +91,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
+    dpat1->_matrix_mode = 0;//使用左乘
 
     //长方体2
     if ((dpat2 = p3d_pointArray_init(8,
@@ -121,6 +122,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat2, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat2, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat2, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
+    dpat2->_matrix_mode = 1;//使用右乘
 
 #if (ENABLE_MPU6050)
     //初始化姿态计算器

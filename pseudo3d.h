@@ -48,7 +48,7 @@ typedef struct
     int *color;           //1元数组 col1;col2... 二维投影点的颜色
     P3D_PPLink_Type *link;     //各三维点的连线关系
     P3D_Comment_Type *comment; //注释信息
-    int _matrix_mode;     //0/左乘(相对自身坐标系旋转) 1/右乘(相对空间坐标系旋转)
+    int _matrix_mode;     //0/左乘(相对空间坐标系旋转) 1/右乘(相对自身坐标系旋转)
 } P3D_PointArray_Type;
 
 /*

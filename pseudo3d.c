@@ -9,7 +9,7 @@
 #include <string.h>
 #include <math.h>
 
-//传入旋转角度的矩阵模式: 0/左乘(相对自身坐标系旋转) 1/右乘(相对空间坐标系旋转)
+//传入旋转角度的矩阵模式: 0/左乘(相对空间坐标系旋转) 1/右乘(相对自身坐标系旋转)
 #define P3D_MATRIX_MODE 1
 
 //传入旋转和平移数值模式: 0/固定值 1/增量值
@@ -263,9 +263,9 @@ void p3d_angle_to_xyz(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyzArray[3]
         if(dpat->_matrix_mode == 1)
-            p3d_matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
-        else
             p3d_matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
+        else
+            p3d_matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
         //平移量(相对于绝对坐标系)
         dpat->xyzArray[j] += dpat->mvxyz[0];
         dpat->xyzArray[j + 1] += dpat->mvxyz[1];
@@ -283,9 +283,9 @@ void p3d_angle_to_xyz(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyz[3]
         if(dpat->_matrix_mode == 1)
-            p3d_matrix_zyx(dpat->raxyz, dct->xyz);
-        else
             p3d_matrix_xyz(dpat->raxyz, dct->xyz);
+        else
+            p3d_matrix_zyx(dpat->raxyz, dct->xyz);
         //平移量(相对于绝对坐标系)
         dct->xyz[0] += dpat->mvxyz[0];
         dct->xyz[1] += dpat->mvxyz[1];
