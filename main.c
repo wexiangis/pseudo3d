@@ -188,11 +188,12 @@ int main(int argc, char **argv)
         dpat3->raxyz[1] = posture_getY();
         dpat3->raxyz[2] = posture_getZ();
 
-        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f"
+        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f D/%.4f"
                " AC x/%04d y/%04d z/%04d AG x/%04d y/%04d z/%04d\r\n",
                posture_getX(), posture_getY(), posture_getZ(),
                posture_getACX(), posture_getACY(), posture_getACZ(),
                posture_getAGX(), posture_getAGY(), posture_getAGZ(),
+               posture_dir(),
                posture_getACXVal(), posture_getACYVal(), posture_getACZVal(),
                posture_getAGXVal(), posture_getAGYVal(), posture_getAGZVal());
 

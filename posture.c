@@ -6,9 +6,16 @@
 #include <sys/time.h>
 #include "delayus.h"
 
-#define POSTURE_WORK_MODE 2 // 0/原始数据模式 1/使用dmp库 2/compare
+// 0/原始数据模式 1/使用dmp库 2/compare
+#define PE_WORK_MODE 2
 
-#if(POSTURE_WORK_MODE > 0)
+// 启用罗盘
+#define PE_USE_HMC5883 1
+#if (PE_USE_HMC5883 != 0)
+#include "hmc5883.h"
+#endif
+
+#if (PE_WORK_MODE > 0)
 #include "inv_mpu.h"
 #else
 #include "mpu6050.h"
@@ -67,7 +74,7 @@ void *posture_thread(void *argv)
     DELAY_US_INIT;
     short agVal[3];
     short acVal[3];
-#if(POSTURE_WORK_MODE == 1)
+#if (PE_WORK_MODE == 1)
     float fVal[3];
     mpu_dmp_init(1000 / ps.intervalMs, 0);
     while (ps.flagRun)
@@ -75,7 +82,8 @@ void *posture_thread(void *argv)
         DELAY_US(ps.intervalMs * 1000);
 
         // ----- 采样 -----
-        if(mpu_dmp_get_data(fVal, agVal, acVal) == 0) {
+        if (mpu_dmp_get_data(fVal, agVal, acVal) == 0)
+        {
             ps.X = fVal[1] * PE_PI / 180;
             ps.Y = fVal[0] * PE_PI / 180;
             ps.Z = fVal[2] * PE_PI / 180;
@@ -89,7 +97,7 @@ void *posture_thread(void *argv)
     }
 #else
     float tmp;
-#if(POSTURE_WORK_MODE == 2)
+#if (PE_WORK_MODE == 2)
     float fVal[3];
     mpu_dmp_init(1000 / ps.intervalMs, 0);
 #else
@@ -101,8 +109,9 @@ void *posture_thread(void *argv)
         DELAY_US(ps.intervalMs * 1000);
 
         // ----- 采样 -----
-#if(POSTURE_WORK_MODE == 2)
-        if(mpu_dmp_get_data(fVal, agVal, acVal) == 0) {
+#if (PE_WORK_MODE == 2)
+        if (mpu_dmp_get_data(fVal, agVal, acVal) == 0)
+        {
             ps.X = fVal[1] * PE_PI / 180;
             ps.Y = fVal[0] * PE_PI / 180;
             ps.Z = fVal[2] * PE_PI / 180;
@@ -131,12 +140,18 @@ void *posture_thread(void *argv)
         ps.agY += (float)agVal[1] / ps.intervalMs / PE_ACP;
         ps.agZ += (float)agVal[2] / ps.intervalMs / PE_ACP;
         //范围限制
-        if(ps.agX > PE_PI) ps.agX -= PE_2PI;
-        else if(ps.agX < -PE_PI) ps.agX += PE_2PI;
-        if(ps.agY > PE_PI) ps.agY -= PE_2PI;
-        else if(ps.agY < -PE_PI) ps.agY += PE_2PI;
-        if(ps.agZ > PE_PI) ps.agZ -= PE_2PI;
-        else if(ps.agZ < -PE_PI) ps.agZ += PE_2PI;
+        if (ps.agX > PE_PI)
+            ps.agX -= PE_2PI;
+        else if (ps.agX < -PE_PI)
+            ps.agX += PE_2PI;
+        if (ps.agY > PE_PI)
+            ps.agY -= PE_2PI;
+        else if (ps.agY < -PE_PI)
+            ps.agY += PE_2PI;
+        if (ps.agZ > PE_PI)
+            ps.agZ -= PE_2PI;
+        else if (ps.agZ < -PE_PI)
+            ps.agZ += PE_2PI;
 
         // ----- accel计算姿态 -----
 
@@ -144,9 +159,8 @@ void *posture_thread(void *argv)
         tmp = (float)sqrt((float)ps.acYVal * ps.acYVal + (float)ps.acZVal * ps.acZVal);
         ps.acY = -atan2((float)ps.acXVal, tmp);
         ps.acZ = 0;
-
     }
-#if(POSTURE_WORK_MODE == 0)
+#if (PE_WORK_MODE == 0)
     mpu6050_release();
 #endif
 #endif
@@ -165,7 +179,7 @@ void posture_init(unsigned short intervalMs)
 
 void posture_exit(void)
 {
-    if(ps.flagRun)
+    if (ps.flagRun)
     {
         ps.flagRun = 0;
         pthread_join(ps.th, NULL);
@@ -217,7 +231,7 @@ void posture_reset(void)
 {
     ps.agX = ps.agY = ps.agZ = 0;
     ps.acX = ps.acY = ps.acZ = 0;
-#if (POSTURE_WORK_MODE > 0)
+#if (PE_WORK_MODE > 0)
     ps.ZErr = -ps.Z;
 #endif
 }
@@ -248,4 +262,14 @@ short posture_getAGYVal(void)
 short posture_getAGZVal(void)
 {
     return ps.agZVal;
+}
+
+//获取罗盘角度
+float posture_dir(void)
+{
+#if (PE_USE_HMC5883 == 0)
+    return 0;
+#else
+    return hmc5883_get();
+#endif
 }

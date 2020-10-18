@@ -36,4 +36,7 @@ short posture_getAGXVal(void);
 short posture_getAGYVal(void);
 short posture_getAGZVal(void);
 
+//获取罗盘角度
+float posture_dir(void);
+
 #endif

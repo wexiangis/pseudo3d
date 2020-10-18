@@ -23,7 +23,7 @@
 #define GYRO_ZOUT_L 0x48
 #define PWR_MGMT_1 0x6B //电源管理，典型值：0x00(正常启用)
 #define WHO_AM_I 0x75   //IIC地址寄存器(默认数值0x68，只读)
-#define SLAVE_ADDR 0x68 //IIC写入时的地址字节数据，+1为读取
+#define MPU6050_ID 0x68 //IIC写入时的地址字节数据，+1为读取
 
 #define GX_Offset (24)
 #define GY_Offset (-14)
@@ -44,7 +44,7 @@ static void mpu6050_write(unsigned char reg, unsigned char val)
         return;
     data_buf[0] = val;
     reg_addr[0] = reg;
-    i2c_transfer_write(_fd, SLAVE_ADDR, data_buf, 1, reg_addr, 1);
+    i2c_transfer_write(_fd, MPU6050_ID, data_buf, 1, reg_addr, 1);
 }
 
 static unsigned char mpu6050_read(unsigned char reg)
@@ -54,7 +54,7 @@ static unsigned char mpu6050_read(unsigned char reg)
     if (_fd < 1)
         return 0x00;
     reg_addr[0] = reg;
-    if (i2c_transfer_read(_fd, SLAVE_ADDR, data_buf, 1, reg_addr, 1) == 0)
+    if (i2c_transfer_read(_fd, MPU6050_ID, data_buf, 1, reg_addr, 1) == 0)
         return data_buf[0];
     return 0x00;
 }
@@ -62,7 +62,7 @@ static unsigned char mpu6050_read(unsigned char reg)
 /*
  *  mpu6050 operation
  */
-void mpu6050_release()
+void mpu6050_release(void)
 {
     if (_fd > 0)
         i2c_transfer_close(_fd);

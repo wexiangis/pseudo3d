@@ -26,6 +26,9 @@ obj-c += mpu6050/mpu6050.c
 obj-c += mpu6050/inv_mpu.c
 obj-c += mpu6050/inv_mpu_dmp_motion_driver.c
 
+# HMC5883 驱动
+obj-c += hmc5883.c
+
 target:
 	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./mpu6050 -lm -lpthread
 
