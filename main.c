@@ -14,7 +14,7 @@
 #include "view.h"
 
 //使用陀螺仪模块
-#define ENABLE_MPU6050 0
+#define ENABLE_MPU6050 1
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
@@ -171,6 +171,9 @@ int main(int argc, char **argv)
         wave_load(3, (short)(posture_getAGX() * 10000));
         wave_load(4, (short)(posture_getAGY() * 10000));
         wave_load(5, (short)(posture_getAGZ() * 10000));
+        wave_load(6, (short)(posture_getX() * 10000));
+        wave_load(7, (short)(posture_getY() * 10000));
+        wave_load(8, (short)(posture_getZ() * 10000));
 
         wave_refresh();
 

@@ -5,7 +5,7 @@
 #define _WAVE_H_
 
 /*
- *  chn: 0~5
+ *  chn: 0~8
  */
 void wave_load(int chn, short value);
 

@@ -6,7 +6,7 @@
 
 #include "fbmap.h"
 
-#define WAVE_CHN 6
+#define WAVE_CHN 9
 #define WAVE_Y_OFFSET 320
 
 static FbMap *fbmap;
@@ -27,6 +27,9 @@ const char wave_color[WAVE_CHN][3] = {
     {0xFF, 0xFF, 0x00},
     {0x00, 0xFF, 0xFF},
     {0xFF, 0x00, 0xFF},
+    {0x80, 0x40, 0x40},
+    {0x40, 0x80, 0x40},
+    {0x40, 0x40, 0x80},
 };
 
 static void wav_init()
@@ -110,7 +113,7 @@ void wave_line(int xStart, int yStart, int xEnd, int yEnd, char *rgb)
 }
 
 /*
- *  chn: 0~5
+ *  chn: 0~8
  */
 void wave_load(int chn, short value)
 {
