@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include "delayus.h"
 
-#define POSTURE_WORK_MODE 2 // 0/原始数据模式 1/使用dmp库 2/dmp data
+#define POSTURE_WORK_MODE 2 // 0/原始数据模式 1/使用dmp库 2/compare
 
 #if(POSTURE_WORK_MODE > 0)
 #include "inv_mpu.h"
@@ -16,13 +16,14 @@
 
 #define PE_PI 3.14159265358979323846 //位数越多 精度越高
 #define PE_2PI (PE_PI * 2)
-#define PE_ACP (PE_PI * 110)
+
+#define PE_ACP (PE_PI * 3000) // param in 100Hz
 
 typedef struct
 {
     pthread_t th;
     short flagRun;
-    short intervalMs;
+    unsigned short intervalMs;
     //角速度原始数据
     short agXVal, agYVal, agZVal;
     //重力加速度原始数据
@@ -32,7 +33,7 @@ typedef struct
     //重力加速度得到的角度值(rad:0.0~2pi)
     float acX, acY, acZ;
     //
-    float X, Y, Z;
+    float X, Y, Z, ZErr;
 } PostureStruct;
 
 static PostureStruct ps = {
@@ -58,6 +59,7 @@ static PostureStruct ps = {
     .X = 0,
     .Y = 0,
     .Z = 0,
+    .ZErr = 0,
 };
 
 void *posture_thread(void *argv)
@@ -67,7 +69,7 @@ void *posture_thread(void *argv)
     short acVal[3];
 #if(POSTURE_WORK_MODE == 1)
     float fVal[3];
-    mpu_dmp_init(1);
+    mpu_dmp_init(1000 / ps.intervalMs, 0);
     while (ps.flagRun)
     {
         DELAY_US(ps.intervalMs * 1000);
@@ -89,7 +91,7 @@ void *posture_thread(void *argv)
     float tmp;
 #if(POSTURE_WORK_MODE == 2)
     float fVal[3];
-    mpu_dmp_init(0);
+    mpu_dmp_init(1000 / ps.intervalMs, 0);
 #else
     //2倍pi值
     mpu6050_init("/dev/i2c-1");
@@ -153,7 +155,7 @@ void *posture_thread(void *argv)
 }
 
 //初始化,设定数据刷新间隔
-void posture_init(short intervalMs)
+void posture_init(unsigned short intervalMs)
 {
     ps.intervalMs = intervalMs;
     if (!ps.flagRun)
@@ -207,7 +209,7 @@ float posture_getY(void)
 }
 float posture_getZ(void)
 {
-    return ps.Z;
+    return ps.Z + ps.ZErr;
 }
 
 //复位(重置计算值)
@@ -215,6 +217,9 @@ void posture_reset(void)
 {
     ps.agX = ps.agY = ps.agZ = 0;
     ps.acX = ps.acY = ps.acZ = 0;
+#if (POSTURE_WORK_MODE > 0)
+    ps.ZErr = -ps.Z;
+#endif
 }
 
 //获取加速度计数据

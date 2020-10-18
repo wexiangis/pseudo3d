@@ -5,7 +5,7 @@
 #define _POSTURE_H_
 
 //初始化,设定数据刷新间隔
-void posture_init(short shortervalMs);
+void posture_init(unsigned short intervalMs);
 void posture_exit(void);
 
 //复位(重置计算值)

@@ -871,8 +871,8 @@ int mpu_init(void)
     if (mpu_configure_fifo(0))
         return -1;
 
-        // if (int_param)
-        //     reg_int_cb(int_param);
+    // if (int_param)
+    //     reg_int_cb(int_param);
 
 #ifdef AK89xx_SECONDARY
     setup_compass();
@@ -3014,7 +3014,7 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 }
 
 //返回值: 0/正常
-int mpu_dmp_init(char enableTest)
+int mpu_dmp_init(unsigned short Hz, char enableTest)
 {
     int res = 0;
     if (mpu_init() == 0)
@@ -3025,7 +3025,7 @@ int mpu_dmp_init(char enableTest)
         res = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置FIFO
         if (res)
             return 2;
-        res = mpu_set_sample_rate(DEFAULT_MPU_HZ); //设置采样率
+        res = mpu_set_sample_rate(Hz); //设置采样率
         if (res)
             return 3;
         res = dmp_load_motion_driver_firmware(); //加载dmp固件
@@ -3040,7 +3040,7 @@ int mpu_dmp_init(char enableTest)
             DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
         if (res)
             return 6;
-        res = dmp_set_fifo_rate(DEFAULT_MPU_HZ); //设置DMP输出速率(最大不超过200Hz)
+        res = dmp_set_fifo_rate(Hz); //设置DMP输出速率(最大不超过200Hz)
         if (res)
             return 7;
         if(enableTest) {

@@ -18,10 +18,11 @@
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
+#define MPU6050_INTERVALMS 10 //sample freq ms
 #endif
 
 //采样间隔
-#define INTERVALUS 50000
+#define INTERVALUS 50000 //screen freq us
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -153,11 +154,11 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat3->_matrix_mode = 1;//使用右乘
+    dpat3->_matrix_mode = 0;//使用左乘
 
 #if (ENABLE_MPU6050)
     //初始化姿态计算器
-    posture_init(INTERVALUS / 1000);
+    posture_init(MPU6050_INTERVALMS);
 #endif
 
     while (1)
@@ -168,12 +169,12 @@ int main(int argc, char **argv)
         wave_load(0, (short)(posture_getACX() * 10000));
         wave_load(1, (short)(posture_getACY() * 10000));
         wave_load(2, (short)(posture_getACZ() * 10000));
-        wave_load(3, (short)(posture_getAGX() * 10000));
-        wave_load(4, (short)(posture_getAGY() * 10000));
-        wave_load(5, (short)(posture_getAGZ() * 10000));
-        wave_load(6, (short)(posture_getX() * 10000));
-        wave_load(7, (short)(posture_getY() * 10000));
-        wave_load(8, (short)(posture_getZ() * 10000));
+        wave_load(3, (short)(posture_getX() * 10000));
+        wave_load(4, (short)(posture_getY() * 10000));
+        wave_load(5, (short)(posture_getZ() * 10000));
+//        wave_load(6, (short)(posture_getAGX() * 10000));
+//        wave_load(7, (short)(posture_getAGY() * 10000));
+//        wave_load(8, (short)(posture_getAGZ() * 10000));
 
         wave_refresh();
 
@@ -187,13 +188,13 @@ int main(int argc, char **argv)
         dpat3->raxyz[1] = posture_getY();
         dpat3->raxyz[2] = posture_getZ();
 
-        printf("x/%.4f y/%.4f z/%.4f -- x/%.4f y/%.4f z/%.4f -- x/%.4f y/%.4f z/%.4f"
-               " -- x/%04d y/%04d z/%04d -- x/%04d y/%04d z/%04d\r\n",
+        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f"
+               " AC x/%04d y/%04d z/%04d AG x/%04d y/%04d z/%04d\r\n",
+               posture_getX(), posture_getY(), posture_getZ(),
                posture_getACX(), posture_getACY(), posture_getACZ(),
                posture_getAGX(), posture_getAGY(), posture_getAGZ(),
-               posture_getX(), posture_getY(), posture_getZ(),
-               posture_getAGXVal(), posture_getAGYVal(), posture_getAGZVal(),
-               posture_getACXVal(), posture_getACYVal(), posture_getACZVal());
+               posture_getACXVal(), posture_getACYVal(), posture_getACZVal(),
+               posture_getAGXVal(), posture_getAGYVal(), posture_getAGZVal());
 
 #endif
 
