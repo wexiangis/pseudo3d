@@ -59,7 +59,7 @@ typedef struct
  * 
  *  注意: x, y, z 必须用 0.00 的格式赋值, 例如: 3 写成 3.00, -13 写成 -13.00
  */
-P3D_PointArray_Type *p3d_pointArray_init(
+P3D_PointArray_Type *p3d_init(
     int pointNum,
     double x,
     double y,
@@ -101,12 +101,6 @@ void p3d_comment_add(
     char *comment,
     int type,
     int color);
-
-/*
- *  根据当前 dpat 中的 raxyz[3] 和 mvxyz[3] 对当前的图形进行旋转和平移
- */
-void p3d_angle_to_xyz(
-    P3D_PointArray_Type *dpat);
 
 /*
  *  输出当前图形到屏幕

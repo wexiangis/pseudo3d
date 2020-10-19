@@ -159,7 +159,7 @@ void p3d_comment_add(P3D_PointArray_Type *dpat, double x, double y, double z, ch
  * 
  *  注意: x, y, z 必须用 0.00 的格式赋值, 例如: 3 写成 3.00, -13 写成 -13.00
  */
-P3D_PointArray_Type *p3d_pointArray_init(int pointNum, double x, double y, double z, int color, ...)
+P3D_PointArray_Type *p3d_init(int pointNum, double x, double y, double z, int color, ...)
 {
     int i, j;
     P3D_PointArray_Type *dpat;
@@ -229,7 +229,7 @@ void p3d_3d_to_2d(double P3D_XYZ[3], int _2D_XY[2])
 /*
  *  根据当前 dpat 中的 raxyz[3] 和 mvxyz[3] 对当前的图形进行旋转和平移
  */
-void p3d_angle_to_xyz(P3D_PointArray_Type *dpat)
+void p3d_refresh(P3D_PointArray_Type *dpat)
 {
     int i, j;
     P3D_Comment_Type *dct;
@@ -314,6 +314,9 @@ void p3d_draw(int centreX, int centreY, P3D_PointArray_Type *dpat)
 
     if (dpat == NULL)
         return;
+
+    //运算
+    p3d_refresh(dpat);
 
     //三维坐标转二维
     for (i = 0, j = 0, k = 0; i < dpat->pointNum; i++)

@@ -3,14 +3,13 @@
  */
 #include <math.h>
 #include <pthread.h>
-#include <sys/time.h>
 #include "delayus.h"
 
 // 0/原始数据模式 1/使用dmp库 2/compare
 #define PE_WORK_MODE 2
 
 // 启用罗盘
-#define PE_USE_HMC5883 1
+#define PE_USE_HMC5883 0
 #if (PE_USE_HMC5883 != 0)
 #include "hmc5883.h"
 #endif
@@ -24,23 +23,28 @@
 #define PE_PI 3.14159265358979323846 //位数越多 精度越高
 #define PE_2PI (PE_PI * 2)
 
-#define PE_ACP (PE_PI * 3000) // param in 100Hz
+// param in 100Hz
+#define PE_ACP (PE_PI * 3000)
 
 typedef struct
 {
+    //线程及其运行标志
     pthread_t th;
     short flagRun;
+    //采样周期
     unsigned short intervalMs;
     //角速度原始数据
     short agXVal, agYVal, agZVal;
     //重力加速度原始数据
     short acXVal, acYVal, acZVal;
-    //角速度累加得到的角度值(rad:0.0~2pi)
+    //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
     float agX, agY, agZ;
-    //重力加速度得到的角度值(rad:0.0~2pi)
+    //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
     float acX, acY, acZ;
-    //
-    float X, Y, Z, ZErr;
+    //最终输出角度值(相对空间坐标,rad:[-pi, pi])
+    float X, Y, Z;
+    //偏航角较正
+    float zErr;
 } PostureStruct;
 
 static PostureStruct ps = {
@@ -54,19 +58,20 @@ static PostureStruct ps = {
     .acXVal = 0,
     .acYVal = 0,
     .acZVal = 0,
-    //角速度累加得到的角度值
+    //角速度累加得到的角度值(相对自身坐标)
     .agX = 0,
     .agY = 0,
     .agZ = 0,
-    //重力加速度得到的角度值
+    //重力加速度得到的角度值(相对空间坐标)
     .acX = 0,
     .acY = 0,
     .acZ = 0,
-    //
+    //最终输出角度值(相对空间坐标)
     .X = 0,
     .Y = 0,
     .Z = 0,
-    .ZErr = 0,
+    //偏航角较正
+    .zErr = 0,
 };
 
 void *posture_thread(void *argv)
@@ -168,7 +173,11 @@ void *posture_thread(void *argv)
     return NULL;
 }
 
-//初始化,设定数据刷新间隔
+/*
+ *  初始化
+ * 
+ *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
+ */
 void posture_init(unsigned short intervalMs)
 {
     ps.intervalMs = intervalMs;
@@ -186,7 +195,7 @@ void posture_exit(void)
     }
 }
 
-//获取角速度计算的转角(相对于空间坐标系)
+//获取角速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getAGX(void)
 {
     return ps.agX;
@@ -199,7 +208,7 @@ float posture_getAGZ(void)
 {
     return ps.agZ;
 }
-//获取重力加速度计算的转角(相对于空间坐标系)
+//获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getACX(void)
 {
     return ps.acX;
@@ -212,7 +221,7 @@ float posture_getACZ(void)
 {
     return ps.acZ;
 }
-//最终输出转角
+//最终输出转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getX(void)
 {
     return ps.X;
@@ -223,7 +232,7 @@ float posture_getY(void)
 }
 float posture_getZ(void)
 {
-    return ps.Z + ps.ZErr;
+    return ps.Z + ps.zErr;
 }
 
 //复位(重置计算值)
@@ -232,7 +241,7 @@ void posture_reset(void)
     ps.agX = ps.agY = ps.agZ = 0;
     ps.acX = ps.acY = ps.acZ = 0;
 #if (PE_WORK_MODE > 0)
-    ps.ZErr = -ps.Z;
+    ps.zErr = -ps.Z;
 #endif
 }
 
@@ -264,12 +273,12 @@ short posture_getAGZVal(void)
     return ps.agZVal;
 }
 
-//获取罗盘角度
+//获取罗盘角度(rad:[-pi, pi])
 float posture_dir(void)
 {
-#if (PE_USE_HMC5883 == 0)
-    return 0;
-#else
+#if (PE_USE_HMC5883 > 0)
     return hmc5883_get();
+#else
+    return 0;
 #endif
 }

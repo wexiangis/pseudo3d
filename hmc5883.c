@@ -1,4 +1,4 @@
-#include "math.h"
+#include <math.h>
 #include "i2c_transfer.h"
 
 #define HMC5883_ID 0x3C //定义器件在IIC总线中的从地址
@@ -6,11 +6,13 @@
 static char hmc5883_start_flag = 0;
 static float hmc5883_result = 0;
 
+//获取罗盘角度(rad:[-pi, pi])
 float hmc5883_get(void)
 {
     unsigned char data[6] = {0};
     // short z;
     short x, y;
+
     // init
     if (!hmc5883_start_flag)
     {

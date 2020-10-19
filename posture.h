@@ -4,24 +4,28 @@
 #ifndef _POSTURE_H_
 #define _POSTURE_H_
 
-//初始化,设定数据刷新间隔
+/*
+ *  初始化
+ * 
+ *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
+ */
 void posture_init(unsigned short intervalMs);
 void posture_exit(void);
 
 //复位(重置计算值)
 void posture_reset(void);
 
-//获取角速度计算的转角(相对于自身坐标系)
+//获取角速度计算的转角(相对于自身坐标系,rad:[-pi, pi])
 float posture_getAGX(void);
 float posture_getAGY(void);
 float posture_getAGZ(void);
 
-//获取重力加速度计算的转角(相对于空间坐标系)
+//获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getACX(void);
 float posture_getACY(void);
 float posture_getACZ(void);
 
-//最终输出转角
+//最终输出转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getX(void);
 float posture_getY(void);
 float posture_getZ(void);
@@ -36,7 +40,7 @@ short posture_getAGXVal(void);
 short posture_getAGYVal(void);
 short posture_getAGZVal(void);
 
-//获取罗盘角度
+//获取罗盘角度(rad:[-pi, pi])
 float posture_dir(void);
 
 #endif

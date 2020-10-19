@@ -45,15 +45,15 @@ int main(int argc, char **argv)
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
 
     //XYZ
-    if ((dpat0 = p3d_pointArray_init(6,
-                                     P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
-                                     -P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
-                                     0.00, P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
-                                     0.00, -P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
-                                     0.00, 0.00, P3D_XYZ_LEN * 1.00, 0x008000,
-                                     0.00, 0.00, -P3D_XYZ_LEN * 1.00, 0x008000)) == NULL)
+    if ((dpat0 = p3d_init(6,
+        P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
+        -P3D_XYZ_LEN * 1.00, 0.00, 0.00, 0x800000,
+        0.00, P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
+        0.00, -P3D_XYZ_LEN * 1.00, 0.00, 0x008080,
+        0.00, 0.00, P3D_XYZ_LEN * 1.00, 0x008000,
+        0.00, 0.00, -P3D_XYZ_LEN * 1.00, 0x008000)) == NULL)
     {
-        printf("p3d_pointArray_init failed\r\n");
+        printf("p3d_init failed\r\n");
         return -1;
     }
     p3d_ppLink_add(dpat0, 0x800000, 0, 1, 1);
@@ -64,17 +64,17 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat0, 0, 0, P3D_XYZ_LEN, "Z", 0, 0x008000);
 
     //长方体
-    if ((dpat1 = p3d_pointArray_init(8,
-                                     40.00, 30.00, 50.00, 0xFF00FF,
-                                     40.00, -30.00, 50.00, 0xFFFF00,
-                                     -40.00, -30.00, 50.00, 0x00FFFF,
-                                     -40.00, 30.00, 50.00, 0xFF8000,
-                                     -40.00, 30.00, -50.00, 0xFF00FF,
-                                     -40.00, -30.00, -50.00, 0xFFFF00,
-                                     40.00, -30.00, -50.00, 0x00FFFF,
-                                     40.00, 30.00, -50.00, 0xFF8000)) == NULL)
+    if ((dpat1 = p3d_init(8,
+        40.00, 30.00, 50.00, 0xFF00FF,
+        40.00, -30.00, 50.00, 0xFFFF00,
+        -40.00, -30.00, 50.00, 0x00FFFF,
+        -40.00, 30.00, 50.00, 0xFF8000,
+        -40.00, 30.00, -50.00, 0xFF00FF,
+        -40.00, -30.00, -50.00, 0xFFFF00,
+        40.00, -30.00, -50.00, 0x00FFFF,
+        40.00, 30.00, -50.00, 0xFF8000)) == NULL)
     {
-        printf("p3d_pointArray_init failed\r\n");
+        printf("p3d_init failed\r\n");
         return -1;
     }
     p3d_ppLink_add(dpat1, 0xFF0000, 0, 3, 1, 3, 7);
@@ -95,17 +95,17 @@ int main(int argc, char **argv)
     dpat1->_matrix_mode = 0;//使用左乘
 
     //长方体2
-    if ((dpat2 = p3d_pointArray_init(8,
-                                     40.00, 30.00, 50.00, 0xFF00FF,
-                                     40.00, -30.00, 50.00, 0xFFFF00,
-                                     -40.00, -30.00, 50.00, 0x00FFFF,
-                                     -40.00, 30.00, 50.00, 0xFF8000,
-                                     -40.00, 30.00, -50.00, 0xFF00FF,
-                                     -40.00, -30.00, -50.00, 0xFFFF00,
-                                     40.00, -30.00, -50.00, 0x00FFFF,
-                                     40.00, 30.00, -50.00, 0xFF8000)) == NULL)
+    if ((dpat2 = p3d_init(8,
+        40.00, 30.00, 50.00, 0xFF00FF,
+        40.00, -30.00, 50.00, 0xFFFF00,
+        -40.00, -30.00, 50.00, 0x00FFFF,
+        -40.00, 30.00, 50.00, 0xFF8000,
+        -40.00, 30.00, -50.00, 0xFF00FF,
+        -40.00, -30.00, -50.00, 0xFFFF00,
+        40.00, -30.00, -50.00, 0x00FFFF,
+        40.00, 30.00, -50.00, 0xFF8000)) == NULL)
     {
-        printf("p3d_pointArray_init failed\r\n");
+        printf("p3d_init failed\r\n");
         return -1;
     }
     p3d_ppLink_add(dpat2, 0xFF0000, 0, 3, 1, 3, 7);
@@ -126,17 +126,17 @@ int main(int argc, char **argv)
     dpat2->_matrix_mode = 1;//使用右乘
 
     //长方体3
-    if ((dpat3 = p3d_pointArray_init(8,
-                                     40.00, 30.00, 50.00, 0xFF00FF,
-                                     40.00, -30.00, 50.00, 0xFFFF00,
-                                     -40.00, -30.00, 50.00, 0x00FFFF,
-                                     -40.00, 30.00, 50.00, 0xFF8000,
-                                     -40.00, 30.00, -50.00, 0xFF00FF,
-                                     -40.00, -30.00, -50.00, 0xFFFF00,
-                                     40.00, -30.00, -50.00, 0x00FFFF,
-                                     40.00, 30.00, -50.00, 0xFF8000)) == NULL)
+    if ((dpat3 = p3d_init(8,
+        40.00, 30.00, 50.00, 0xFF00FF,
+        40.00, -30.00, 50.00, 0xFFFF00,
+        -40.00, -30.00, 50.00, 0x00FFFF,
+        -40.00, 30.00, 50.00, 0xFF8000,
+        -40.00, 30.00, -50.00, 0xFF00FF,
+        -40.00, -30.00, -50.00, 0xFFFF00,
+        40.00, -30.00, -50.00, 0x00FFFF,
+        40.00, 30.00, -50.00, 0xFF8000)) == NULL)
     {
-        printf("p3d_pointArray_init failed\r\n");
+        printf("p3d_init failed\r\n");
         return -1;
     }
     p3d_ppLink_add(dpat3, 0xFF0000, 0, 3, 1, 3, 7);
@@ -166,15 +166,15 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-        wave_load(0, (short)(posture_getACX() * 10000));
-        wave_load(1, (short)(posture_getACY() * 10000));
-        wave_load(2, (short)(posture_getACZ() * 10000));
-        wave_load(3, (short)(posture_getX() * 10000));
-        wave_load(4, (short)(posture_getY() * 10000));
-        wave_load(5, (short)(posture_getZ() * 10000));
-//        wave_load(6, (short)(posture_getAGX() * 10000));
-//        wave_load(7, (short)(posture_getAGY() * 10000));
-//        wave_load(8, (short)(posture_getAGZ() * 10000));
+        wave_load(0, (short)(posture_getX() * 10000));
+        wave_load(1, (short)(posture_getY() * 10000));
+        wave_load(2, (short)(posture_getZ() * 10000));
+        wave_load(3, (short)(posture_getACX() * 10000));
+        wave_load(4, (short)(posture_getACY() * 10000));
+        wave_load(5, (short)(posture_getACZ() * 10000));
+        // wave_load(6, (short)(posture_getAGX() * 10000));
+        // wave_load(7, (short)(posture_getAGY() * 10000));
+        // wave_load(8, (short)(posture_getAGZ() * 10000));
 
         wave_refresh();
 
@@ -200,10 +200,6 @@ int main(int argc, char **argv)
 #endif
 
         PRINT_CLEAR();
-
-        p3d_angle_to_xyz(dpat1);
-        p3d_angle_to_xyz(dpat2);
-        p3d_angle_to_xyz(dpat3);
 
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
