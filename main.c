@@ -169,21 +169,21 @@ int main(int argc, char **argv)
         wave_load(0, (short)(posture_getX() * 10000));
         wave_load(1, (short)(posture_getY() * 10000));
         wave_load(2, (short)(posture_getZ() * 10000));
-        wave_load(3, (short)(posture_getACX() * 10000));
-        wave_load(4, (short)(posture_getACY() * 10000));
-        wave_load(5, (short)(posture_getACZ() * 10000));
-        // wave_load(6, (short)(posture_getAGX() * 10000));
-        // wave_load(7, (short)(posture_getAGY() * 10000));
-        // wave_load(8, (short)(posture_getAGZ() * 10000));
+        wave_load(3, (short)(posture_getAX() * 10000));
+        wave_load(4, (short)(posture_getAY() * 10000));
+        wave_load(5, (short)(posture_getAZ() * 10000));
+        // wave_load(6, (short)(posture_getGX() * 10000));
+        // wave_load(7, (short)(posture_getGY() * 10000));
+        // wave_load(8, (short)(posture_getGZ() * 10000));
 
         wave_refresh();
 
-        dpat1->raxyz[0] = posture_getACX();
-        dpat1->raxyz[1] = posture_getACY();
-        dpat1->raxyz[2] = posture_getACZ();
-        dpat2->raxyz[0] = posture_getAGX();
-        dpat2->raxyz[1] = posture_getAGY();
-        dpat2->raxyz[2] = posture_getAGZ();
+        dpat1->raxyz[0] = posture_getAX();
+        dpat1->raxyz[1] = posture_getAY();
+        dpat1->raxyz[2] = posture_getAZ();
+        dpat2->raxyz[0] = posture_getGX();
+        dpat2->raxyz[1] = posture_getGY();
+        dpat2->raxyz[2] = posture_getGZ();
         dpat3->raxyz[0] = posture_getX();
         dpat3->raxyz[1] = posture_getY();
         dpat3->raxyz[2] = posture_getZ();
@@ -191,11 +191,11 @@ int main(int argc, char **argv)
         printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f D/%.4f"
                " AC x/%04d y/%04d z/%04d AG x/%04d y/%04d z/%04d\r\n",
                posture_getX(), posture_getY(), posture_getZ(),
-               posture_getACX(), posture_getACY(), posture_getACZ(),
-               posture_getAGX(), posture_getAGY(), posture_getAGZ(),
+               posture_getAX(), posture_getAY(), posture_getAZ(),
+               posture_getGX(), posture_getGY(), posture_getGZ(),
                posture_dir(),
-               posture_getACXVal(), posture_getACYVal(), posture_getACZVal(),
-               posture_getAGXVal(), posture_getAGYVal(), posture_getAGZVal());
+               posture_getAXVal(), posture_getAYVal(), posture_getAZVal(),
+               posture_getGXVal(), posture_getGYVal(), posture_getGZVal());
 
 #endif
 

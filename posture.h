@@ -16,14 +16,14 @@ void posture_exit(void);
 void posture_reset(void);
 
 //获取角速度计算的转角(相对于自身坐标系,rad:[-pi, pi])
-float posture_getAGX(void);
-float posture_getAGY(void);
-float posture_getAGZ(void);
+float posture_getGX(void);
+float posture_getGY(void);
+float posture_getGZ(void);
 
 //获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float posture_getACX(void);
-float posture_getACY(void);
-float posture_getACZ(void);
+float posture_getAX(void);
+float posture_getAY(void);
+float posture_getAZ(void);
 
 //最终输出转角(相对于空间坐标系,rad:[-pi, pi])
 float posture_getX(void);
@@ -31,14 +31,24 @@ float posture_getY(void);
 float posture_getZ(void);
 
 //获取加速度计数据
-short posture_getACXVal(void);
-short posture_getACYVal(void);
-short posture_getACZVal(void);
+short posture_getAXVal(void);
+short posture_getAYVal(void);
+short posture_getAZVal(void);
+
+//获取轴向加速度g值
+float posture_getAXG(void);
+float posture_getAYG(void);
+float posture_getAZG(void);
 
 //获取陀螺仪数据
-short posture_getAGXVal(void);
-short posture_getAGYVal(void);
-short posture_getAGZVal(void);
+short posture_getGXVal(void);
+short posture_getGYVal(void);
+short posture_getGZVal(void);
+
+//获取绕轴角速度rad/s
+float posture_getGXR(void);
+float posture_getGYR(void);
+float posture_getGZR(void);
 
 //获取罗盘角度(rad:[-pi, pi])
 float posture_dir(void);

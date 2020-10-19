@@ -3017,6 +3017,7 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 int mpu_dmp_init(unsigned short Hz, char enableTest)
 {
     int res = 0;
+    //默认精度: gyro/2000 accel/2g
     if (mpu_init() == 0)
     {
         res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置所需要的传感器

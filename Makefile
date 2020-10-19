@@ -22,7 +22,6 @@ obj-c += wave.c
 obj-c += posture.c
 
 # MPU6050 驱动
-obj-c += mpu6050/mpu6050.c
 obj-c += mpu6050/inv_mpu.c
 obj-c += mpu6050/inv_mpu_dmp_motion_driver.c
 
