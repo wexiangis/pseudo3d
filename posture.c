@@ -4,6 +4,7 @@
 #include <math.h>
 #include <pthread.h>
 
+#include "posture.h"
 #include "delayus.h"
 #include "inv_mpu.h"
 
@@ -124,7 +125,7 @@ void *posture_thread(void *argv)
         // accel计算姿态
         ps.aX = atan2((float)ps.aYVal, (float)ps.aZVal);
         ps.aY = -atan2((float)ps.aXVal,
-                (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
+                       (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
         ps.aZ = 0;
     }
 
@@ -228,6 +229,13 @@ float posture_getAZG(void)
 {
     return (float)ps.aZVal / ACCEL_VAL_P_G;
 }
+float posture_getAG(void)
+{
+    float x = posture_getAXG();
+    float y = posture_getAYG();
+    float z = posture_getAZG();
+    return sqrt(x * x + y * y + z * z);
+}
 
 //获取陀螺仪数据
 short posture_getGXVal(void)
@@ -266,3 +274,4 @@ float posture_dir(void)
     return 0;
 #endif
 }
+

@@ -39,6 +39,7 @@ short posture_getAZVal(void);
 float posture_getAXG(void);
 float posture_getAYG(void);
 float posture_getAZG(void);
+float posture_getAG(void);
 
 //获取陀螺仪数据
 short posture_getGXVal(void);
