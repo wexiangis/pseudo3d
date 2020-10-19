@@ -22,6 +22,9 @@
 // 1g对应采样值, 加速度计数据除以该值得到轴向受力, 单位g
 #define ACCEL_VAL_P_G (32768 / 2)
 
+// 陀螺仪积分时矫正倍数
+#define GYRO_REDUCE_POW 1000
+
 typedef struct
 {
     //线程及其运行标志
@@ -91,20 +94,12 @@ void *posture_thread(void *argv)
             ps.Z = fVal[2] * PE_PI / 180;
         }
 
-        ps.gXVal = agVal[0];
-        ps.gYVal = agVal[1];
-        ps.gZVal = agVal[2];
-        ps.aXVal = acVal[0];
-        ps.aYVal = acVal[1];
-        ps.aZVal = acVal[2];
+        // 累加角加速度得到角度值
+        ps.gX += ((float)agVal[0] - (float)(agVal[0] - ps.gXVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
+        ps.gY += ((float)agVal[1] - (float)(agVal[1] - ps.gYVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
+        ps.gZ += ((float)agVal[2] - (float)(agVal[2] - ps.gZVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
 
-        // ----- ag计算姿态 -----
-
-        //累加角加速度得到角度值
-        ps.gX += (float)agVal[0] / GYRO_VAL_P_RED * ps.intervalMs / 1000;
-        ps.gY += (float)agVal[1] / GYRO_VAL_P_RED * ps.intervalMs / 1000;
-        ps.gZ += (float)agVal[2] / GYRO_VAL_P_RED * ps.intervalMs / 1000;
-        //范围限制
+        // 范围限制
         if (ps.gX > PE_PI)
             ps.gX -= PE_2PI;
         else if (ps.gX < -PE_PI)
@@ -118,8 +113,15 @@ void *posture_thread(void *argv)
         else if (ps.gZ < -PE_PI)
             ps.gZ += PE_2PI;
 
-        // ----- accel计算姿态 -----
+        // copy
+        ps.gXVal = agVal[0];
+        ps.gYVal = agVal[1];
+        ps.gZVal = agVal[2];
+        ps.aXVal = acVal[0];
+        ps.aYVal = acVal[1];
+        ps.aZVal = acVal[2];
 
+        // accel计算姿态
         ps.aX = atan2((float)ps.aYVal, (float)ps.aZVal);
         ps.aY = -atan2((float)ps.aXVal,
                 (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
