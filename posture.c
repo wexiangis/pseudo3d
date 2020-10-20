@@ -74,7 +74,7 @@ static PostureStruct ps = {
     .zErr = 0,
 };
 
-void *posture_thread(void *argv)
+void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
     float fVal[3];
@@ -125,7 +125,7 @@ void *posture_thread(void *argv)
         // accel计算姿态
         ps.aX = atan2((float)ps.aYVal, (float)ps.aZVal);
         ps.aY = -atan2((float)ps.aXVal,
-                       (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
+            (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
         ps.aZ = 0;
     }
 
@@ -137,15 +137,15 @@ void *posture_thread(void *argv)
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
  */
-void posture_init(unsigned short intervalMs)
+void pe_init(unsigned short intervalMs)
 {
     ps.intervalMs = intervalMs;
     if (!ps.flagRun)
-        pthread_create(&ps.th, NULL, &posture_thread, NULL);
+        pthread_create(&ps.th, NULL, &pe_thread, NULL);
     ps.flagRun = 1;
 }
 
-void posture_exit(void)
+void pe_exit(void)
 {
     if (ps.flagRun)
     {
@@ -155,47 +155,47 @@ void posture_exit(void)
 }
 
 //获取角速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float posture_getGX(void)
+float pe_getGX(void)
 {
     return ps.gX;
 }
-float posture_getGY(void)
+float pe_getGY(void)
 {
     return ps.gY;
 }
-float posture_getGZ(void)
+float pe_getGZ(void)
 {
     return ps.gZ;
 }
 //获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float posture_getAX(void)
+float pe_getAX(void)
 {
     return ps.aX;
 }
-float posture_getAY(void)
+float pe_getAY(void)
 {
     return ps.aY;
 }
-float posture_getAZ(void)
+float pe_getAZ(void)
 {
     return ps.aZ;
 }
 //最终输出转角(相对于空间坐标系,rad:[-pi, pi])
-float posture_getX(void)
+float pe_getX(void)
 {
     return ps.X;
 }
-float posture_getY(void)
+float pe_getY(void)
 {
     return ps.Y;
 }
-float posture_getZ(void)
+float pe_getZ(void)
 {
     return ps.Z + ps.zErr;
 }
 
 //复位(重置计算值)
-void posture_reset(void)
+void pe_reset(void)
 {
     ps.gX = ps.gY = ps.gZ = 0;
     ps.aX = ps.aY = ps.aZ = 0;
@@ -203,70 +203,70 @@ void posture_reset(void)
 }
 
 //获取加速度计数据
-short posture_getAXVal(void)
+short pe_getAXVal(void)
 {
     return ps.aXVal;
 }
-short posture_getAYVal(void)
+short pe_getAYVal(void)
 {
     return ps.aYVal;
 }
-short posture_getAZVal(void)
+short pe_getAZVal(void)
 {
     return ps.aZVal;
 }
 
 //获取轴向加速度g值
-float posture_getAXG(void)
+float pe_getAXG(void)
 {
     return (float)ps.aXVal / ACCEL_VAL_P_G;
 }
-float posture_getAYG(void)
+float pe_getAYG(void)
 {
     return (float)ps.aYVal / ACCEL_VAL_P_G;
 }
-float posture_getAZG(void)
+float pe_getAZG(void)
 {
     return (float)ps.aZVal / ACCEL_VAL_P_G;
 }
-float posture_getAG(void)
+float pe_getAG(void)
 {
-    float x = posture_getAXG();
-    float y = posture_getAYG();
-    float z = posture_getAZG();
+    float x = pe_getAXG();
+    float y = pe_getAYG();
+    float z = pe_getAZG();
     return sqrt(x * x + y * y + z * z);
 }
 
 //获取陀螺仪数据
-short posture_getGXVal(void)
+short pe_getGXVal(void)
 {
     return ps.gXVal;
 }
-short posture_getGYVal(void)
+short pe_getGYVal(void)
 {
     return ps.gYVal;
 }
-short posture_getGZVal(void)
+short pe_getGZVal(void)
 {
     return ps.gZVal;
 }
 
 //获取绕轴角速度rad/s
-float posture_getGXR(void)
+float pe_getGXR(void)
 {
     return (float)ps.gXVal / GYRO_VAL_P_RED;
 }
-float posture_getGYR(void)
+float pe_getGYR(void)
 {
     return (float)ps.gYVal / GYRO_VAL_P_RED;
 }
-float posture_getGZR(void)
+float pe_getGZR(void)
 {
     return (float)ps.gZVal / GYRO_VAL_P_RED;
 }
 
 //获取罗盘角度(rad:[-pi, pi])
-float posture_dir(void)
+float pe_dir(void)
 {
 #if (PE_USE_HMC5883 > 0)
     return hmc5883_get();
