@@ -18,23 +18,23 @@ typedef struct
     //重力加速度原始数据
     short aXVal, aYVal, aZVal;
     //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
-    float gX, gY, gZ;
+    double gX, gY, gZ;
     //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
-    float aX, aY, aZ;
+    double aX, aY, aZ;
     //最终输出角度值(相对空间坐标,rad:[-pi, pi])
-    float rX, rY, rZ;
+    double rX, rY, rZ;
     //偏航角较正
-    float zErr;
-    //
-    float gXR, gYR, gZR;
-    //
-    float aXG, aYG, aZG, aG;
-    //
-    float xG, yG;
-    //
-    float xSpe, ySpe;
-    //
-    float xMov, yMov;
+    double zErr;
+    //绕轴角速度(单位:rad/s)
+    double gXR, gYR, gZR;
+    //各轴受力及合力(单位:g)
+    double aXG, aYG, aZG, aG;
+    //空间坐标系下的横纵向g值(单位:g)
+    double xG, yG;
+    //空间坐标系下的横纵向速度(单位:m/s)
+    double xSpe, ySpe;
+    //空间坐标系下的横纵向偏移距离(单位:m)
+    double xMov, yMov;
 } PostureStruct;
 
 /*
@@ -49,6 +49,6 @@ void pe_exit(PostureStruct **ps);
 void pe_reset(PostureStruct *ps);
 
 //获取罗盘角度(rad:[-pi, pi])
-float pe_dir(void);
+double pe_dir(void);
 
 #endif

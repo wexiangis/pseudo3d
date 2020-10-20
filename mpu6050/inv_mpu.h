@@ -22,8 +22,8 @@
 #define _INV_MPU_H_
 
 //主要的对外接口
-int mpu_dmp_init(unsigned short Hz, char enableTest);
-int mpu_dmp_get_data(float *pry, short *gyro, short *accel);
+int mpu_dmp_init(unsigned short Hz, char test);
+int mpu_dmp_get_data(double *pry, short *gyro, short *accel);
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)

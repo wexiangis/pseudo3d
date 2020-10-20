@@ -13,7 +13,8 @@
 #include "pseudo3d.h"
 #include "view.h"
 
-#define COMPARE 1
+//3种姿态计算对比
+#define COMPARE 0
 
 //使用陀螺仪模块
 #define ENABLE_MPU6050 1
@@ -34,11 +35,14 @@ int main(int argc, char **argv)
 {
     //初始化一个多边形
     P3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
+    //终端输入
     char input[16];
     int fd;
-#if (ENABLE_MPU6050)
-    PostureStruct *ps;
+    //测试点
     double xyz[3];
+#if (ENABLE_MPU6050)
+    //姿态结构体
+    PostureStruct *ps;
 #endif
 
     // open console
@@ -203,15 +207,25 @@ int main(int argc, char **argv)
             ps->aX, ps->aY, ps->aZ,
             ps->gX, ps->gY, ps->gZ);
 #else
-        printf("G/%.4f -- mov x/%.4f y/%.4f \r\n",
+        printf("G/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f \r\n",
             ps->aG,
+            ps->xSpe, ps->ySpe,
             ps->xMov, ps->yMov);
 #endif
-
+        //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = ps->gX * 100;
         xyz[1] = ps->gY * 100;
         xyz[2] = ps->gZ * 100;
         p3d_matrix_zyx(dpat1->raxyz, xyz);
+#else
+        //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
+        xyz[0] = 0;
+        xyz[1] = 0;
+        xyz[2] = -100;
+        //转为物体坐标系
+        p3d_matrix_zyx(dpat1->raxyz, xyz);
+        //转回空间坐标系
+        p3d_matrix_xyz(dpat1->raxyz, xyz);
 #endif
 
         PRINT_CLEAR();

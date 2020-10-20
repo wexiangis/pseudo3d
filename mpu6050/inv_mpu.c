@@ -3014,7 +3014,7 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 }
 
 //返回值: 0/正常
-int mpu_dmp_init(unsigned short Hz, char enableTest)
+int mpu_dmp_init(unsigned short Hz, char test)
 {
     int res = 0;
     //默认精度: gyro/2000 accel/2g
@@ -3044,7 +3044,7 @@ int mpu_dmp_init(unsigned short Hz, char enableTest)
         res = dmp_set_fifo_rate(Hz); //设置DMP输出速率(最大不超过200Hz)
         if (res)
             return 7;
-        if(enableTest) {
+        if(test) {
             res = run_self_test(); //自检
             if (res)
                 return 8;
@@ -3065,7 +3065,7 @@ int mpu_dmp_init(unsigned short Hz, char enableTest)
  *  yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
  *  返回值: 0/正常
  */
-int mpu_dmp_get_data(float *pry, short *gyro, short *accel)
+int mpu_dmp_get_data(double *pry, short *gyro, short *accel)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
@@ -3093,9 +3093,9 @@ int mpu_dmp_get_data(float *pry, short *gyro, short *accel)
         q2 = quat[2] / q30;
         q3 = quat[3] / q30;
         //计算得到俯仰角/横滚角/航向角
-        pry[0] = asin(-2 * q1 * q3 + 2 * q0 * q2) * 57.3;                                      // pitch
-        pry[1] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1) * 57.3;      // roll
-        pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) * 57.3; // yaw
+        pry[0] = asin(-2 * q1 * q3 + 2 * q0 * q2);                                      // pitch
+        pry[1] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);      // roll
+        pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
     }
     else
         return 2;

@@ -26,8 +26,20 @@
 // 1g对应采样值, 加速度计数据除以该值得到轴向受力, 单位g
 #define ACCEL_VAL_P_G (32768 / 2)
 
-// 陀螺仪积分时矫正倍数
+// 陀螺仪积分矫正倍数
 #define GYRO_REDUCE_POW 1000
+
+// 陀螺仪角度积分公式(这里用的梯形面积计算方式)
+// 采样间隔 intervalMs 变化时不需再调整参数
+#define GYRO_SUM_FUN(new, old) \
+(((double)new - (double)(new - old) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW)
+
+// 速度积分矫正倍数
+#define SPE_REDUCE_POW 10
+
+// 速度积分得到移动距离(同上面 GYRO_SUM_FUN() )
+#define SPE_SUN_FUN(spe, accel) \
+((spe - accel / 2) * ps->intervalMs / 1000 / SPE_REDUCE_POW)
 
 void pe_inertial_navigation(PostureStruct *ps)
 {
@@ -35,19 +47,21 @@ void pe_inertial_navigation(PostureStruct *ps)
     double rXYZ[3];
     vXYZ[0] = ps->aXG; vXYZ[1] = ps->aYG; vXYZ[2] = ps->aZG;
     rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
-    //
+    //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_xyz(rXYZ, vXYZ);
-    //
-    ps->aXG = vXYZ[0]; ps->aXG = vXYZ[0];
-    ps->xSpe += ps->aXG; ps->ySpe += ps->aYG;
-    ps->xMov += ps->aXG * ps->intervalMs / 1000;
-    ps->yMov += ps->aYG * ps->intervalMs / 1000;
+    //则该向量在水平方向的分量即为横纵向的g值
+    ps->gX = vXYZ[0]; ps->gY = vXYZ[1];
+    //速度积分得到移动距离
+    ps->xMov += SPE_SUN_FUN(ps->xSpe, ps->gX);
+    ps->yMov += SPE_SUN_FUN(ps->ySpe, ps->gY);
+    //g值积分得到速度
+    ps->xSpe += ps->gX; ps->ySpe += ps->gY;
 }
 
 void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
-    float fVal[3];
+    double dVal[3];
     short agVal[3], acVal[3];
     PostureStruct *ps = (PostureStruct*)argv;
     //初始化mpu6050
@@ -57,20 +71,18 @@ void *pe_thread(void *argv)
     while (ps->flagRun)
     {
         DELAY_US(ps->intervalMs * 1000);
-
-        // ----- 采样 -----
-        if (mpu_dmp_get_data(fVal, agVal, acVal) == 0)
+        // 采样
+        if (mpu_dmp_get_data(dVal, agVal, acVal) == 0)
         {
-            ps->rX = fVal[1] * PE_PI / 180;
-            ps->rY = fVal[0] * PE_PI / 180;
-            ps->rZ = fVal[2] * PE_PI / 180 + ps->zErr;
+            // dmp库用4元素法得到的欧拉角(单位:rad)
+            ps->rX = dVal[1];
+            ps->rY = dVal[0];
+            ps->rZ = dVal[2] + ps->zErr;
         }
-
         // 累加角加速度得到角度值
-        ps->gX += ((float)agVal[0] - (float)(agVal[0] - ps->gXVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
-        ps->gY += ((float)agVal[1] - (float)(agVal[1] - ps->gYVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
-        ps->gZ += ((float)agVal[2] - (float)(agVal[2] - ps->gZVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
-
+        ps->gX += GYRO_SUM_FUN(agVal[0], ps->gXVal);
+        ps->gY += GYRO_SUM_FUN(agVal[1], ps->gYVal);
+        ps->gZ += GYRO_SUM_FUN(agVal[2], ps->gZVal);
         // 范围限制
         if (ps->gX > PE_PI)
             ps->gX -= PE_2PI;
@@ -84,7 +96,6 @@ void *pe_thread(void *argv)
             ps->gZ -= PE_2PI;
         else if (ps->gZ < -PE_PI)
             ps->gZ += PE_2PI;
-
         // copy
         ps->gXVal = agVal[0];
         ps->gYVal = agVal[1];
@@ -92,24 +103,22 @@ void *pe_thread(void *argv)
         ps->aXVal = acVal[0];
         ps->aYVal = acVal[1];
         ps->aZVal = acVal[2];
-
         // accel计算姿态
-        ps->aX = atan2((float)ps->aYVal, (float)ps->aZVal);
-        ps->aY = -atan2((float)ps->aXVal,
-            (float)sqrt((float)ps->aYVal * ps->aYVal + (float)ps->aZVal * ps->aZVal));
+        ps->aX = atan2((double)ps->aYVal, (double)ps->aZVal);
+        ps->aY = -atan2((double)ps->aXVal,
+            (double)sqrt((double)ps->aYVal * ps->aYVal + (double)ps->aZVal * ps->aZVal));
         ps->aZ = 0;
-
-        //
-        ps->gXR = (float)ps->gXVal / ACCEL_VAL_P_G;
-        ps->gYR = (float)ps->gYVal / ACCEL_VAL_P_G;
-        ps->gZR = (float)ps->gZVal / ACCEL_VAL_P_G;
-        
-        //
-        ps->aXG = (float)ps->aXVal / ACCEL_VAL_P_G;
-        ps->aYG = (float)ps->aYVal / ACCEL_VAL_P_G;
-        ps->aZG = (float)ps->aZVal / ACCEL_VAL_P_G;
+        // 角速度转换(单位:rad/s)
+        ps->gXR = (double)ps->gXVal / ACCEL_VAL_P_G;
+        ps->gYR = (double)ps->gYVal / ACCEL_VAL_P_G;
+        ps->gZR = (double)ps->gZVal / ACCEL_VAL_P_G;
+        // 各轴向受力转换(单位:g)
+        ps->aXG = (double)ps->aXVal / ACCEL_VAL_P_G;
+        ps->aYG = (double)ps->aYVal / ACCEL_VAL_P_G;
+        ps->aZG = (double)ps->aZVal / ACCEL_VAL_P_G;
+        // 合受力(单位:g)
         ps->aG = sqrt(ps->aXG * ps->aXG + ps->aYG * ps->aYG + ps->aZG * ps->aZG);
-
+        // 惯导参数计算
         pe_inertial_navigation(ps);
     }
 
@@ -153,10 +162,10 @@ void pe_reset(PostureStruct *ps)
 }
 
 //获取罗盘角度(rad:[-pi, pi])
-float pe_dir(void)
+double pe_dir(void)
 {
 #if (PE_USE_HMC5883 > 0)
-    return hmc5883_get();
+    return (double)hmc5883_get();
 #else
     return 0;
 #endif

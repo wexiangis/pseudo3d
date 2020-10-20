@@ -47,55 +47,8 @@ void p3d_matrix_xyz(double raxyz[3], double point[3])
 {
     double x = point[0], y = point[1], z = point[2];
     double A = raxyz[0], B = raxyz[1], C = raxyz[2];
-#if 0
-    /*
-    *       [roll X]
-    *   1       0       0
-    *   0     cosA    -sinA
-    *   0     sinA     cosA
-    *
-    *       [roll Y]
-    *  cosB     0      sinB
-    *   0       1       0
-    * -sinB     0      cosB
-    *
-    *       [roll Z]
-    *  cosC   -sinC     0
-    *  sinC    cosC     0
-    *   0       0       1
-    *
-    *                                   |x|
-    *  result = [roll X][roll Y][roll Z]|y|
-    *                                   |z|
-    *
-    *           |cB,     0,  sB    |        |x|
-    *         = |sB*sA,  cA, -cB*sA|[roll Z]|y|
-    *           |-sB*cA, sA, cB*cA |        |z|
-    * 
-    *           |cC*cB,             -sC*cB,            sB    ||x|
-    *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
-    *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
-    *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
-    *
-    *  point[*] is equal to the follow ...
-    */
-
-    point[0] =
-        x * cos(C) * cos(B) +
-        y * (-sin(C) * cos(B)) +
-        z * sin(B);
-    point[1] =
-        x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
-        y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
-        z * (-cos(B) * sin(A));
-    point[2] =
-        x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
-        y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
-        z * cos(B) * cos(A);
-#else
+    //这个宏用于切换坐标系方向,注意要和p3d_matrix_xyz()形成互为逆矩阵
+#if 1
     /*
     *       [roll X]
     *   1       0       0
@@ -130,7 +83,6 @@ void p3d_matrix_xyz(double raxyz[3], double point[3])
     *
     *  point[*] is equal to the follow ...
     */
-
     point[0] =
         x * cos(C) * cos(B) +
         y * sin(C) * cos(B) +
@@ -142,6 +94,53 @@ void p3d_matrix_xyz(double raxyz[3], double point[3])
     point[2] =
         x * (cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
         y * (sin(C) * sin(B) * cos(A) - cos(C) * sin(A)) +
+        z * cos(B) * cos(A);
+#else
+    /*
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA    -sinA
+    *   0     sinA     cosA
+    *
+    *       [roll Y]
+    *  cosB     0      sinB
+    *   0       1       0
+    * -sinB     0      cosB
+    *
+    *       [roll Z]
+    *  cosC   -sinC     0
+    *  sinC    cosC     0
+    *   0       0       1
+    *
+    *                                   |x|
+    *  result = [roll X][roll Y][roll Z]|y|
+    *                                   |z|
+    *
+    *           |cB,     0,  sB    |        |x|
+    *         = |sB*sA,  cA, -cB*sA|[roll Z]|y|
+    *           |-sB*cA, sA, cB*cA |        |z|
+    * 
+    *           |cC*cB,             -sC*cB,            sB    ||x|
+    *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
+    *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+    point[0] =
+        x * cos(C) * cos(B) +
+        y * (-sin(C) * cos(B)) +
+        z * sin(B);
+    point[1] =
+        x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
+        y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
+        z * (-cos(B) * sin(A));
+    point[2] =
+        x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
+        y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
         z * cos(B) * cos(A);
 #endif
 }
@@ -156,6 +155,7 @@ void p3d_matrix_zyx(double raxyz[3], double point[3])
 {
     double x = point[0], y = point[1], z = point[2];
     double A = raxyz[0], B = raxyz[1], C = raxyz[2];
+    //这个宏用于切换坐标系方向,注意要和p3d_matrix_xyz()形成互为逆矩阵
 #if 1
     /*
     *       [roll Z]
@@ -191,7 +191,6 @@ void p3d_matrix_zyx(double raxyz[3], double point[3])
     *
     *  point[*] is equal to the follow ...
     */
-
     point[0] =
         x * cos(B) * cos(C) +
         y * (-cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
@@ -239,7 +238,6 @@ void p3d_matrix_zyx(double raxyz[3], double point[3])
     *
     *  point[*] is equal to the follow ...
     */
-
     point[0] =
         x * cos(B) * cos(C) +
         y * (cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
