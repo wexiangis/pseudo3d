@@ -13,8 +13,10 @@
 #include "pseudo3d.h"
 #include "view.h"
 
+#define COMPARE 1
+
 //使用陀螺仪模块
-#define ENABLE_MPU6050 0
+#define ENABLE_MPU6050 1
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
@@ -32,10 +34,12 @@ int main(int argc, char **argv)
 {
     //初始化一个多边形
     P3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
-
     char input[16];
     int fd;
-    double xyz[3] = {P3D_XYZ_LEN / 4, 0, 0}, xyzOut[3];
+#if (ENABLE_MPU6050)
+    PostureStruct *ps;
+    double xyz[3];
+#endif
 
     // open console
     if (argc > 1)
@@ -124,7 +128,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat2, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat2, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat2, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat2->_matrix_mode = 0;//使用xyz旋转矩阵
+    dpat2->_matrix_mode = 1;//使用zyx旋转矩阵
 
     //长方体3
     if ((dpat3 = p3d_init(8,
@@ -155,11 +159,11 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat3->_matrix_mode = 1;//使用zyx旋转矩阵
+    dpat3->_matrix_mode = 0;//使用xyz旋转矩阵
 
 #if (ENABLE_MPU6050)
     //初始化姿态计算器
-    pe_init(MPU6050_INTERVALMS);
+    ps = pe_init(MPU6050_INTERVALMS);
 #endif
 
     while (1)
@@ -167,50 +171,60 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-        wave_load(0, (short)(pe_getX() * 10000));
-        wave_load(1, (short)(pe_getY() * 10000));
-        wave_load(2, (short)(pe_getZ() * 10000));
-        wave_load(3, (short)(pe_getAX() * 10000));
-        wave_load(4, (short)(pe_getAY() * 10000));
-        wave_load(5, (short)(pe_getAZ() * 10000));
-        // wave_load(6, (short)(pe_getGX() * 10000));
-        // wave_load(7, (short)(pe_getGY() * 10000));
-        // wave_load(8, (short)(pe_getGZ() * 10000));
+#if (COMPARE)
+        wave_load(0, (short)(ps->rX * 10000));
+        wave_load(1, (short)(ps->rY * 10000));
+        wave_load(2, (short)(ps->rZ * 10000));
+        wave_load(3, (short)(ps->aX * 10000));
+        wave_load(4, (short)(ps->aY * 10000));
+        wave_load(5, (short)(ps->aZ * 10000));
+#else
+        wave_load(0, (short)(ps->xSpe * 10000));
+        wave_load(1, (short)(ps->ySpe * 10000));
+        wave_load(2, (short)(ps->xMov * 10000));
+        wave_load(3, (short)(ps->yMov * 10000));
+#endif
 
         wave_refresh();
 
-        dpat1->raxyz[0] = pe_getAX();
-        dpat1->raxyz[1] = pe_getAY();
-        dpat1->raxyz[2] = pe_getAZ();
-        dpat2->raxyz[0] = pe_getGX();
-        dpat2->raxyz[1] = pe_getGY();
-        dpat2->raxyz[2] = pe_getGZ();
-        dpat3->raxyz[0] = pe_getX();
-        dpat3->raxyz[1] = pe_getY();
-        dpat3->raxyz[2] = pe_getZ();
+        dpat1->raxyz[0] = ps->rX;
+        dpat1->raxyz[1] = ps->rY;
+        dpat1->raxyz[2] = ps->rZ;
+        dpat2->raxyz[0] = ps->aX;
+        dpat2->raxyz[1] = ps->aY;
+        dpat2->raxyz[2] = ps->aZ;
+        dpat3->raxyz[0] = ps->gX;
+        dpat3->raxyz[1] = ps->gY;
+        dpat3->raxyz[2] = ps->gZ;
 
-        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f D/%.4f"
-               " AC x/%04d y/%04d z/%04d AG x/%04d y/%04d z/%04d g/%.4f\r\n",
-               pe_getX(), pe_getY(), pe_getZ(),
-               pe_getAX(), pe_getAY(), pe_getAZ(),
-               pe_getGX(), pe_getGY(), pe_getGZ(),
-               pe_dir(),
-               pe_getAXVal(), pe_getAYVal(), pe_getAZVal(),
-               pe_getGXVal(), pe_getGYVal(), pe_getGZVal(),
-               pe_getAG());
+#if (COMPARE)
+        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f \r\n",
+            ps->rX, ps->rY, ps->rZ,
+            ps->aX, ps->aY, ps->aZ,
+            ps->gX, ps->gY, ps->gZ);
+#else
+        printf("G/%.4f -- mov x/%.4f y/%.4f \r\n",
+            ps->aG,
+            ps->xMov, ps->yMov);
+#endif
 
+        xyz[0] = ps->gX * 100;
+        xyz[1] = ps->gY * 100;
+        xyz[2] = ps->gZ * 100;
+        p3d_matrix_zyx(dpat1->raxyz, xyz);
 #endif
 
         PRINT_CLEAR();
 
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
+#if (COMPARE)
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
         p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
         p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
-
-        memcpy(xyzOut, xyz, sizeof(double)*3);
-        p3d_matrix_zyx(dpat1->raxyz, xyzOut);
-        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, 0xFF8000, xyzOut);
+#else
+        p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
+#endif
+        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, 0xFF8000, xyz);
 
         PRINT_EN();
 
@@ -261,7 +275,7 @@ int main(int argc, char **argv)
                 p3d_reset(dpat2);
                 p3d_reset(dpat3);
 #if (ENABLE_MPU6050)
-                pe_reset();
+                pe_reset(ps);
 #endif
             }
 

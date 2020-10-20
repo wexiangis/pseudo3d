@@ -4,52 +4,49 @@
 #ifndef _POSTURE_H_
 #define _POSTURE_H_
 
+#include <pthread.h>
+
+typedef struct
+{
+    //线程及其运行标志
+    pthread_t th;
+    short flagRun;
+    //采样周期
+    unsigned short intervalMs;
+    //角速度原始数据
+    short gXVal, gYVal, gZVal;
+    //重力加速度原始数据
+    short aXVal, aYVal, aZVal;
+    //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
+    float gX, gY, gZ;
+    //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
+    float aX, aY, aZ;
+    //最终输出角度值(相对空间坐标,rad:[-pi, pi])
+    float rX, rY, rZ;
+    //偏航角较正
+    float zErr;
+    //
+    float gXR, gYR, gZR;
+    //
+    float aXG, aYG, aZG, aG;
+    //
+    float xG, yG;
+    //
+    float xSpe, ySpe;
+    //
+    float xMov, yMov;
+} PostureStruct;
+
 /*
  *  初始化
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
  */
-void pe_init(unsigned short intervalMs);
-void pe_exit(void);
+PostureStruct *pe_init(unsigned short intervalMs);
+void pe_exit(PostureStruct **ps);
 
 //复位(重置计算值)
-void pe_reset(void);
-
-//获取角速度计算的转角(相对于自身坐标系,rad:[-pi, pi])
-float pe_getGX(void);
-float pe_getGY(void);
-float pe_getGZ(void);
-
-//获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float pe_getAX(void);
-float pe_getAY(void);
-float pe_getAZ(void);
-
-//最终输出转角(相对于空间坐标系,rad:[-pi, pi])
-float pe_getX(void);
-float pe_getY(void);
-float pe_getZ(void);
-
-//获取加速度计数据
-short pe_getAXVal(void);
-short pe_getAYVal(void);
-short pe_getAZVal(void);
-
-//获取轴向加速度g值
-float pe_getAXG(void);
-float pe_getAYG(void);
-float pe_getAZG(void);
-float pe_getAG(void);
-
-//获取陀螺仪数据
-short pe_getGXVal(void);
-short pe_getGYVal(void);
-short pe_getGZVal(void);
-
-//获取绕轴角速度rad/s
-float pe_getGXR(void);
-float pe_getGYR(void);
-float pe_getGZR(void);
+void pe_reset(PostureStruct *ps);
 
 //获取罗盘角度(rad:[-pi, pi])
 float pe_dir(void);

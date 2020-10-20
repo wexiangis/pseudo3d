@@ -1,12 +1,15 @@
 /*
  *  根据MPU6050数据计算姿态
  */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
-#include <pthread.h>
 
 #include "posture.h"
 #include "delayus.h"
 #include "inv_mpu.h"
+#include "pseudo3d.h"
 
 // 启用罗盘
 #define PE_USE_HMC5883 0
@@ -26,107 +29,88 @@
 // 陀螺仪积分时矫正倍数
 #define GYRO_REDUCE_POW 1000
 
-typedef struct
+void pe_inertial_navigation(PostureStruct *ps)
 {
-    //线程及其运行标志
-    pthread_t th;
-    short flagRun;
-    //采样周期
-    unsigned short intervalMs;
-    //角速度原始数据
-    short gXVal, gYVal, gZVal;
-    //重力加速度原始数据
-    short aXVal, aYVal, aZVal;
-    //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
-    float gX, gY, gZ;
-    //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
-    float aX, aY, aZ;
-    //最终输出角度值(相对空间坐标,rad:[-pi, pi])
-    float X, Y, Z;
-    //偏航角较正
-    float zErr;
-} PostureStruct;
-
-static PostureStruct ps = {
-    .flagRun = 0,
-    .intervalMs = 10,
-    //角速度原始数据
-    .gXVal = 0,
-    .gYVal = 0,
-    .gZVal = 0,
-    //重力加速度原始数据
-    .aXVal = 0,
-    .aYVal = 0,
-    .aZVal = 0,
-    //角速度累加得到的角度值(相对自身坐标)
-    .gX = 0,
-    .gY = 0,
-    .gZ = 0,
-    //重力加速度得到的角度值(相对空间坐标)
-    .aX = 0,
-    .aY = 0,
-    .aZ = 0,
-    //最终输出角度值(相对空间坐标)
-    .X = 0,
-    .Y = 0,
-    .Z = 0,
-    //偏航角较正
-    .zErr = 0,
-};
+    double vXYZ[3];
+    double rXYZ[3];
+    vXYZ[0] = ps->aXG; vXYZ[1] = ps->aYG; vXYZ[2] = ps->aZG;
+    rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
+    //
+    p3d_matrix_xyz(rXYZ, vXYZ);
+    //
+    ps->aXG = vXYZ[0]; ps->aXG = vXYZ[0];
+    ps->xSpe += ps->aXG; ps->ySpe += ps->aYG;
+    ps->xMov += ps->aXG * ps->intervalMs / 1000;
+    ps->yMov += ps->aYG * ps->intervalMs / 1000;
+}
 
 void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
     float fVal[3];
     short agVal[3], acVal[3];
+    PostureStruct *ps = (PostureStruct*)argv;
     //初始化mpu6050
-    if (mpu_dmp_init(1000 / ps.intervalMs, 0) != 0)
+    if (mpu_dmp_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
     //周期采样
-    while (ps.flagRun)
+    while (ps->flagRun)
     {
-        DELAY_US(ps.intervalMs * 1000);
+        DELAY_US(ps->intervalMs * 1000);
 
         // ----- 采样 -----
         if (mpu_dmp_get_data(fVal, agVal, acVal) == 0)
         {
-            ps.X = fVal[1] * PE_PI / 180;
-            ps.Y = fVal[0] * PE_PI / 180;
-            ps.Z = fVal[2] * PE_PI / 180;
+            ps->rX = fVal[1] * PE_PI / 180;
+            ps->rY = fVal[0] * PE_PI / 180;
+            ps->rZ = fVal[2] * PE_PI / 180 + ps->zErr;
         }
 
         // 累加角加速度得到角度值
-        ps.gX += ((float)agVal[0] - (float)(agVal[0] - ps.gXVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
-        ps.gY += ((float)agVal[1] - (float)(agVal[1] - ps.gYVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
-        ps.gZ += ((float)agVal[2] - (float)(agVal[2] - ps.gZVal) / 2) * ps.intervalMs / 1000 / GYRO_REDUCE_POW;
+        ps->gX += ((float)agVal[0] - (float)(agVal[0] - ps->gXVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
+        ps->gY += ((float)agVal[1] - (float)(agVal[1] - ps->gYVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
+        ps->gZ += ((float)agVal[2] - (float)(agVal[2] - ps->gZVal) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW;
 
         // 范围限制
-        if (ps.gX > PE_PI)
-            ps.gX -= PE_2PI;
-        else if (ps.gX < -PE_PI)
-            ps.gX += PE_2PI;
-        if (ps.gY > PE_PI)
-            ps.gY -= PE_2PI;
-        else if (ps.gY < -PE_PI)
-            ps.gY += PE_2PI;
-        if (ps.gZ > PE_PI)
-            ps.gZ -= PE_2PI;
-        else if (ps.gZ < -PE_PI)
-            ps.gZ += PE_2PI;
+        if (ps->gX > PE_PI)
+            ps->gX -= PE_2PI;
+        else if (ps->gX < -PE_PI)
+            ps->gX += PE_2PI;
+        if (ps->gY > PE_PI)
+            ps->gY -= PE_2PI;
+        else if (ps->gY < -PE_PI)
+            ps->gY += PE_2PI;
+        if (ps->gZ > PE_PI)
+            ps->gZ -= PE_2PI;
+        else if (ps->gZ < -PE_PI)
+            ps->gZ += PE_2PI;
 
         // copy
-        ps.gXVal = agVal[0];
-        ps.gYVal = agVal[1];
-        ps.gZVal = agVal[2];
-        ps.aXVal = acVal[0];
-        ps.aYVal = acVal[1];
-        ps.aZVal = acVal[2];
+        ps->gXVal = agVal[0];
+        ps->gYVal = agVal[1];
+        ps->gZVal = agVal[2];
+        ps->aXVal = acVal[0];
+        ps->aYVal = acVal[1];
+        ps->aZVal = acVal[2];
 
         // accel计算姿态
-        ps.aX = atan2((float)ps.aYVal, (float)ps.aZVal);
-        ps.aY = -atan2((float)ps.aXVal,
-            (float)sqrt((float)ps.aYVal * ps.aYVal + (float)ps.aZVal * ps.aZVal));
-        ps.aZ = 0;
+        ps->aX = atan2((float)ps->aYVal, (float)ps->aZVal);
+        ps->aY = -atan2((float)ps->aXVal,
+            (float)sqrt((float)ps->aYVal * ps->aYVal + (float)ps->aZVal * ps->aZVal));
+        ps->aZ = 0;
+
+        //
+        ps->gXR = (float)ps->gXVal / ACCEL_VAL_P_G;
+        ps->gYR = (float)ps->gYVal / ACCEL_VAL_P_G;
+        ps->gZR = (float)ps->gZVal / ACCEL_VAL_P_G;
+        
+        //
+        ps->aXG = (float)ps->aXVal / ACCEL_VAL_P_G;
+        ps->aYG = (float)ps->aYVal / ACCEL_VAL_P_G;
+        ps->aZG = (float)ps->aZVal / ACCEL_VAL_P_G;
+        ps->aG = sqrt(ps->aXG * ps->aXG + ps->aYG * ps->aYG + ps->aZG * ps->aZG);
+
+        pe_inertial_navigation(ps);
     }
 
     return NULL;
@@ -137,132 +121,35 @@ void *pe_thread(void *argv)
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值: 2, 5, 10(推荐),20,25,50
  */
-void pe_init(unsigned short intervalMs)
+PostureStruct *pe_init(unsigned short intervalMs)
 {
-    ps.intervalMs = intervalMs;
-    if (!ps.flagRun)
-        pthread_create(&ps.th, NULL, &pe_thread, NULL);
-    ps.flagRun = 1;
+    PostureStruct *ps = (PostureStruct*)calloc(1, sizeof(PostureStruct));
+    ps->intervalMs = intervalMs;
+    ps->flagRun = 1;
+    pthread_create(&ps->th, NULL, &pe_thread, (void*)ps);
+    return ps;
 }
 
-void pe_exit(void)
+void pe_exit(PostureStruct **ps)
 {
-    if (ps.flagRun)
+    if(!ps || !(*ps))
+        return;
+    if ((*ps)->flagRun)
     {
-        ps.flagRun = 0;
-        pthread_join(ps.th, NULL);
+        (*ps)->flagRun = 0;
+        pthread_join((*ps)->th, NULL);
+        free(*ps);
     }
-}
-
-//获取角速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float pe_getGX(void)
-{
-    return ps.gX;
-}
-float pe_getGY(void)
-{
-    return ps.gY;
-}
-float pe_getGZ(void)
-{
-    return ps.gZ;
-}
-//获取重力加速度计算的转角(相对于空间坐标系,rad:[-pi, pi])
-float pe_getAX(void)
-{
-    return ps.aX;
-}
-float pe_getAY(void)
-{
-    return ps.aY;
-}
-float pe_getAZ(void)
-{
-    return ps.aZ;
-}
-//最终输出转角(相对于空间坐标系,rad:[-pi, pi])
-float pe_getX(void)
-{
-    return ps.X;
-}
-float pe_getY(void)
-{
-    return ps.Y;
-}
-float pe_getZ(void)
-{
-    return ps.Z + ps.zErr;
+    (*ps) = NULL;
 }
 
 //复位(重置计算值)
-void pe_reset(void)
+void pe_reset(PostureStruct *ps)
 {
-    ps.gX = ps.gY = ps.gZ = 0;
-    ps.aX = ps.aY = ps.aZ = 0;
-    ps.zErr = -ps.Z;
-}
-
-//获取加速度计数据
-short pe_getAXVal(void)
-{
-    return ps.aXVal;
-}
-short pe_getAYVal(void)
-{
-    return ps.aYVal;
-}
-short pe_getAZVal(void)
-{
-    return ps.aZVal;
-}
-
-//获取轴向加速度g值
-float pe_getAXG(void)
-{
-    return (float)ps.aXVal / ACCEL_VAL_P_G;
-}
-float pe_getAYG(void)
-{
-    return (float)ps.aYVal / ACCEL_VAL_P_G;
-}
-float pe_getAZG(void)
-{
-    return (float)ps.aZVal / ACCEL_VAL_P_G;
-}
-float pe_getAG(void)
-{
-    float x = pe_getAXG();
-    float y = pe_getAYG();
-    float z = pe_getAZG();
-    return sqrt(x * x + y * y + z * z);
-}
-
-//获取陀螺仪数据
-short pe_getGXVal(void)
-{
-    return ps.gXVal;
-}
-short pe_getGYVal(void)
-{
-    return ps.gYVal;
-}
-short pe_getGZVal(void)
-{
-    return ps.gZVal;
-}
-
-//获取绕轴角速度rad/s
-float pe_getGXR(void)
-{
-    return (float)ps.gXVal / GYRO_VAL_P_RED;
-}
-float pe_getGYR(void)
-{
-    return (float)ps.gYVal / GYRO_VAL_P_RED;
-}
-float pe_getGZR(void)
-{
-    return (float)ps.gZVal / GYRO_VAL_P_RED;
+    ps->gX = ps->gY = ps->gZ = 0;
+    ps->aX = ps->aY = ps->aZ = 0;
+    ps->zErr -= ps->rZ;
+    ps->xSpe = ps->ySpe = ps->xMov = ps->yMov = 0;
 }
 
 //获取罗盘角度(rad:[-pi, pi])

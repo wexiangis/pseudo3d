@@ -38,6 +38,224 @@
 #define P3D_2D_Z 1.0
 
 /*
+ *  把空间坐标point[3]转换为物体自身坐标系
+ *  参数:
+ *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
+ *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
+ */
+void p3d_matrix_xyz(double raxyz[3], double point[3])
+{
+    double x = point[0], y = point[1], z = point[2];
+    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
+#if 0
+    /*
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA    -sinA
+    *   0     sinA     cosA
+    *
+    *       [roll Y]
+    *  cosB     0      sinB
+    *   0       1       0
+    * -sinB     0      cosB
+    *
+    *       [roll Z]
+    *  cosC   -sinC     0
+    *  sinC    cosC     0
+    *   0       0       1
+    *
+    *                                   |x|
+    *  result = [roll X][roll Y][roll Z]|y|
+    *                                   |z|
+    *
+    *           |cB,     0,  sB    |        |x|
+    *         = |sB*sA,  cA, -cB*sA|[roll Z]|y|
+    *           |-sB*cA, sA, cB*cA |        |z|
+    * 
+    *           |cC*cB,             -sC*cB,            sB    ||x|
+    *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
+    *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+
+    point[0] =
+        x * cos(C) * cos(B) +
+        y * (-sin(C) * cos(B)) +
+        z * sin(B);
+    point[1] =
+        x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
+        y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
+        z * (-cos(B) * sin(A));
+    point[2] =
+        x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
+        y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
+        z * cos(B) * cos(A);
+#else
+    /*
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA     sinA
+    *   0    -sinA     cosA
+    *
+    *       [roll Y]
+    *  cosB     0     -sinB
+    *   0       1       0
+    *  sinB     0      cosB
+    *
+    *       [roll Z]
+    *  cosC    sinC     0
+    * -sinC    cosC     0
+    *   0       0       1
+    *
+    *                                   |x|
+    *  result = [roll X][roll Y][roll Z]|y|
+    *                                   |z|
+    *
+    *           |cB,    0,   -sB  |        |x|
+    *         = |sB*sA, cA,  cB*sA|[roll Z]|y|
+    *           |sB*cA, -sA, cB*cA|        |z|
+    * 
+    *           |cC*cB,            sC*cB,            -sB  ||x|
+    *         = |cC*sB*sA - sC*cA, sC*sB*sA + cC*cA, cB*sA||x|
+    *           |cC*sB*cA + sC*sA, sC*sB*cA - cC*sA, cB*cA||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+
+    point[0] =
+        x * cos(C) * cos(B) +
+        y * sin(C) * cos(B) +
+        z * (-sin(B));
+    point[1] =
+        x * (cos(C) * sin(B) * sin(A) - sin(C) * cos(A)) +
+        y * (sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
+        z * cos(B) * sin(A);
+    point[2] =
+        x * (cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
+        y * (sin(C) * sin(B) * cos(A) - cos(C) * sin(A)) +
+        z * cos(B) * cos(A);
+#endif
+}
+
+/*
+ *  把物体自身坐标point[3]转换为空间坐标
+ *  参数:
+ *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
+ *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
+ */
+void p3d_matrix_zyx(double raxyz[3], double point[3])
+{
+    double x = point[0], y = point[1], z = point[2];
+    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
+#if 1
+    /*
+    *       [roll Z]
+    *  cosC   -sinC     0
+    *  sinC    cosC     0
+    *   0       0       1
+    *
+    *       [roll Y]
+    *  cosB     0      sinB
+    *   0       1       0
+    * -sinB     0      cosB
+    * 
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA    -sinA
+    *   0     sinA     cosA
+    *
+    *                                   |x|
+    *  result = [roll Z][roll Y][roll X]|y|
+    *                                   |z|
+    *
+    *           |cB*cC, -sC, sB*cC|        |x|
+    *         = |cB*sC, cC,  sB*sC|[roll X]|y|
+    *           |-sB,   0,   cB   |        |z|
+    * 
+    *           |cB*cC, -cA*sC + sA*sB*cC, sA*sC + cA*sB*cC ||x|
+    *         = |cB*sC, cA*cC + sA*sB*sC,  -sA*cC + cA*sB*sC||x|
+    *           |-sB,   sA*cB,             cA*cB            ||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+
+    point[0] =
+        x * cos(B) * cos(C) +
+        y * (-cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
+        z * (sin(A) * sin(C) + cos(A) * sin(B) * cos(C));
+    point[1] =
+        x * cos(B) * sin(C) +
+        y * (cos(A) * cos(C) + sin(A) * sin(B) * sin(C)) +
+        z * (-sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
+    point[2] =
+        x * (-sin(B)) +
+        y * sin(A) * cos(B) +
+        z * cos(A) * cos(B);
+#else
+    /*
+    *       [roll Z]
+    *  cosC    sinC     0
+    * -sinC    cosC     0
+    *   0       0       1
+    *
+    *       [roll Y]
+    *  cosB     0     -sinB
+    *   0       1       0
+    *  sinB     0      cosB
+    * 
+    *       [roll X]
+    *   1       0       0
+    *   0     cosA     sinA
+    *   0    -sinA     cosA
+    *
+    *                                   |x|
+    *  result = [roll Z][roll Y][roll X]|y|
+    *                                   |z|
+    *
+    *           |cB*cC,  sC, -sB*cC|        |x|
+    *         = |-cB*sC, cC, sB*sC |[roll X]|y|
+    *           |sB,     0,  cB    |        |z|
+    * 
+    *           |cB*cC,  cA*sC + sA*sB*cC, sA*sC - cA*sB*cC||x|
+    *         = |-cB*sC, cA*cC - sA*sB*sC, sA*cC + cA*sB*sC||x|
+    *           |sB,     -sA*cB,           cA*cB           ||z|
+    *
+    *           |point[0]|
+    *         = |point[1]|
+    *           |point[2]|
+    *
+    *  point[*] is equal to the follow ...
+    */
+
+    point[0] =
+        x * cos(B) * cos(C) +
+        y * (cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
+        z * (sin(A) * sin(C) - cos(A) * sin(B) * cos(C));
+    point[1] =
+        x * (-cos(B) * sin(C)) +
+        y * (cos(A) * cos(C) - sin(A) * sin(B) * sin(C)) +
+        z * (sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
+    point[2] =
+        x * sin(B) +
+        y * (-sin(A) * cos(B)) +
+        z * cos(A) * cos(B);
+#endif
+}
+
+/*
  *  重置三维图形到初始化时的状态
  */
 void p3d_reset(P3D_PointArray_Type *dpat)
@@ -425,126 +643,4 @@ void p3d_draw2(
     //输出
     view_dot(color, xy[0], xy[1], 2);
     view_line(color, centreX, centreY, xy[0], xy[1], 1, 0);
-}
-
-// ---------- 额外提供的数学方法 ----------
-
-/*
- *  把空间坐标point[3]转换为物体自身坐标系
- *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- */
-void p3d_matrix_xyz(double raxyz[3], double point[3])
-{
-    double x = point[0], y = point[1], z = point[2];
-    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
-
-    /*
-    *       [roll X]
-    *   1       0       0
-    *   0     cosA    -sinA
-    *   0     sinA     cosA
-    *
-    *       [roll Y]
-    *  cosB     0      sinB
-    *   0       1       0
-    * -sinB     0      cosB
-    *
-    *       [roll Z]
-    *  cosC   -sinC     0
-    *  sinC    cosC     0
-    *   0       0       1
-    *
-    *                                   |x|
-    *  result = [roll X][roll Y][roll Z]|y|
-    *                                   |z|
-    *
-    *           |cB,     0,  sB    |        |x|
-    *         = |sB*sA,  cA, -cB*sA|[roll Z]|y|
-    *           |-sB*cA, sA, cB*cA |        |z|
-    * 
-    *           |cC*cB,             -sC*cB,            sB    ||x|
-    *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
-    *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
-    *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
-    *
-    *  point[*] is equal to the follow ...
-    */
-
-    point[0] =
-        x * cos(C) * cos(B) +
-        y * (-sin(C) * cos(B)) +
-        z * sin(B);
-    point[1] =
-        x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
-        y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
-        z * (-cos(B) * sin(A));
-    point[2] =
-        x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
-        y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
-        z * cos(B) * cos(A);
-}
-
-/*
- *  把物体自身坐标point[3]转换为空间坐标
- *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- */
-void p3d_matrix_zyx(double raxyz[3], double point[3])
-{
-    double x = point[0], y = point[1], z = point[2];
-    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
-
-    /*
-    *       [roll Z]
-    *  cosC   -sinC     0
-    *  sinC    cosC     0
-    *   0       0       1
-    *
-    *       [roll Y]
-    *  cosB     0      sinB
-    *   0       1       0
-    * -sinB     0      cosB
-    * 
-    *       [roll X]
-    *   1       0       0
-    *   0     cosA    -sinA
-    *   0     sinA     cosA
-    *
-    *                                   |x|
-    *  result = [roll Z][roll Y][roll X]|y|
-    *                                   |z|
-    *
-    *           |cB*cC, -sC, sB*cC|        |x|
-    *         = |cB*sC, cC,  sB*sC|[roll X]|y|
-    *           |-sB,   0,   cB   |        |z|
-    * 
-    *           |cB*cC, -cA*sC + sA*sB*cC, sA*sC + cA*sB*cC ||x|
-    *         = |cB*sC, cA*cC + sA*sB*sC,  -sA*cC + cA*sB*sC||x|
-    *           |-sB,   sA*cB,             cA*cB            ||z|
-    *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
-    *
-    *  point[*] is equal to the follow ...
-    */
-
-    point[0] =
-        x * cos(B) * cos(C) +
-        y * (-cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
-        z * (sin(A) * sin(C) + cos(A) * sin(B) * cos(C));
-    point[1] =
-        x * cos(B) * sin(C) +
-        y * (cos(A) * cos(C) + sin(A) * sin(B) * sin(C)) +
-        z * (-sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
-    point[2] =
-        x * (-sin(B)) +
-        y * sin(A) * cos(B) +
-        z * cos(A) * cos(B);
 }
