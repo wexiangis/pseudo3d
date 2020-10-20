@@ -135,7 +135,7 @@ void *pe_thread(void *argv)
 /*
  *  初始化
  * 
- *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
+ *  intervalMs: 采样间隔, 越小误差积累越小, 建议值: 2, 5, 10(推荐),20,25,50
  */
 void pe_init(unsigned short intervalMs)
 {

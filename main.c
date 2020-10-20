@@ -14,7 +14,7 @@
 #include "view.h"
 
 //使用陀螺仪模块
-#define ENABLE_MPU6050 1
+#define ENABLE_MPU6050 0
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 
     char input[16];
     int fd;
+    double xyz[3] = {P3D_XYZ_LEN / 4, 0, 0}, xyzOut[3];
 
     // open console
     if (argc > 1)
@@ -92,7 +93,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat1->_matrix_mode = 0;//使用左乘
+    dpat1->_matrix_mode = 1;//使用zyx旋转矩阵
 
     //长方体2
     if ((dpat2 = p3d_init(8,
@@ -123,7 +124,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat2, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat2, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat2, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat2->_matrix_mode = 1;//使用右乘
+    dpat2->_matrix_mode = 0;//使用xyz旋转矩阵
 
     //长方体3
     if ((dpat3 = p3d_init(8,
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat3->_matrix_mode = 0;//使用左乘
+    dpat3->_matrix_mode = 1;//使用zyx旋转矩阵
 
 #if (ENABLE_MPU6050)
     //初始化姿态计算器
@@ -206,6 +207,10 @@ int main(int argc, char **argv)
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
         p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
         p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
+
+        memcpy(xyzOut, xyz, sizeof(double)*3);
+        p3d_matrix_zyx(dpat1->raxyz, xyzOut);
+        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, 0xFF8000, xyzOut);
 
         PRINT_EN();
 

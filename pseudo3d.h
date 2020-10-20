@@ -49,7 +49,7 @@ typedef struct
     int *color;           //1元数组 col1;col2... 二维投影点的颜色
     P3D_PPLink_Type *link;     //各三维点的连线关系
     P3D_Comment_Type *comment; //注释信息
-    int _matrix_mode;     //0/左乘(相对空间坐标系旋转) 1/右乘(相对自身坐标系旋转)
+    int _matrix_mode;     //0/使用xyz旋转矩阵 1/使用zyx旋转矩阵
 } P3D_PointArray_Type;
 
 /*
@@ -113,25 +113,33 @@ void p3d_draw(
     int centreY,
     P3D_PointArray_Type *dpat);
 
+/*
+ *  把空间点(z,y,z)和原点连线画在屏幕上
+ *  参数:
+ *      centreX, centreY: 绘制原点在屏幕中的位置,一般为(屏幕宽/2, 屏幕高/2)
+ *      color: 划线颜色
+ */
+void p3d_draw2(
+    int centreX,
+    int centreY,
+    int color, 
+    double *xyz);
+
 // ---------- 额外提供的数学方法 ----------
 
 /*
- *  旋转矩阵左乘
+ *  把空间坐标point[3]转换为物体自身坐标系
  *  参数:
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- * 
- *  备注: 绕自身旋转使用左乘, 绕大地坐标旋转使用右乘
  */
 void p3d_matrix_xyz(double raxyz[3], double point[3]);
 
 /*
- *  旋转矩阵右乘
+ *  把物体自身坐标point[3]转换为空间坐标
  *  参数:
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- * 
- *  备注: 绕自身旋转使用左乘, 绕大地坐标旋转使用右乘, 这里为右乘
  */
 void p3d_matrix_zyx(double raxyz[3], double point[3]);
 

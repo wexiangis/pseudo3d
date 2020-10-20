@@ -3,13 +3,14 @@
  *  自制乞丐版3D引擎
  */
 #include "pseudo3d.h"
+#include "view.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-//传入旋转角度的矩阵模式: 0/左乘(相对空间坐标系旋转) 1/右乘(相对自身坐标系旋转)
+//传入旋转角度的矩阵模式: 0/使用xyz旋转矩阵 1/使用zyx旋转矩阵
 #define P3D_MATRIX_MODE 1
 
 //传入旋转和平移数值模式: 0/固定值 1/增量值
@@ -263,9 +264,9 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyzArray[3]
         if(dpat->_matrix_mode == 1)
-            p3d_matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
-        else
             p3d_matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
+        else
+            p3d_matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
         //平移量(相对于绝对坐标系)
         dpat->xyzArray[j] += dpat->mvxyz[0];
         dpat->xyzArray[j + 1] += dpat->mvxyz[1];
@@ -283,9 +284,9 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyz[3]
         if(dpat->_matrix_mode == 1)
-            p3d_matrix_xyz(dpat->raxyz, dct->xyz);
-        else
             p3d_matrix_zyx(dpat->raxyz, dct->xyz);
+        else
+            p3d_matrix_xyz(dpat->raxyz, dct->xyz);
         //平移量(相对于绝对坐标系)
         dct->xyz[0] += dpat->mvxyz[0];
         dct->xyz[1] += dpat->mvxyz[1];
@@ -403,15 +404,36 @@ void p3d_draw(int centreX, int centreY, P3D_PointArray_Type *dpat)
     }
 }
 
+/*
+ *  把空间点(z,y,z)和原点连线画在屏幕上
+ *  参数:
+ *      centreX, centreY: 绘制原点在屏幕中的位置,一般为(屏幕宽/2, 屏幕高/2)
+ *      color: 划线颜色
+ */
+void p3d_draw2(
+    int centreX,
+    int centreY,
+    int color, 
+    double *xyz)
+{
+    int xy[2];
+    //坐标转换
+    p3d_3d_to_2d(xyz, xy);
+    //偏移到中心点
+    xy[0] = centreX - xy[0];
+    xy[1] = centreY - xy[1];
+    //输出
+    view_dot(color, xy[0], xy[1], 2);
+    view_line(color, centreX, centreY, xy[0], xy[1], 1, 0);
+}
+
 // ---------- 额外提供的数学方法 ----------
 
 /*
- *  旋转矩阵左乘
+ *  把空间坐标point[3]转换为物体自身坐标系
  *  参数:
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- * 
- *  备注: 绕自身旋转使用左乘, 绕大地坐标旋转使用右乘
  */
 void p3d_matrix_xyz(double raxyz[3], double point[3])
 {
@@ -468,12 +490,10 @@ void p3d_matrix_xyz(double raxyz[3], double point[3])
 }
 
 /*
- *  旋转矩阵右乘
+ *  把物体自身坐标point[3]转换为空间坐标
  *  参数:
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- * 
- *  备注: 绕自身旋转使用左乘, 绕大地坐标旋转使用右乘, 这里为右乘
  */
 void p3d_matrix_zyx(double raxyz[3], double point[3])
 {
