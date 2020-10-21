@@ -8,7 +8,7 @@
 
 #include "posture.h"
 #include "delayus.h"
-#include "inv_mpu.h"
+#include "mpu6050.h"
 #include "pseudo3d.h"
 
 // 启用罗盘
@@ -41,6 +41,13 @@
 #define SPE_SUN_FUN(new, old) \
 ((new - (new - old) / 2) * ps->intervalMs / 1000 / SPE_REDUCE_POW)
 
+// 速度积分矫正倍数
+#define MOV_REDUCE_POW 1
+
+// 速度积分得到移动距离(同上面 GYRO_SUM_FUN() )
+#define MOV_SUN_FUN(new, old) \
+((new - (new - old) / 2) * ps->intervalMs / 1000 / MOV_REDUCE_POW)
+
 void pe_inertial_navigation(PostureStruct *ps)
 {
     double xSpe, ySpe, xG, yG;
@@ -51,18 +58,18 @@ void pe_inertial_navigation(PostureStruct *ps)
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    xG = vXYZ[0];
-    yG = vXYZ[1];
+    xG = vXYZ[0];// * 0.8 + xG * 0.2;
+    yG = vXYZ[1];// * 0.8 + yG * 0.2;
     //g值积分得到速度
     xSpe = ps->xSpe;
     ySpe = ps->ySpe;
-    xSpe += xG / 100;//SPE_SUN_FUN(xG, ps->xG) * 9.8;
-    ySpe += yG / 100;//SPE_SUN_FUN(yG, ps->yG) * 9.8;
+    xSpe += SPE_SUN_FUN(xG, ps->xG) * 9.8;
+    ySpe += SPE_SUN_FUN(yG, ps->yG) * 9.8;
     ps->xG = xG;
     ps->yG = yG;
     //速度积分得到移动距离
-    ps->xMov += SPE_SUN_FUN(xSpe, ps->xSpe);
-    ps->yMov += SPE_SUN_FUN(ySpe, ps->ySpe);
+    ps->xMov += MOV_SUN_FUN(xSpe, ps->xSpe);
+    ps->yMov += MOV_SUN_FUN(ySpe, ps->ySpe);
     ps->xSpe = xSpe;
     ps->ySpe = ySpe;
 }
@@ -74,14 +81,14 @@ void *pe_thread(void *argv)
     short agVal[3], acVal[3];
     PostureStruct *ps = (PostureStruct*)argv;
     //初始化mpu6050
-    if (mpu_dmp_init(1000 / ps->intervalMs, 0) != 0)
+    if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
     //周期采样
     while (ps->flagRun)
     {
         DELAY_US(ps->intervalMs * 1000);
         // 采样
-        if (mpu_dmp_get_data(dVal, agVal, acVal) == 0)
+        if (mpu6050_get(dVal, agVal, acVal) == 0)
         {
             // dmp库用4元素法得到的欧拉角(单位:rad)
             ps->rX = dVal[1];

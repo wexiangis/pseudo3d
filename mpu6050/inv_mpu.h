@@ -21,9 +21,12 @@
 #ifndef _INV_MPU_H_
 #define _INV_MPU_H_
 
-//主要的对外接口
-int mpu_dmp_init(unsigned short Hz, char test);
-int mpu_dmp_get_data(double *pry, short *gyro, short *accel);
+//模块类型
+#define MPU6050
+// #define MPU9250
+
+//跟着这个宏走,就是这个库改动的地方
+#define ADD_FOR_LINUX
 
 #define INV_X_GYRO      (0x40)
 #define INV_Y_GYRO      (0x20)
@@ -33,16 +36,16 @@ int mpu_dmp_get_data(double *pry, short *gyro, short *accel);
 #define INV_XYZ_COMPASS (0x01)
 
 struct int_param_s {
-//#if defined EMPL_TARGET_MSP430 || defined EMPL_TARGET_LINUX
+#if defined EMPL_TARGET_MSP430 || defined MOTION_DRIVER_TARGET_MSP430
     void (*cb)(void);
     unsigned short pin;
     unsigned char lp_exit;
     unsigned char active_low;
-//#elif defined EMPL_TARGET_UC3L0
-//    unsigned long pin;
-//    void (*cb)(volatile void*);
-//    void *arg;
-//#endif
+#elif defined EMPL_TARGET_UC3L0
+    unsigned long pin;
+    void (*cb)(volatile void*);
+    void *arg;
+#endif
 };
 
 #define MPU_INT_STATUS_DATA_READY       (0x0001)

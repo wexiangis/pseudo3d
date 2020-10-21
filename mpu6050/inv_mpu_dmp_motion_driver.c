@@ -24,8 +24,14 @@
 #include "dmpKey.h"
 #include "dmpmap.h"
 
-//定义自己的开发板类型
-#define  EMPL_TARGET_LINUX
+#ifdef ADD_FOR_LINUX
+
+//接口对接
+#include "delayus.h"
+#define delay_ms(ms) delayms(ms)
+#define get_ms(timestamp) //没用到
+#define log_i printf
+#define log_e printf
 
 /* The following functions must be defined for this platform:
  * i2c_write(unsigned char slave_addr, unsigned char reg_addr,
@@ -35,14 +41,13 @@
  * delay_ms(unsigned long num_ms)
  * get_ms(unsigned long *count)
  */
-
-//根据开发板类型,实现以下接口
-#if defined EMPL_TARGET_LINUX
-#include "delayus.h"
-#define delay_ms(ms) delayms(ms)
-#define get_ms(timestamp) //没用到
-#define log_i printf
-#define log_e printf
+#elif defined MOTION_DRIVER_TARGET_MSP430
+#include "msp430.h"
+#include "msp430_clock.h"
+#define delay_ms    msp430_delay_ms
+#define get_ms      msp430_get_clock_ms
+#define log_i(...)     do {} while (0)
+#define log_e(...)     do {} while (0)
 
 #elif defined EMPL_TARGET_MSP430
 #include "msp430.h"
@@ -488,22 +493,13 @@ struct dmp_s {
     unsigned char packet_length;
 };
 
-//static struct dmp_s dmp = {
-//    .tap_cb = NULL,
-//    .android_orient_cb = NULL,
-//    .orient = 0,
-//    .feature_mask = 0,
-//    .fifo_rate = 0,
-//    .packet_length = 0
-//};
-
-static struct dmp_s dmp={
-  NULL,
-  NULL,
-  0,
-  0,
-  0,
-  0
+static struct dmp_s dmp = {
+    .tap_cb = NULL,
+    .android_orient_cb = NULL,
+    .orient = 0,
+    .feature_mask = 0,
+    .fifo_rate = 0,
+    .packet_length = 0
 };
 
 /**
@@ -639,7 +635,10 @@ int dmp_set_accel_bias(long *bias)
 
     mpu_get_accel_sens(&accel_sens);
     accel_sf = (long long)accel_sens << 15;
-    //__no_operation();
+
+#ifndef ADD_FOR_LINUX
+    __no_operation();
+#endif
 
     accel_bias_body[0] = bias[dmp.orient & 3];
     if (dmp.orient & 4)
