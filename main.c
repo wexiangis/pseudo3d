@@ -13,15 +13,12 @@
 #include "pseudo3d.h"
 #include "view.h"
 
-//3种姿态计算对比
-#define COMPARE 0
-
 //使用陀螺仪模块
 #define ENABLE_MPU6050 1
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
-#define MPU6050_INTERVALMS 10 //sample freq ms
+#define MPU6050_INTERVALMS 5 //sample freq ms
 #endif
 
 //采样间隔
@@ -175,18 +172,26 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-#if (COMPARE)
+#if 0
         wave_load(0, (short)(ps->rX * 10000));
         wave_load(1, (short)(ps->rY * 10000));
         wave_load(2, (short)(ps->rZ * 10000));
         wave_load(3, (short)(ps->aX * 10000));
         wave_load(4, (short)(ps->aY * 10000));
         wave_load(5, (short)(ps->aZ * 10000));
+#elif 0
+        wave_load(0, ps->aXVal);
+        wave_load(1, ps->aYVal);
+        wave_load(2, ps->aZVal);
+        wave_load(3, (short)(ps->aXG * 10000));
+        wave_load(4, (short)(ps->aYG * 10000));
+        wave_load(5, (short)(ps->aZG * 10000));
 #else
-        wave_load(0, (short)(ps->xSpe * 10000));
-        wave_load(1, (short)(ps->ySpe * 10000));
-        wave_load(2, (short)(ps->xMov * 10000));
-        wave_load(3, (short)(ps->yMov * 10000));
+        wave_load(0, (short)(ps->aG * 50000));
+        //wave_load(1, (short)(ps->xG * 50000));
+        //wave_load(2, (short)(ps->yG * 50000));
+        wave_load(3, (short)(ps->xSpe * 10000));
+        wave_load(4, (short)(ps->ySpe * 10000));
 #endif
 
         wave_refresh();
@@ -201,21 +206,22 @@ int main(int argc, char **argv)
         dpat3->raxyz[1] = ps->gY;
         dpat3->raxyz[2] = ps->gZ;
 
-#if (COMPARE)
+#if 0
         printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f \r\n",
             ps->rX, ps->rY, ps->rZ,
             ps->aX, ps->aY, ps->aZ,
             ps->gX, ps->gY, ps->gZ);
 #else
-        printf("G/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f \r\n",
+        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f \r\n",
             ps->aG,
+            ps->aXG, ps->aYG, ps->aZG,
             ps->xSpe, ps->ySpe,
             ps->xMov, ps->yMov);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
-        xyz[0] = ps->gX * 100;
-        xyz[1] = ps->gY * 100;
-        xyz[2] = ps->gZ * 100;
+        xyz[0] = -ps->aXG * 100;
+        xyz[1] = -ps->aYG * 100;
+        xyz[2] = -ps->aZG * 100;
         p3d_matrix_zyx(dpat1->raxyz, xyz);
 #else
         //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
@@ -231,14 +237,11 @@ int main(int argc, char **argv)
         PRINT_CLEAR();
 
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, dpat0);
-#if (COMPARE)
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
         p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
         p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
-#else
-        p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
-#endif
-        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, 0xFF8000, xyz);
+
+        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, 0xFF8000, xyz);
 
         PRINT_EN();
 

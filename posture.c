@@ -35,27 +35,36 @@
 (((double)new - (double)(new - old) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW)
 
 // 速度积分矫正倍数
-#define SPE_REDUCE_POW 10
+#define SPE_REDUCE_POW 100
 
 // 速度积分得到移动距离(同上面 GYRO_SUM_FUN() )
-#define SPE_SUN_FUN(spe, accel) \
-((spe - accel / 2) * ps->intervalMs / 1000 / SPE_REDUCE_POW)
+#define SPE_SUN_FUN(new, old) \
+((new - (new - old) / 2) * ps->intervalMs / 1000 / SPE_REDUCE_POW)
 
 void pe_inertial_navigation(PostureStruct *ps)
 {
-    double vXYZ[3];
-    double rXYZ[3];
+    double xSpe, ySpe, xG, yG;
+    double vXYZ[3], rXYZ[3];
+    //
     vXYZ[0] = ps->aXG; vXYZ[1] = ps->aYG; vXYZ[2] = ps->aZG;
     rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
-    p3d_matrix_xyz(rXYZ, vXYZ);
+    p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    ps->gX = vXYZ[0]; ps->gY = vXYZ[1];
-    //速度积分得到移动距离
-    ps->xMov += SPE_SUN_FUN(ps->xSpe, ps->gX);
-    ps->yMov += SPE_SUN_FUN(ps->ySpe, ps->gY);
+    xG = vXYZ[0];
+    yG = vXYZ[1];
     //g值积分得到速度
-    ps->xSpe += ps->gX; ps->ySpe += ps->gY;
+    xSpe = ps->xSpe;
+    ySpe = ps->ySpe;
+    xSpe += xG / 100;//SPE_SUN_FUN(xG, ps->xG) * 9.8;
+    ySpe += yG / 100;//SPE_SUN_FUN(yG, ps->yG) * 9.8;
+    ps->xG = xG;
+    ps->yG = yG;
+    //速度积分得到移动距离
+    ps->xMov += SPE_SUN_FUN(xSpe, ps->xSpe);
+    ps->yMov += SPE_SUN_FUN(ySpe, ps->ySpe);
+    ps->xSpe = xSpe;
+    ps->ySpe = ySpe;
 }
 
 void *pe_thread(void *argv)
@@ -109,9 +118,9 @@ void *pe_thread(void *argv)
             (double)sqrt((double)ps->aYVal * ps->aYVal + (double)ps->aZVal * ps->aZVal));
         ps->aZ = 0;
         // 角速度转换(单位:rad/s)
-        ps->gXR = (double)ps->gXVal / ACCEL_VAL_P_G;
-        ps->gYR = (double)ps->gYVal / ACCEL_VAL_P_G;
-        ps->gZR = (double)ps->gZVal / ACCEL_VAL_P_G;
+        ps->gXR = (double)ps->gXVal / GYRO_VAL_P_RED;
+        ps->gYR = (double)ps->gYVal / GYRO_VAL_P_RED;
+        ps->gZR = (double)ps->gZVal / GYRO_VAL_P_RED;
         // 各轴向受力转换(单位:g)
         ps->aXG = (double)ps->aXVal / ACCEL_VAL_P_G;
         ps->aYG = (double)ps->aYVal / ACCEL_VAL_P_G;
