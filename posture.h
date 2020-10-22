@@ -17,6 +17,12 @@ typedef struct
     short gXVal, gYVal, gZVal;
     //重力加速度原始数据
     short aXVal, aYVal, aZVal;
+    //罗盘原始数据
+    short cXVal, cYVal, cZVal;
+    //水平方向(单位:rad)
+    double dir;
+    //温度(原始数值)
+    long temper;
     //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
     double gX, gY, gZ;
     //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])

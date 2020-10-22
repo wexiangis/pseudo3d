@@ -20,12 +20,6 @@
 #define PE_PI 3.14159265358979323846
 #define PE_2PI (PE_PI * 2)
 
-// 1弧度对应采样值, 陀螺仪数据除以该值得到绕轴角加速度, 单位rad/s
-#define GYRO_VAL_P_RED (32768 / 2000 * PE_PI / 180)
-
-// 1g对应采样值, 加速度计数据除以该值得到轴向受力, 单位g
-#define ACCEL_VAL_P_G (32768 / 2)
-
 // 陀螺仪积分矫正倍数
 #define GYRO_REDUCE_POW 1000
 
@@ -77,8 +71,9 @@ void pe_inertial_navigation(PostureStruct *ps)
 void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
+    int timeCount = 0;
     double dVal[3];
-    short agVal[3], acVal[3], dirVal[3];
+    short agVal[3], acVal[3], cpVal[3];
     PostureStruct *ps = (PostureStruct*)argv;
     //初始化mpu6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
@@ -88,9 +83,9 @@ void *pe_thread(void *argv)
     {
         DELAY_US(ps->intervalMs * 1000);
         // 采样
-        if (mpu6050_get(dVal, agVal, acVal, dirVal) == 0)
+        if (mpu6050_angle(dVal, agVal, acVal) == 0)
         {
-            // dmp库用4元素法得到的欧拉角(单位:rad)
+            //dmp库用4元素法得到的欧拉角(单位:rad)
             ps->rX = dVal[1];
             ps->rY = dVal[0];
             ps->rZ = dVal[2] + ps->zErr;
@@ -136,6 +131,21 @@ void *pe_thread(void *argv)
         ps->aG = sqrt(ps->aXG * ps->aXG + ps->aYG * ps->aYG + ps->aZG * ps->aZG);
         // 惯导参数计算
         pe_inertial_navigation(ps);
+
+        //定时获取罗盘数据 & 温度数据
+        timeCount += ps->intervalMs;
+        if(timeCount >= 200){
+            timeCount = 0;
+            //罗盘
+            if(mpu6050_compass(cpVal) == 0) {
+                ps->cXVal = cpVal[0];
+                ps->cYVal = cpVal[1];
+                ps->cZVal = cpVal[2];
+                ps->dir = atan2((float)ps->cYVal, (float)ps->cXVal);
+            }
+            //温度
+            mpu6050_temper(&ps->temper);
+        }
     }
 
     return NULL;

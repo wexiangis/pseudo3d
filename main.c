@@ -172,20 +172,18 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-#if 1
+#if 0
         wave_load(0, (short)(ps->rX * 10000));
         wave_load(1, (short)(ps->rY * 10000));
         wave_load(2, (short)(ps->rZ * 10000));
         wave_load(3, (short)(ps->aX * 10000));
         wave_load(4, (short)(ps->aY * 10000));
         wave_load(5, (short)(ps->aZ * 10000));
-#elif 0
-        wave_load(0, ps->aXVal);
-        wave_load(1, ps->aYVal);
-        wave_load(2, ps->aZVal);
-        wave_load(3, (short)(ps->aXG * 10000));
-        wave_load(4, (short)(ps->aYG * 10000));
-        wave_load(5, (short)(ps->aZG * 10000));
+#elif 1
+        wave_load(0, ps->cXVal);
+        wave_load(1, ps->cYVal);
+        wave_load(2, ps->cZVal);
+        wave_load(3, ps->temper);
 #else
         wave_load(0, (short)(ps->aG * 50000));
         //wave_load(1, (short)(ps->xG * 50000));
@@ -207,16 +205,22 @@ int main(int argc, char **argv)
         dpat3->raxyz[2] = ps->gZ;
 
 #if 0
-        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f \r\n",
+        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f -- dir %.4f\r\n",
             ps->rX, ps->rY, ps->rZ,
             ps->aX, ps->aY, ps->aZ,
-            ps->gX, ps->gY, ps->gZ);
+            ps->gX, ps->gY, ps->gZ,
+            ps->dir);
+#elif 1
+        printf("dir x/%04d y%04d z%04d %.4lf -- tmp %ld \r\n",
+            ps->cXVal, ps->cYVal, ps->cZVal,
+            ps->dir, ps->temper);
 #else
-        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f \r\n",
+        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f -- dir %.4f\r\n",
             ps->aG,
             ps->aXG, ps->aYG, ps->aZG,
             ps->xSpe, ps->ySpe,
-            ps->xMov, ps->yMov);
+            ps->xMov, ps->yMov,
+            ps->dir);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->aXG * 100;

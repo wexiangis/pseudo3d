@@ -3,12 +3,6 @@
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 
-#ifdef MPU9250
-#include "i2c_transfer.h"
-#define i2c_write(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 1)
-#define i2c_read(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 0)
-#endif
-
 //q30格式,long转float时的除数.
 #define q30 1073741824.0f
 
@@ -89,88 +83,80 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
     return scalar;
 }
 
-//返回值: 0/正常
+/*
+ *  传感器精度: gyro/2000 accel/2g
+ *  Hz: 设置陀螺仪和角速度计采样频率,推荐值: 50, 25, 20, 10
+ *  test: 是否启用自测(启动会慢很多)
+ *  返回值: 0/正常
+ */
 int mpu6050_init(unsigned short Hz, char test)
 {
-    int res = 0;
-    // unsigned char data[1];
-
-    //默认精度: gyro/2000 accel/2g
     if (mpu_init() == 0)
     {
-        // data[0] = 0x02;
-        // i2c_write(0x68, 0x37, 1, data);//turn on Bypass Mode
-#ifdef MPU6050
-        res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置所需要的传感器
+        //设置用到的传感器
+#ifdef MPU9250
+        if (mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS) != 0)
 #else
-        res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS); //设置所需要的传感器
+        if (mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL) != 0)
 #endif
-        if (res)
             return 1;
-        res = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置FIFO
-        if (res)
+        //设置FIFO
+        if (mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL) != 0)
             return 2;
-        res = mpu_set_sample_rate(Hz); //设置采样率
-        if (res)
+        //设置陀螺仪和角速度计采样率
+        if (mpu_set_sample_rate(Hz) != 0)
             return 3;
-        res = dmp_load_motion_driver_firmware(); //加载dmp固件
-        if (res)
+#ifdef MPU9250
+        //设置罗盘采样率(最大100但没必要)
+        if (mpu_set_compass_sample_rate(10) != 0)
             return 4;
-        res = dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation)); //设置陀螺仪方向
-        if (res)
+#endif
+        //加载dmp固件
+        if (dmp_load_motion_driver_firmware() != 0)
             return 5;
-        res = dmp_enable_feature(
-            DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP | //设置dmp功能
-            DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL |
-            DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL);
-        if (res)
+        //设置陀螺仪方向
+        if (dmp_set_orientation(inv_orientation_matrix_to_scalar(gyro_orientation)) != 0)
             return 6;
-        res = dmp_set_fifo_rate(Hz); //设置DMP输出速率(最大不超过200Hz)
-        if (res)
+        //设置dmp功能
+        if (dmp_enable_feature(
+                DMP_FEATURE_6X_LP_QUAT | DMP_FEATURE_TAP |
+                DMP_FEATURE_ANDROID_ORIENT | DMP_FEATURE_SEND_RAW_ACCEL |
+                DMP_FEATURE_SEND_CAL_GYRO | DMP_FEATURE_GYRO_CAL) != 0)
             return 7;
-        if(test) {
-            res = run_self_test(); //自检
-            if (res)
-                return 8;
+        //设置DMP输出速率(最大不超过200Hz)
+        if (dmp_set_fifo_rate(Hz) != 0)
+            return 8;
+        if (test)
+        {
+            //自检
+            if (run_self_test() != 0)
+                return 9;
         }
-        res = mpu_set_dmp_state(1); //使能DMP
-        if (res)
-            return 9;
+        //使能DMP
+        if (mpu_set_dmp_state(1) != 0)
+            return 10;
     }
     else
-        return 10;
+        return 99;
     return 0;
 }
 
 /*
  *  得到dmp处理后的数据
- *  pry:
- *      pitch:俯仰角 精度:0.1°   范围:-90.0° <---> +90.0°
- *      roll:横滚角  精度:0.1°   范围:-180.0°<---> +180.0°
- *      yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
+ *  pry: 欧拉角 pitch, roll, yaw, 单位rad
+ *  gyro: 陀螺仪原始数据
+ *  accel: 重力加速度原始数据
  *  返回值: 0/正常
  */
-int mpu6050_get(double *pry, short *gyro, short *accel, short *dir)
+int mpu6050_angle(double *pry, short *gyro, short *accel)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
     short sensors;
     unsigned char more;
     long quat[4];
-#ifdef MPU9250
-    short _dir[3];
-#endif
-    if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more))
+    if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more) != 0)
         return 1;
-    /* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
-	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.
-	**/
-#ifdef MPU9250
-    if(!dir)
-        mpu_get_compass_reg(dir, &sensor_timestamp);
-    else
-        mpu_get_compass_reg(_dir, &sensor_timestamp);
-#endif
     /* Unlike gyro and accel, quaternions are written to the FIFO in the body frame, q30.
 	 * The orientation is set by the scalar passed to dmp_set_orientation during initialization. 
 	**/
@@ -188,4 +174,22 @@ int mpu6050_get(double *pry, short *gyro, short *accel, short *dir)
     else
         return 2;
     return 0;
+}
+
+/*
+ *  取罗盘数据
+ */
+int mpu6050_compass(short *compass)
+{
+    unsigned long sensor_timestamp;
+    return mpu_get_compass_reg(compass, &sensor_timestamp);
+}
+
+/*
+ *  取温度数据
+ */
+int mpu6050_temper(long *temper)
+{
+    unsigned long sensor_timestamp;
+    return mpu_get_temperature(temper, &sensor_timestamp);
 }
