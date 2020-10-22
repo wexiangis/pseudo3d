@@ -702,9 +702,15 @@ int mpu_read_reg(unsigned char reg, unsigned char *data)
  *  @param[in]  int_param   Platform-specific parameters to interrupt API.
  *  @return     0 if successful.
  */
+#ifdef ADD_FOR_LINUX
 int mpu_init(void)
 {
+    unsigned char data[6];
+#else
+int mpu_init(int_param_s *int_param)
+{
     unsigned char data[6], rev;
+#endif
 
     /* Reset device. */
     data[0] = BIT_RESET;
@@ -750,6 +756,8 @@ int mpu_init(void)
     }
 #elif defined MPU6500
 #define MPU6500_MEM_REV_ADDR    (0x17)
+
+#ifndef ADD_FOR_LINUX
     if (mpu_read_mem(MPU6500_MEM_REV_ADDR, 1, &rev))
         return -1;
     if (rev == 0x1)
@@ -758,6 +766,7 @@ int mpu_init(void)
         log_e("Unsupported software product rev %d.\n", rev);
         return -1;
     }
+#endif
 
     /* MPU6500 shares 4kB of memory between the DMP and the FIFO. Since the
      * first 3kB are needed by the DMP, we'll use the last 1kB for the FIFO.
@@ -801,8 +810,10 @@ int mpu_init(void)
     if (mpu_configure_fifo(0))
         return -1;
 
-    // if (int_param)
-    //     reg_int_cb(int_param);
+#ifndef ADD_FOR_LINUX
+    if (int_param)
+        reg_int_cb(int_param);
+#endif
 
 #ifdef AK89xx_SECONDARY
     setup_compass();

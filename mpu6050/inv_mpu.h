@@ -22,8 +22,8 @@
 #define _INV_MPU_H_
 
 //模块类型
-#define MPU6050
-// #define MPU9250
+// #define MPU6050
+#define MPU9250
 
 //跟着这个宏走,就是这个库改动的地方
 #define ADD_FOR_LINUX
@@ -64,7 +64,11 @@ struct int_param_s {
 #define MPU_INT_STATUS_DMP_5            (0x2000)
 
 /* Set up APIs */
+#ifdef ADD_FOR_LINUX
 int mpu_init(void);
+#else
+int mpu_init(int_param_s *int_param);
+#endif
 int mpu_init_slave(void);
 int mpu_set_bypass(unsigned char bypass_on);
 

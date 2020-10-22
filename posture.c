@@ -78,7 +78,7 @@ void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
     double dVal[3];
-    short agVal[3], acVal[3];
+    short agVal[3], acVal[3], dirVal[3];
     PostureStruct *ps = (PostureStruct*)argv;
     //初始化mpu6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
@@ -88,7 +88,7 @@ void *pe_thread(void *argv)
     {
         DELAY_US(ps->intervalMs * 1000);
         // 采样
-        if (mpu6050_get(dVal, agVal, acVal) == 0)
+        if (mpu6050_get(dVal, agVal, acVal, dirVal) == 0)
         {
             // dmp库用4元素法得到的欧拉角(单位:rad)
             ps->rX = dVal[1];

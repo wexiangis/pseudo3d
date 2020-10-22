@@ -3,6 +3,12 @@
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 
+#ifdef MPU9250
+#include "i2c_transfer.h"
+#define i2c_write(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 1)
+#define i2c_read(slave_addr, reg_addr, length, data) i2c_default_rw(slave_addr, reg_addr, length, data, 0)
+#endif
+
 //q30格式,long转float时的除数.
 #define q30 1073741824.0f
 
@@ -87,10 +93,18 @@ unsigned short inv_orientation_matrix_to_scalar(const signed char *mtx)
 int mpu6050_init(unsigned short Hz, char test)
 {
     int res = 0;
+    // unsigned char data[1];
+
     //默认精度: gyro/2000 accel/2g
     if (mpu_init() == 0)
     {
+        // data[0] = 0x02;
+        // i2c_write(0x68, 0x37, 1, data);//turn on Bypass Mode
+#ifdef MPU6050
         res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置所需要的传感器
+#else
+        res = mpu_set_sensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS); //设置所需要的传感器
+#endif
         if (res)
             return 1;
         res = mpu_configure_fifo(INV_XYZ_GYRO | INV_XYZ_ACCEL); //设置FIFO
@@ -129,30 +143,34 @@ int mpu6050_init(unsigned short Hz, char test)
 }
 
 /*
- *  得到dmp处理后的数据(注意,本函数需要比较多堆栈,局部变量有点多)
- *  pitch:俯仰角 精度:0.1°   范围:-90.0° <---> +90.0°
- *  roll:横滚角  精度:0.1°   范围:-180.0°<---> +180.0°
- *  yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
+ *  得到dmp处理后的数据
+ *  pry:
+ *      pitch:俯仰角 精度:0.1°   范围:-90.0° <---> +90.0°
+ *      roll:横滚角  精度:0.1°   范围:-180.0°<---> +180.0°
+ *      yaw:航向角   精度:0.1°   范围:-180.0°<---> +180.0°
  *  返回值: 0/正常
  */
-int mpu6050_get(double *pry, short *gyro, short *accel)
+int mpu6050_get(double *pry, short *gyro, short *accel, short *dir)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
     short sensors;
     unsigned char more;
     long quat[4];
-
+#ifdef MPU9250
+    short _dir[3];
+#endif
     if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more))
         return 1;
-
     /* Gyro and accel data are written to the FIFO by the DMP in chip frame and hardware units.
 	 * This behavior is convenient because it keeps the gyro and accel outputs of dmp_read_fifo and mpu_read_fifo consistent.
 	**/
-    /*if (sensors & INV_XYZ_GYRO )
-	send_packet(PACKET_TYPE_GYRO, gyro);
-	if (sensors & INV_XYZ_ACCEL)
-	send_packet(PACKET_TYPE_ACCEL, accel); */
+#ifdef MPU9250
+    if(!dir)
+        mpu_get_compass_reg(dir, &sensor_timestamp);
+    else
+        mpu_get_compass_reg(_dir, &sensor_timestamp);
+#endif
     /* Unlike gyro and accel, quaternions are written to the FIFO in the body frame, q30.
 	 * The orientation is set by the scalar passed to dmp_set_orientation during initialization. 
 	**/

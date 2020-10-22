@@ -18,7 +18,7 @@
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
-#define MPU6050_INTERVALMS 5 //sample freq ms
+#define MPU6050_INTERVALMS 10 //sample freq ms
 #endif
 
 //采样间隔
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-#if 0
+#if 1
         wave_load(0, (short)(ps->rX * 10000));
         wave_load(1, (short)(ps->rY * 10000));
         wave_load(2, (short)(ps->rZ * 10000));
