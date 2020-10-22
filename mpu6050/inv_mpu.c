@@ -704,13 +704,11 @@ int mpu_read_reg(unsigned char reg, unsigned char *data)
  */
 #ifdef ADD_FOR_LINUX
 int mpu_init(void)
-{
-    unsigned char data[6];
 #else
 int mpu_init(int_param_s *int_param)
+#endif
 {
     unsigned char data[6], rev;
-#endif
 
     /* Reset device. */
     data[0] = BIT_RESET;
