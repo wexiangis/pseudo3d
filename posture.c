@@ -42,8 +42,11 @@
 #define MOV_SUN_FUN(new, old) \
 ((new - (new - old) / 2) * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
+static double xGErr = 0, yGErr = 0;
+
 void pe_inertial_navigation(PostureStruct *ps)
 {
+    double adj = 0.0001;
     double xSpe, ySpe, xG, yG;
     double vXYZ[3], rXYZ[3];
     //
@@ -52,18 +55,29 @@ void pe_inertial_navigation(PostureStruct *ps)
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    xG = vXYZ[0] / ACCEL_VAL_P_G;// * 0.5 + xG * 0.5;
-    yG = vXYZ[1] / ACCEL_VAL_P_G;// * 0.5 + yG * 0.5;
+    xG = (vXYZ[0] * 0.8 + ps->xG * 0.2) / ACCEL_VAL_P_G + xGErr;
+    yG = (vXYZ[1] * 0.8 + ps->yG * 0.2) / ACCEL_VAL_P_G + yGErr;
     //g值积分得到速度
     xSpe = ps->xSpe;
     ySpe = ps->ySpe;
     xSpe += SPE_SUN_FUN(xG, ps->xG) * 9.8;
     ySpe += SPE_SUN_FUN(yG, ps->yG) * 9.8;
-    ps->xG = xG;
-    ps->yG = yG;
     //速度积分得到移动距离
     ps->xMov += MOV_SUN_FUN(xSpe, ps->xSpe);
     ps->yMov += MOV_SUN_FUN(ySpe, ps->ySpe);
+    //
+    if (xG > adj) xGErr -= adj;
+    else if (xG < -adj) xGErr += adj;
+    if (yG > adj) yGErr -= adj;
+    else if (yG < -adj) yGErr += adj;
+    //
+    if (xG > 0) ps->tmp1 += 1;
+    else ps->tmp1 -= 1;
+    if (yG > 0) ps->tmp2 += 1;
+    else ps->tmp2 -= 1;
+    //bakup
+    ps->xG = xG;
+    ps->yG = yG;
     ps->xSpe = xSpe;
     ps->ySpe = ySpe;
 }
@@ -189,6 +203,7 @@ void pe_reset(PostureStruct *ps)
     ps->aX = ps->aY = ps->aZ = 0;
     ps->zErr -= ps->rZ;
     ps->xSpe = ps->ySpe = ps->xMov = ps->yMov = 0;
+    ps->tmp1 = ps->tmp2 = 0;
 }
 
 //获取罗盘角度(rad:[-pi, pi])

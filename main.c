@@ -18,11 +18,11 @@
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
-#define MPU6050_INTERVALMS 5 //sample freq ms
+#define MPU6050_INTERVALMS 10 //sample freq ms
 #endif
 
 //采样间隔
-#define INTERVALUS 25000 //screen freq us
+#define INTERVALUS 30000 //screen freq us
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -185,10 +185,11 @@ int main(int argc, char **argv)
         wave_load(2, ps->cZVal);
         wave_load(3, ps->temper);
 #else
-        wave_load(0, (short)(ps->xSpe * 10000));
-        wave_load(1, (short)(ps->ySpe * 10000));
-        wave_load(2, (short)(ps->xMov * 10000));
-        wave_load(3, (short)(ps->yMov * 10000));
+        wave_load(0, 10000);
+        wave_load(1, (short)(ps->xSpe * 10000) + 10000);
+        wave_load(2, (short)(ps->ySpe * 10000) + 10000);
+        wave_load(3, (short)(ps->xG * 50000) - 10000);
+        wave_load(4, (short)(ps->yG * 50000) - 10000);
 #endif
 
         wave_refresh();
@@ -214,12 +215,12 @@ int main(int argc, char **argv)
             ps->cXVal, ps->cYVal, ps->cZVal,
             ps->dir, ps->temper);
 #else
-        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f -- dir %.4f\r\n",
+        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f -- x/%d y/%d\r\n",
             ps->aG,
             ps->aXG, ps->aYG, ps->aZG,
             ps->xSpe, ps->ySpe,
             ps->xMov, ps->yMov,
-            ps->dir);
+            ps->tmp1, ps->tmp2);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->aXG * 100;
