@@ -181,8 +181,12 @@ int mpu6050_angle(double *pry, short *gyro, short *accel)
  */
 int mpu6050_compass(short *compass)
 {
+#ifndef MPU9250
+    return 0;
+#else
     unsigned long sensor_timestamp;
     return mpu_get_compass_reg(compass, &sensor_timestamp);
+#endif
 }
 
 /*

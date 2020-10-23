@@ -11,7 +11,7 @@
 #include "mpu6050.h"
 #include "pseudo3d.h"
 
-// 启用罗盘
+// 启用HMC5883罗盘
 #define PE_USE_HMC5883 0
 #if (PE_USE_HMC5883 != 0)
 #include "hmc5883.h"
@@ -28,17 +28,17 @@
 #define GYRO_SUM_FUN(new, old) \
 (((double)new - (double)(new - old) / 2) * ps->intervalMs / 1000 / GYRO_REDUCE_POW)
 
-// 速度积分矫正倍数
-#define SPE_REDUCE_POW 100
+// Speed积分矫正倍数
+#define SPE_REDUCE_POW 1
 
-// 速度积分得到移动距离(同上面 GYRO_SUM_FUN() )
+// Speed积分得到移动距离(同上面 GYRO_SUM_FUN() )
 #define SPE_SUN_FUN(new, old) \
 ((new - (new - old) / 2) * ps->intervalMs / 1000 / SPE_REDUCE_POW)
 
-// 速度积分矫正倍数
+// Mov积分矫正倍数
 #define MOV_REDUCE_POW 1
 
-// 速度积分得到移动距离(同上面 GYRO_SUM_FUN() )
+// Mov积分得到移动距离(同上面 GYRO_SUM_FUN() )
 #define MOV_SUN_FUN(new, old) \
 ((new - (new - old) / 2) * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
@@ -47,13 +47,13 @@ void pe_inertial_navigation(PostureStruct *ps)
     double xSpe, ySpe, xG, yG;
     double vXYZ[3], rXYZ[3];
     //
-    vXYZ[0] = ps->aXG; vXYZ[1] = ps->aYG; vXYZ[2] = ps->aZG;
+    vXYZ[0] = (double)ps->aXVal; vXYZ[1] = (double)ps->aYVal; vXYZ[2] = (double)ps->aZVal;
     rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    xG = vXYZ[0];// * 0.8 + xG * 0.2;
-    yG = vXYZ[1];// * 0.8 + yG * 0.2;
+    xG = vXYZ[0] / ACCEL_VAL_P_G;// * 0.5 + xG * 0.5;
+    yG = vXYZ[1] / ACCEL_VAL_P_G;// * 0.5 + yG * 0.5;
     //g值积分得到速度
     xSpe = ps->xSpe;
     ySpe = ps->ySpe;
@@ -89,6 +89,10 @@ void *pe_thread(void *argv)
             ps->rX = dVal[1];
             ps->rY = dVal[0];
             ps->rZ = dVal[2] + ps->zErr;
+            //
+            agVal[0] = -agVal[0];
+            agVal[1] = -agVal[1];
+            agVal[2] = -agVal[2];
         }
         // 累加角加速度得到角度值
         ps->gX += GYRO_SUM_FUN(agVal[0], ps->gXVal);

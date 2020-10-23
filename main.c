@@ -18,11 +18,11 @@
 #if (ENABLE_MPU6050)
 #include "posture.h"
 #include "wave.h"
-#define MPU6050_INTERVALMS 10 //sample freq ms
+#define MPU6050_INTERVALMS 5 //sample freq ms
 #endif
 
 //采样间隔
-#define INTERVALUS 50000 //screen freq us
+#define INTERVALUS 25000 //screen freq us
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -179,17 +179,16 @@ int main(int argc, char **argv)
         wave_load(3, (short)(ps->aX * 10000));
         wave_load(4, (short)(ps->aY * 10000));
         wave_load(5, (short)(ps->aZ * 10000));
-#elif 1
+#elif 0
         wave_load(0, ps->cXVal);
         wave_load(1, ps->cYVal);
         wave_load(2, ps->cZVal);
         wave_load(3, ps->temper);
 #else
-        wave_load(0, (short)(ps->aG * 50000));
-        //wave_load(1, (short)(ps->xG * 50000));
-        //wave_load(2, (short)(ps->yG * 50000));
-        wave_load(3, (short)(ps->xSpe * 10000));
-        wave_load(4, (short)(ps->ySpe * 10000));
+        wave_load(0, (short)(ps->xSpe * 10000));
+        wave_load(1, (short)(ps->ySpe * 10000));
+        wave_load(2, (short)(ps->xMov * 10000));
+        wave_load(3, (short)(ps->yMov * 10000));
 #endif
 
         wave_refresh();
@@ -210,7 +209,7 @@ int main(int argc, char **argv)
             ps->aX, ps->aY, ps->aZ,
             ps->gX, ps->gY, ps->gZ,
             ps->dir);
-#elif 1
+#elif 0
         printf("dir x/%04d y%04d z%04d %.4lf -- tmp %ld \r\n",
             ps->cXVal, ps->cYVal, ps->cZVal,
             ps->dir, ps->temper);

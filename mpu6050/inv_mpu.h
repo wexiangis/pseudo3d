@@ -22,8 +22,8 @@
 #define _INV_MPU_H_
 
 //模块类型
-// #define MPU6050
-#define MPU9250
+#define MPU6050
+//#define MPU9250
 
 //跟着这个宏走,就是这个库改动的地方
 #define ADD_FOR_LINUX
