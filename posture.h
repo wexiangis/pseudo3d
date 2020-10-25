@@ -41,8 +41,6 @@ typedef struct
     double xSpe, ySpe;
     //空间坐标系下的横纵向偏移距离(单位:m)
     double xMov, yMov;
-    //
-    int tmp1, tmp2;
 } PostureStruct;
 
 /*

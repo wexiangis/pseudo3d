@@ -188,8 +188,9 @@ int main(int argc, char **argv)
         wave_load(0, 10000);
         wave_load(1, (short)(ps->xSpe * 10000) + 10000);
         wave_load(2, (short)(ps->ySpe * 10000) + 10000);
-        wave_load(3, (short)(ps->xG * 50000) - 10000);
-        wave_load(4, (short)(ps->yG * 50000) - 10000);
+        wave_load(3, -10000);
+        wave_load(4, (short)(ps->xG * 50000) - 10000);
+        wave_load(5, (short)(ps->yG * 50000) - 10000);
 #endif
 
         wave_refresh();
@@ -215,12 +216,10 @@ int main(int argc, char **argv)
             ps->cXVal, ps->cYVal, ps->cZVal,
             ps->dir, ps->temper);
 #else
-        printf("G/%.4f -- g x/%.4f y/%.4f z/%.4f -- spe x/%.4f y/%.4f -- mov x/%.4f y/%.4f -- x/%d y/%d\r\n",
-            ps->aG,
-            ps->aXG, ps->aYG, ps->aZG,
+        printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f\r\n",
+            ps->aG, ps->xG, ps->yG,
             ps->xSpe, ps->ySpe,
-            ps->xMov, ps->yMov,
-            ps->tmp1, ps->tmp2);
+            ps->xMov, ps->yMov);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->aXG * 100;
