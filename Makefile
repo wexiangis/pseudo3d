@@ -20,6 +20,8 @@ obj-c += fbmap.c
 obj-c += wave.c
 # 根据MPU6050数据计算姿态
 obj-c += posture.c
+# 
+obj-c += dot.c
 
 # MPU6050 驱动
 obj-c += mpu6050/mpu6050.c

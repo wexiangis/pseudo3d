@@ -36,11 +36,13 @@ typedef struct
     //各轴受力及合力(单位:g)
     double aXG, aYG, aZG, aG;
     //空间坐标系下的横纵向g值(单位:g)
-    double xG, yG;
+    double xG, yG, xyG;
+    double rad;
     //空间坐标系下的横纵向速度(单位:m/s)
     double xSpe, ySpe;
     //空间坐标系下的横纵向偏移距离(单位:m)
     double xMov, yMov;
+    int tt[4];
 } PostureStruct;
 
 /*

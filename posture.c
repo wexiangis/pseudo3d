@@ -10,6 +10,7 @@
 #include "delayus.h"
 #include "mpu6050.h"
 #include "pseudo3d.h"
+#include "dot.h"
 
 // 启用HMC5883罗盘
 #define PE_USE_HMC5883 0
@@ -50,13 +51,13 @@ void pe_inertial_navigation(PostureStruct *ps)
     double xSpe, ySpe, xG, yG;
     double vXYZ[3], rXYZ[3];
     //
-    vXYZ[0] = (double)ps->aXVal; vXYZ[1] = (double)ps->aYVal; vXYZ[2] = (double)ps->aZVal;
+    vXYZ[0] = ps->aXG; vXYZ[1] = ps->aYG; vXYZ[2] = ps->aZG;
     rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    xG = vXYZ[0] / ACCEL_VAL_P_G + xGErr;
-    yG = vXYZ[1] / ACCEL_VAL_P_G + yGErr;
+    xG = vXYZ[0] + xGErr;
+    yG = vXYZ[1] + yGErr;
     // adjust
     if (xG > err) xGErr -= err;
     else if (xG < -err) xGErr += err;
@@ -75,6 +76,22 @@ void pe_inertial_navigation(PostureStruct *ps)
     ps->yG = yG;
     ps->xSpe = xSpe;
     ps->ySpe = ySpe;
+    //
+    dot_set(xG, 0, 0xFF0000);
+    dot_set(0, yG, 0x0000FF);
+    dot_set(xG, yG, 0xFFFF00);
+    if (xG > 0) {
+        if (yG > 0)
+            ps->tt[0] += 1;
+        else
+            ps->tt[2] += 1;
+    }
+    else {
+        if (yG > 0)
+            ps->tt[1] += 1;
+        else
+            ps->tt[3] += 1;
+    }
 }
 
 //复位(重置计算值)
@@ -84,6 +101,8 @@ void pe_reset(PostureStruct *ps)
     ps->aX = ps->aY = ps->aZ = 0;
     ps->zErr -= ps->rZ;
     ps->xSpe = ps->ySpe = ps->xMov = ps->yMov = 0;
+    dot_clear();
+    ps->tt[0] = ps->tt[1] = ps->tt[2] = ps->tt[3] = 0;
 }
 
 void *pe_thread(void *argv)

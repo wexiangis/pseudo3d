@@ -12,6 +12,7 @@
 #include "delayus.h"
 #include "pseudo3d.h"
 #include "view.h"
+#include "dot.h"
 
 //使用陀螺仪模块
 #define ENABLE_MPU6050 1
@@ -194,6 +195,7 @@ int main(int argc, char **argv)
 #endif
 
         wave_refresh();
+        dot_refresh();
 
         dpat1->raxyz[0] = ps->rX;
         dpat1->raxyz[1] = ps->rY;
@@ -216,10 +218,11 @@ int main(int argc, char **argv)
             ps->cXVal, ps->cYVal, ps->cZVal,
             ps->dir, ps->temper);
 #else
-        printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f\r\n",
+        printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f -- %03d %03d %03d %03d\r\n",
             ps->aG, ps->xG, ps->yG,
             ps->xSpe, ps->ySpe,
-            ps->xMov, ps->yMov);
+            ps->xMov, ps->yMov,
+            ps->tt[0], ps->tt[1], ps->tt[2], ps->tt[3]);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->aXG * 100;

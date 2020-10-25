@@ -3,13 +3,12 @@
  */
 #include <stdlib.h>
 #include <string.h>
-
 #include "fbmap.h"
 
 #define WAVE_CHN 9
 #define WAVE_Y_OFFSET 320
 
-static FbMap *fbmap;
+static FbMap *wave_fbmap = NULL;
 
 static int wave_width = 100;
 static int wave_height = 100;
@@ -35,14 +34,14 @@ const char wave_color[WAVE_CHN][3] = {
 static void wav_init()
 {
     int i;
-    if (fbmap)
+    if (wave_fbmap)
         return;
 
-    fbmap = fb_init(0, WAVE_Y_OFFSET);
-    if (!fbmap)
+    wave_fbmap = fb_init(0, WAVE_Y_OFFSET);
+    if (!wave_fbmap)
         return;
-    wave_width = fbmap->fbInfo.xres;
-    wave_height = fbmap->fbInfo.yres - WAVE_Y_OFFSET;
+    wave_width = wave_fbmap->fbInfo.xres;
+    wave_height = wave_fbmap->fbInfo.yres - WAVE_Y_OFFSET;
     wave_height_half = wave_height / 2;
     wave_data_size = wave_width * wave_height * 3;
 
@@ -121,7 +120,7 @@ void wave_load(int chn, short value)
         return;
 
     wav_init();
-    if (!fbmap)
+    if (!wave_fbmap)
         return;
 
     wave_chn[chn][wave_refresh_count] = value;
@@ -132,7 +131,7 @@ void wave_refresh(void)
     int i, j, x, y, ox = 0, oy = 0;
 
     wav_init();
-    if (!fbmap)
+    if (!wave_fbmap)
         return;
 
     memset(wave_data, 0, wave_data_size);
@@ -161,7 +160,7 @@ void wave_refresh(void)
     }
 
     // draw
-    fb_refresh(fbmap, wave_data, wave_width, wave_height, 3);
+    fb_refresh(wave_fbmap, wave_data, wave_width, wave_height, 3);
 
     wave_refresh_count += 1;
     if (wave_refresh_count >= wave_width)
