@@ -1,16 +1,19 @@
 /*
- *  自制简易版示波器,图像输出到fb0
+ *  屏幕打点工具,用来展示采样点的宏观分布情况
  */
 #include <stdlib.h>
 #include <string.h>
 #include "dot.h"
 #include "fbmap.h"
 
+//画布在屏幕的起始位置
 #define DOT_X_OFFSET 0
 #define DOT_Y_OFFSET 0
 
+//画布长高
 static int dot_x_size = 320;
 static int dot_y_size = 320;
+
 static int dot_x_half = 0;
 static int dot_y_half = 0;
 

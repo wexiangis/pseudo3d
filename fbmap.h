@@ -22,6 +22,7 @@ typedef struct
 } FbMap;
 
 FbMap *fb_init(int xOffset, int yOffset);
+
 void fb_release(FbMap *fb);
 
 void fb_refresh(FbMap *fb, unsigned char *data, int width, int height, int per);
