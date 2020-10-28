@@ -177,21 +177,21 @@ int main(int argc, char **argv)
         wave_load(0, (short)(ps->rX * 10000));
         wave_load(1, (short)(ps->rY * 10000));
         wave_load(2, (short)(ps->rZ * 10000));
-        wave_load(3, (short)(ps->aX * 10000));
-        wave_load(4, (short)(ps->aY * 10000));
-        wave_load(5, (short)(ps->aZ * 10000));
+        wave_load(3, (short)(ps->rAX * 10000));
+        wave_load(4, (short)(ps->rAY * 10000));
+        wave_load(5, (short)(ps->rAZ * 10000));
 #elif 0
-        wave_load(0, ps->cXVal);
-        wave_load(1, ps->cYVal);
-        wave_load(2, ps->cZVal);
+        wave_load(0, ps->vCX);
+        wave_load(1, ps->vCY);
+        wave_load(2, ps->vCZ);
         wave_load(3, ps->temper);
 #else
         wave_load(0, 10000);
-        wave_load(1, (short)(ps->xSpe * 10000) + 10000);
-        wave_load(2, (short)(ps->ySpe * 10000) + 10000);
+        wave_load(1, (short)(ps->speX * 10000) + 10000);
+        wave_load(2, (short)(ps->speY * 10000) + 10000);
         wave_load(3, -10000);
-        wave_load(4, (short)(ps->xG * 50000) - 10000);
-        wave_load(5, (short)(ps->yG * 50000) - 10000);
+        wave_load(4, (short)(ps->gX * 50000) - 10000);
+        wave_load(5, (short)(ps->gY * 50000) - 10000);
 #endif
 
         wave_refresh();
@@ -200,34 +200,32 @@ int main(int argc, char **argv)
         dpat1->raxyz[0] = ps->rX;
         dpat1->raxyz[1] = ps->rY;
         dpat1->raxyz[2] = ps->rZ;
-        dpat2->raxyz[0] = ps->aX;
-        dpat2->raxyz[1] = ps->aY;
-        dpat2->raxyz[2] = ps->aZ;
-        dpat3->raxyz[0] = ps->gX;
-        dpat3->raxyz[1] = ps->gY;
-        dpat3->raxyz[2] = ps->gZ;
+        dpat2->raxyz[0] = ps->rAX;
+        dpat2->raxyz[1] = ps->rAY;
+        dpat2->raxyz[2] = ps->rAZ;
+        dpat3->raxyz[0] = ps->rGX;
+        dpat3->raxyz[1] = ps->rGY;
+        dpat3->raxyz[2] = ps->rGZ;
 
 #if 0
-        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f -- dir %.4f\r\n",
+        printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f \r\n",
             ps->rX, ps->rY, ps->rZ,
-            ps->aX, ps->aY, ps->aZ,
-            ps->gX, ps->gY, ps->gZ,
-            ps->dir);
+            ps->rAX, ps->rAY, ps->rAZ,
+            ps->rGX, ps->rGY, ps->rGZ);
 #elif 0
-        printf("dir x/%04d y%04d z%04d %.4lf -- tmp %ld \r\n",
-            ps->cXVal, ps->cYVal, ps->cZVal,
-            ps->dir, ps->temper);
+        printf("dir x/%04d y%04d z%04d -- tmp %ld \r\n",
+            ps->vCX, ps->vCY, ps->vCZ, ps->temper);
 #else
         printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f -- %03d %03d %03d %03d\r\n",
-            ps->aG, ps->xG, ps->yG,
-            ps->xSpe, ps->ySpe,
-            ps->xMov, ps->yMov,
+            ps->gXYZ, ps->gX, ps->gY,
+            ps->speX, ps->speY,
+            ps->movX, ps->movY,
             ps->tt[0], ps->tt[1], ps->tt[2], ps->tt[3]);
 #endif
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
-        xyz[0] = -ps->aXG * 100;
-        xyz[1] = -ps->aYG * 100;
-        xyz[2] = -ps->aZG * 100;
+        xyz[0] = -ps->vAX2 * 100;
+        xyz[1] = -ps->vAY2 * 100;
+        xyz[2] = -ps->vAZ2 * 100;
         p3d_matrix_zyx(dpat1->raxyz, xyz);
 #else
         //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
@@ -246,7 +244,6 @@ int main(int argc, char **argv)
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
         p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
         p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
-
         p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, 0xFF8000, xyz);
 
         PRINT_EN();

@@ -1179,7 +1179,7 @@ void view_string_rectangle(long fColor, long bColor, char *str, int xStart, int 
 //返回: 无
 int view_string_rectangleCR(long fColor, long bColor, char *str, int xStart, int yStart, int strWidth, int strHight, int xScreenStart, int yScreenStart, int xScreenEnd, int yScreenEnd, int type, int space, int xErr, int printMode)
 {
-    int xMov = xErr;
+    int movX = xErr;
     int ret, strCount = 0, retVal = xErr;
     unsigned char buf[512] = {0};
     unsigned int bufLen = 0;
@@ -1206,7 +1206,7 @@ int view_string_rectangleCR(long fColor, long bColor, char *str, int xStart, int
     else
         bp = NULL;
     //
-    while (xMov < strWidth)
+    while (movX < strWidth)
     {
         memset(buf, 0, sizeof(buf));
         ret = gbk_getArrayByUtf8((unsigned char *)&str[strCount], buf, &bufLen, type); //为ascii字符时ret=1, 为中文时ret=3
@@ -1216,19 +1216,19 @@ int view_string_rectangleCR(long fColor, long bColor, char *str, int xStart, int
         {
             retWidth = bufLen * 8 / (type / 10);
             //printf("%s ret = %d, bufLen = %d, retWidth = %d\r\n", str, ret, bufLen, retWidth);
-            if (xMov + retWidth > 0)
-                view_string_print2(fp, bp, buf, bufLen, retWidth, xStart + xMov, yStart, xScreenStart, yScreenStart, xScreenEnd, yScreenEnd, printMode);
-            xMov += (retWidth + space);
+            if (movX + retWidth > 0)
+                view_string_print2(fp, bp, buf, bufLen, retWidth, xStart + movX, yStart, xScreenStart, yScreenStart, xScreenEnd, yScreenEnd, printMode);
+            movX += (retWidth + space);
             strCount += ret; //到当前为止总的字节数    //为ascii字符时ret=1, 为中文时ret=3
         }
         //
         if (str[strCount] == '\0') //字符串内容循环输出
         {
             //自动填充空格分开字符串
-            xMov += (type / 10 + space);
+            movX += (type / 10 + space);
             //
-            if (xMov <= 0)     //字符串遍历完还未抵达开始绘制的位置
-                retVal = xMov; //返回此次绘制的偏差值, 以便后续无缝衔接
+            if (movX <= 0)     //字符串遍历完还未抵达开始绘制的位置
+                retVal = movX; //返回此次绘制的偏差值, 以便后续无缝衔接
             strCount = 0;
         }
     }
@@ -1251,7 +1251,7 @@ int view_string_rectangleCR(long fColor, long bColor, char *str, int xStart, int
 int view_string_rectangleMultiLine(long fColor, long bColor, char *str, int *xStart, int *yStart, int *strWidth, int *strHight, int type, int space, int lineNum, int *retLineCharNum, int printMode)
 {
     int i, ret, retWidth, retVal = 0;
-    int xMov = 0, strCount = 0;
+    int movX = 0, strCount = 0;
     unsigned char buf[512] = {0};
     unsigned int bufLen = 0;
     unsigned char fCol[8], bCol[8], *fp, *bp;
@@ -1291,18 +1291,18 @@ int view_string_rectangleMultiLine(long fColor, long bColor, char *str, int *xSt
             else
                 retWidth = typeSize;
             //
-            if (xMov + retWidth > strWidth[lineCount])
+            if (movX + retWidth > strWidth[lineCount])
             {
                 if (retLineCharNum)
                     retLineCharNum[lineCount] = lineStrCount;
-                xMov = 0;
+                movX = 0;
                 lineStrCount = 0;
                 lineCount += 1;
                 if (lineCount >= lineNum)
                     break;
             }
             else
-                xMov += (retWidth + space);
+                movX += (retWidth + space);
             //
             ret = -1;
         }
@@ -1318,22 +1318,22 @@ int view_string_rectangleMultiLine(long fColor, long bColor, char *str, int *xSt
         {
             retWidth = bufLen * 8 / typeSize;
             //printf("%s ret = %d, bufLen = %d, retWidth = %d\r\n", str, ret, bufLen, retWidth);
-            if (xMov + retWidth > strWidth[lineCount])
+            if (movX + retWidth > strWidth[lineCount])
             {
                 //如果需要, 返回每行实际填充的字节数(由于ascii和中文前者占1字节后者3字节, 这里每行占用的字节数不能用行宽度除以字节宽度来计算!!!)
                 if (retLineCharNum)
                     retLineCharNum[lineCount] = lineStrCount;
                 //行起始偏移量清零
-                xMov = 0;
+                movX = 0;
                 lineStrCount = 0;
                 //行数加+1
                 lineCount += 1;
                 if (lineCount >= lineNum)
                     break;
             }
-            view_string_print2(fp, bp, buf, bufLen, retWidth, xStart[lineCount] + xMov, yStart[lineCount], xStart[lineCount], yStart[lineCount], xStart[lineCount] + strWidth[lineCount], yStart[lineCount] + strHight[lineCount], printMode);
+            view_string_print2(fp, bp, buf, bufLen, retWidth, xStart[lineCount] + movX, yStart[lineCount], xStart[lineCount], yStart[lineCount], xStart[lineCount] + strWidth[lineCount], yStart[lineCount] + strHight[lineCount], printMode);
             //
-            xMov += (retWidth + space); //行起始偏移量 = 字符实际宽度 + 使用的空格像素
+            movX += (retWidth + space); //行起始偏移量 = 字符实际宽度 + 使用的空格像素
             strCount += ret;            //到当前为止总的字节数    //为ascii字符时ret=1, 为中文时ret=3
             lineStrCount += ret;        //每行字节数的备份
         }
