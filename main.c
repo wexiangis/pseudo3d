@@ -24,7 +24,7 @@
 #endif
 
 //采样间隔
-#define INTERVALUS 30000 //screen freq us
+#define INTERVALUS 20000 //screen freq us
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
     ds = dot_init(
         fb_width - VIEW_X_SIZE, VIEW_Y_SIZE,
         VIEW_X_SIZE, fb_height - VIEW_Y_SIZE,
-        -3.14, 3.14, -3.14, 3.14);
+        -1.5, 1.5, -1.5, 1.5);
 #endif
 
     while (1)

@@ -41,7 +41,7 @@ void dot_set(Dot_Struct *ds, double x, double y, int color)
     int _x, _y;
     if (!ds)
         return;
-    _x = (int)((x - ds->xMin) * ds->width / (ds->xMax - ds->xMax));
+    _x = (int)((x - ds->xMin) * ds->width / (ds->xMax - ds->xMin));
     _y = (int)((y - ds->yMin) * ds->height / (ds->yMax - ds->yMin));
     if (_x < 0)
         _x = 0;
