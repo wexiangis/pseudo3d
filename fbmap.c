@@ -11,79 +11,125 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <linux/fb.h>
 
-#include "fbmap.h"
 #define FB_PATH "/dev/fb0"
 
-void fb_release(FbMap *fb)
+typedef struct
 {
-    if (!fb)
+    int fd;
+    unsigned char *fb;
+    size_t fbSize;
+    struct fb_var_screeninfo fbInfo;
+    //bytes per point
+    int bpp;
+    //bytes width, height
+    int bw, bh;
+} FbMap;
+
+static FbMap *fbmap = NULL;
+int fb_width = 1024, fb_height = 600;
+
+void fb_release(void)
+{
+    if (!fbmap)
         return;
-    if (fb->fb)
-        munmap(fb->fb, fb->fbSize);
-    if (fb->fd > 0)
-        close(fb->fd);
-    free(fb);
-    fb = NULL;
+    if (fbmap->fb)
+        munmap(fbmap->fb, fbmap->fbSize);
+    if (fbmap->fd > 0)
+        close(fbmap->fd);
+    free(fbmap);
+    fbmap = NULL;
 }
 
-FbMap *fb_init(int xOffset, int yOffset)
+//返回0正常
+int fb_init(void)
 {
-    FbMap *fb = (FbMap *)calloc(1, sizeof(FbMap));
+    if (fbmap)
+        return 0;
 
-    fb->xOffset = xOffset;
-    fb->yOffset = yOffset;
+    fbmap = (FbMap *)calloc(1, sizeof(FbMap));
 
-    fb->fd = open(FB_PATH, O_RDWR);
-    if (fb->fd < 1)
+    fbmap->fd = open(FB_PATH, O_RDWR);
+    if (fbmap->fd < 1)
     {
         fprintf(stderr, "fb_init: open %s err \r\n", FB_PATH);
-        fb_release(fb);
-        return NULL;
+        fb_release();
+        return -1;
     }
 
-    if (ioctl(fb->fd, FBIOGET_VSCREENINFO, &fb->fbInfo) < 0)
+    if (ioctl(fbmap->fd, FBIOGET_VSCREENINFO, &fbmap->fbInfo) < 0)
     {
         fprintf(stderr, "fb_init: ioctl FBIOGET_VSCREENINFO err \r\n");
-        fb_release(fb);
-        return NULL;
+        fb_release();
+        return -1;
     }
     printf("frameBuffer: %s, %d x %d, %dbytes / %dbpp\r\n",
-           FB_PATH, fb->fbInfo.xres, fb->fbInfo.yres, fb->fbInfo.bits_per_pixel / 8, fb->fbInfo.bits_per_pixel);
+           FB_PATH, fbmap->fbInfo.xres, fbmap->fbInfo.yres, fbmap->fbInfo.bits_per_pixel / 8, fbmap->fbInfo.bits_per_pixel);
 
-    fb->bpp = fb->fbInfo.bits_per_pixel / 8;
-    fb->bw = fb->bpp * fb->fbInfo.xres;
-    fb->bh = fb->bpp * fb->fbInfo.yres;
-    fb->fbSize = fb->fbInfo.xres * fb->fbInfo.yres * fb->bpp;
+    fbmap->bpp = fbmap->fbInfo.bits_per_pixel / 8;
+    fbmap->bw = fbmap->bpp * fbmap->fbInfo.xres;
+    fbmap->bh = fbmap->bpp * fbmap->fbInfo.yres;
+    fbmap->fbSize = fbmap->fbInfo.xres * fbmap->fbInfo.yres * fbmap->bpp;
 
-    fb->fb = (unsigned char *)mmap(0, fb->fbSize, PROT_READ | PROT_WRITE, MAP_SHARED, fb->fd, 0);
-    if (!fb->fb)
+    fb_width = fbmap->fbInfo.xres;
+    fb_height = fbmap->fbInfo.yres;
+
+    fbmap->fb = (unsigned char *)mmap(0, fbmap->fbSize, PROT_READ | PROT_WRITE, MAP_SHARED, fbmap->fd, 0);
+    if (!fbmap->fb)
     {
-        fprintf(stderr, "fb_init: mmap size %ld err \r\n", fb->fbSize);
-        fb_release(fb);
-        return NULL;
+        fprintf(stderr, "fb_init: mmap size %ld err \r\n", fbmap->fbSize);
+        fb_release();
+        return -1;
     }
-    return fb;
+
+    return 0;
 }
 
-void fb_refresh(FbMap *fb, unsigned char *data, int width, int height, int per)
+/*
+ *  屏幕输出
+ *  data: 图像数组,数据长度必须为 width*height*3, RGB格式
+ *  offsetX, offsetY: 屏幕起始位置
+ *  width, height: 图像宽高
+ */
+void fb_output(unsigned char *data, int offsetX, int offsetY, int width, int height)
 {
-    int x, y, offset, bmpCount;
-
-    if (!fb)
+    int x, y, offset;
+    //初始化检查
+    if (fb_init())
         return;
-
-    bmpCount = 0;
+    //起始坐标限制
+    if (offsetX < 0)
+        offsetX = 0;
+    else if (offsetX >= fbmap->fbInfo.xres)
+        return;
+    if (offsetY < 0)
+        offsetY = 0;
+    else if (offsetY >= fbmap->fbInfo.yres)
+        return;
+    //范围限制
+    if (width < 1)
+        return;
+    else if (offsetX + width - 1 >= fbmap->fbInfo.xres)
+        width = fbmap->fbInfo.xres - offsetX;
+    if (height < 1)
+        return;
+    else if (offsetY + height - 1 >= fbmap->fbInfo.yres)
+        height = fbmap->fbInfo.yres - offsetY;
+    //覆盖画图
     for (y = 0; y < height; y++)
     {
-        offset = (y + fb->yOffset) * fb->bw + (0 + fb->xOffset) * fb->bpp;
+        //当前行在fb数据的偏移
+        offset = (y + offsetY) * fbmap->bw + (0 + offsetX) * fbmap->bpp;
+        //画data中的一行数据
         for (x = 0; x < width; x++)
         {
-            fb->fb[offset + 3] = 0x00;             //A
-            fb->fb[offset + 2] = data[bmpCount++]; //R
-            fb->fb[offset + 1] = data[bmpCount++]; //G
-            fb->fb[offset + 0] = data[bmpCount++]; //B
-            offset += fb->bpp;
+            if (fbmap->bpp == 4)
+                fbmap->fb[offset + 3] = 0x00; //A
+            fbmap->fb[offset + 2] = *data++;  //R
+            fbmap->fb[offset + 1] = *data++;  //G
+            fbmap->fb[offset + 0] = *data++;  //B
+            offset += fbmap->bpp;
         }
     }
 }

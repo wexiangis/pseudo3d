@@ -6,63 +6,69 @@
 #include "dot.h"
 #include "fbmap.h"
 
-//画布在屏幕的起始位置
-#define DOT_X_OFFSET 0
-#define DOT_Y_OFFSET 0
-
-//画布长高
-static int dot_x_size = 320;
-static int dot_y_size = 320;
-
-static int dot_x_half = 0;
-static int dot_y_half = 0;
-
-static FbMap *dot_fbmap = NULL;
-static unsigned char *dot_data;
-static int dot_data_size = 0;
-
-void dot_init(void)
+Dot_Struct *dot_init(int xOffset, int yOffset, int width, int height, double xMin, double xMax, double yMin, double yMax)
 {
-    if(dot_fbmap)
-        return;
-    dot_fbmap = fb_init(DOT_X_OFFSET, DOT_Y_OFFSET);
-    if (!dot_fbmap)
-        return;
-    if (dot_x_size > dot_fbmap->fbInfo.xres - DOT_X_OFFSET)
-        dot_x_size = dot_fbmap->fbInfo.xres - DOT_X_OFFSET;
-    if (dot_y_size > dot_fbmap->fbInfo.yres - DOT_Y_OFFSET)
-        dot_y_size = dot_fbmap->fbInfo.yres - DOT_Y_OFFSET;
-    dot_x_half = dot_x_size / 2;
-    dot_y_half = dot_y_size / 2;
-    dot_data_size = dot_x_size * dot_y_size * 3;
-    dot_data = (unsigned char*)calloc(dot_data_size, sizeof(unsigned char));
+    Dot_Struct *ds = (Dot_Struct *)calloc(1, sizeof(Dot_Struct));
+    ds->xOffset = xOffset;
+    ds->yOffset = yOffset;
+    ds->width = width;
+    ds->height = height;
+    ds->xMin = xMin;
+    ds->xMax = xMax;
+    ds->yMin = yMin;
+    ds->yMax = yMax;
+    ds->map_size = width * height * 3;
+    ds->map = (unsigned char *)calloc(ds->map_size, sizeof(char));
+    return ds;
 }
 
-void dot_set(double x, double y, int color)
+void dot_release(Dot_Struct **ds)
+{
+    if (!ds)
+        return;
+    if (*ds)
+    {
+        if ((*ds)->map)
+            free((*ds)->map);
+        free(*ds);
+        *ds = NULL;
+    }
+}
+
+void dot_set(Dot_Struct *ds, double x, double y, int color)
 {
     int offset = 0;
-    int _x = (int)((x - DOT_X_RANGE_START) * dot_x_size / (DOT_X_RANGE_END - DOT_X_RANGE_START));
-    int _y = (int)((y - DOT_Y_RANGE_START) * dot_y_size / (DOT_Y_RANGE_END - DOT_Y_RANGE_START));
-    if (_x < 0) _x = 0;
-    else if(_x >= dot_x_size) _x = dot_x_size - 1;
-    if (_y < 0) _y = 0;
-    else if(_y >= dot_y_size) _y = dot_y_size - 1;
-    offset = (_y * dot_x_size + _x) * 3;
-    dot_data[offset] = (((color >> 16) & 0xFF) >> 1) + (dot_data[offset] >> 1);
+    int _x, _y;
+    if (!ds)
+        return;
+    _x = (int)((x - ds->xMin) * ds->width / (ds->xMax - ds->xMax));
+    _y = (int)((y - ds->yMin) * ds->height / (ds->yMax - ds->yMin));
+    if (_x < 0)
+        _x = 0;
+    else if (_x >= ds->width)
+        _x = ds->width - 1;
+    if (_y < 0)
+        _y = 0;
+    else if (_y >= ds->height)
+        _y = ds->height - 1;
+    offset = (_y * ds->width + _x) * 3;
+    ds->map[offset] = (((color >> 16) & 0xFF) >> 1) + (ds->map[offset] >> 1);
     offset += 1;
-    dot_data[offset] = (((color >> 8) & 0xFF) >> 1) + (dot_data[offset] >> 1);
+    ds->map[offset] = (((color >> 8) & 0xFF) >> 1) + (ds->map[offset] >> 1);
     offset += 1;
-    dot_data[offset] = (((color >> 0) & 0xFF) >> 1) + (dot_data[offset] >> 1);
+    ds->map[offset] = (((color >> 0) & 0xFF) >> 1) + (ds->map[offset] >> 1);
 }
 
-void dot_clear(void)
+void dot_clear(Dot_Struct *ds)
 {
-    dot_init();
-    memset(dot_data, 0, dot_data_size);
+    if (!ds)
+        return;
+    memset(ds->map, 0, ds->map_size);
 }
 
-void dot_refresh(void)
+void dot_output(Dot_Struct *ds)
 {
-    dot_init();
-    fb_refresh(dot_fbmap, dot_data, dot_x_size, dot_y_size, 3);
+    if (!ds)
+        return;
+    fb_output(ds->map, ds->xOffset, ds->yOffset, ds->width, ds->height);
 }

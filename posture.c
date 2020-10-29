@@ -10,7 +10,6 @@
 #include "delayus.h"
 #include "mpu6050.h"
 #include "pseudo3d.h"
-#include "dot.h"
 
 // 启用HMC5883罗盘
 #define PE_USE_HMC5883 0
@@ -101,10 +100,6 @@ void pe_accel(PostureStruct *ps, short *valA)
 #endif
     // 合受力(单位:g)
     ps->gXYZ = sqrt(ps->vAX2 * ps->vAX2 + ps->vAY2 * ps->vAY2 + ps->vAZ2 * ps->vAZ2);
-    //
-    dot_set(ps->gX, 0, 0xFF0000);
-    dot_set(0, ps->gY, 0x0000FF);
-    dot_set(ps->gX, ps->gY, 0xFFFF00);
 }
 
 void pe_gyro(PostureStruct *ps, short *valG)
@@ -195,7 +190,6 @@ void pe_reset(PostureStruct *ps)
     ps->aX = ps->aY = 0;
     ps->speX = ps->speY = 0;
     ps->movX = ps->movY = 0;
-    dot_clear();
     ps->tt[0] = ps->tt[1] = ps->tt[2] = ps->tt[3] = 0;
 }
 

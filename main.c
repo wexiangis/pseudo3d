@@ -12,12 +12,13 @@
 #include "delayus.h"
 #include "pseudo3d.h"
 #include "view.h"
-#include "dot.h"
 
 //使用陀螺仪模块
 #define ENABLE_MPU6050 1
 #if (ENABLE_MPU6050)
 #include "posture.h"
+#include "fbmap.h"
+#include "dot.h"
 #include "wave.h"
 #define MPU6050_INTERVALMS 10 //sample freq ms
 #endif
@@ -41,6 +42,10 @@ int main(int argc, char **argv)
 #if (ENABLE_MPU6050)
     //姿态结构体
     PostureStruct *ps;
+    //示波器2个
+    Wave_Struct *ws1, *ws2;
+    //打点器1个
+    Dot_Struct *ds;
 #endif
 
     // open console
@@ -166,6 +171,14 @@ int main(int argc, char **argv)
 #if (ENABLE_MPU6050)
     //初始化姿态计算器
     ps = pe_init(MPU6050_INTERVALMS);
+    //示波器初始化(上、下半屏)
+    ws1 = wave_init(0, 0, fb_width - VIEW_X_SIZE, fb_height / 2);
+    ws2 = wave_init(0, fb_height / 2, fb_width - VIEW_X_SIZE, fb_height / 2);
+    //打点器初始化(在姿态图像下方)
+    ds = dot_init(
+        fb_width - VIEW_X_SIZE, VIEW_Y_SIZE,
+        VIEW_X_SIZE, fb_height - VIEW_Y_SIZE,
+        -3.14, 3.14, -3.14, 3.14);
 #endif
 
     while (1)
@@ -173,29 +186,27 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-#if 0
-        wave_load(0, (short)(ps->rX * 10000));
-        wave_load(1, (short)(ps->rY * 10000));
-        wave_load(2, (short)(ps->rZ * 10000));
-        wave_load(3, (short)(ps->rAX * 10000));
-        wave_load(4, (short)(ps->rAY * 10000));
-        wave_load(5, (short)(ps->rAZ * 10000));
-#elif 0
-        wave_load(0, ps->vCX);
-        wave_load(1, ps->vCY);
-        wave_load(2, ps->vCZ);
-        wave_load(3, ps->temper);
-#else
-        wave_load(0, 10000);
-        wave_load(1, (short)(ps->speX * 10000) + 10000);
-        wave_load(2, (short)(ps->speY * 10000) + 10000);
-        wave_load(3, -10000);
-        wave_load(4, (short)(ps->gX * 50000) - 10000);
-        wave_load(5, (short)(ps->gY * 50000) - 10000);
-#endif
+        wave_load(ws1, 0, (short)(ps->rX * 10000));
+        wave_load(ws1, 1, (short)(ps->rY * 10000));
+        wave_load(ws1, 2, (short)(ps->rZ * 10000));
+        wave_load(ws1, 3, (short)(ps->rAX * 10000));
+        wave_load(ws1, 4, (short)(ps->rAY * 10000));
+        wave_load(ws1, 5, (short)(ps->rAZ * 10000));
 
-        wave_refresh();
-        dot_refresh();
+        wave_load(ws2, 0, 10000);
+        wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
+        wave_load(ws2, 2, (short)(ps->speY * 10000) + 10000);
+        wave_load(ws2, 3, -10000);
+        wave_load(ws2, 4, (short)(ps->gX * 50000) - 10000);
+        wave_load(ws2, 5, (short)(ps->gY * 50000) - 10000);
+
+        dot_set(ds, ps->gX, 0, 0xFF0000);
+        dot_set(ds, 0, ps->gY, 0x0000FF);
+        dot_set(ds, ps->gX, ps->gY, 0x00FF00);
+
+        wave_output(ws1);
+        wave_output(ws2);
+        dot_output(ds);
 
         dpat1->raxyz[0] = ps->rX;
         dpat1->raxyz[1] = ps->rY;
@@ -296,6 +307,7 @@ int main(int argc, char **argv)
                 p3d_reset(dpat3);
 #if (ENABLE_MPU6050)
                 pe_reset(ps);
+                dot_clear(ds);
 #endif
             }
 

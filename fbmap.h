@@ -4,27 +4,15 @@
 #ifndef _FBMAP_H_
 #define _FBMAP_H_
 
-#include <stdlib.h>
-#include <linux/fb.h>
+//屏幕宽高
+extern int fb_width, fb_height;
 
-typedef struct
-{
-    int fd;
-    unsigned char *fb;
-    size_t fbSize;
-    struct fb_var_screeninfo fbInfo;
-    //bytes per point
-    int bpp;
-    //bytes width, height
-    int bw, bh;
-    //draw offset
-    int xOffset, yOffset;
-} FbMap;
-
-FbMap *fb_init(int xOffset, int yOffset);
-
-void fb_release(FbMap *fb);
-
-void fb_refresh(FbMap *fb, unsigned char *data, int width, int height, int per);
+/*
+ *  屏幕输出
+ *  data: 图像数组,数据长度必须为 width*height*3, RGB格式
+ *  offsetX, offsetY: 屏幕起始位置
+ *  width, height: 图像宽高
+ */
+void fb_output(unsigned char *data, int offsetX, int offsetY, int width, int height);
 
 #endif
