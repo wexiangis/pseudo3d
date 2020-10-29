@@ -5,10 +5,10 @@
 
 void delayus(unsigned int us)
 {
-    struct timeval delay;
-    delay.tv_sec = us / 1000000;
-    delay.tv_usec = us % 1000000;
-    select(0, NULL, NULL, NULL, &delay);
+    struct timeval tv;
+    tv.tv_sec = us / 1000000;
+    tv.tv_usec = us % 1000000;
+    select(0, NULL, NULL, NULL, &tv);
 }
 
 void delayms(unsigned int ms)

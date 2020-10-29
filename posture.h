@@ -37,12 +37,15 @@ typedef struct
     double vAX2, vAY2, vAZ2;
     //空间坐标系下的横纵向g值(单位:g)
     double gX, gY, gXYZ;
-    //
+    //correct gX/gY (单位:g)
+    double gXErr, gYErr;
+    //accel in horizomtal X/Y (unit:m/ss)
     double aX, aY;
     //空间坐标系下的横纵向速度(单位:m/s)
     double speX, speY;
     //空间坐标系下的横纵向偏移距离(单位:m)
     double movX, movY;
+    //
     int tt[4];
 } PostureStruct;
 

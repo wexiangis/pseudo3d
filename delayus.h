@@ -9,15 +9,10 @@ void delayms(unsigned int ms);
 #define DELAY_US_INIT \
     long _tick1 = 0, _tick2 = 0;
 
-#define DELAY_US_RESET() \
-    long = getTickUs();
-
 #define DELAY_US(us)                             \
     _tick2 = getTickUs();                        \
     if (_tick2 > _tick1 && _tick2 - _tick1 < us) \
         delayus(us - (_tick2 - _tick1));         \
-    else                                         \
-        delayus(us);                             \
     _tick1 = getTickUs();
 
 long getTickUs(void);
