@@ -47,15 +47,105 @@
 #define MOV_SUN_FUN(new, old) \
 ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
+void _filter_event(FilterStruct *fs, FilterEvent event)
+{
+    switch(event) {
+        case FE_PL_TO_NG:
+            //showTickUs(0);
+            //printf(" plus to negative\r\n");
+            //fs->adjustPow = 0.2;
+            //fs->adjustTime = 200;
+            break;
+        case FE_NG_TO_PL:
+            //showTickUs(0);
+            //printf(" negative to plus\r\n");
+            //fs->adjustPow = 0.2;
+            //fs->adjustTime = 200;
+            break;
+        case FE_UP_TO_DOWN:
+            showTickUs(0);
+            printf(" up to down\r\n");
+            fs->adjustPow = 0.2;
+            fs->adjustTime = fs->upTime;
+            break;
+        case FE_DOWN_TO_UP:
+            showTickUs(0);
+            printf(" down to up\r\n");
+            fs->adjustPow = 0.2;
+            fs->adjustTime = fs->downTime;
+            break;
+    }
+}
+
+void _filter(FilterStruct *fs, int intervalMs, double val)
+{
+    if (fs->adjustTime > 0) {
+        fs->adjustTime -= intervalMs;
+        if (fs->adjustTime <= 0) {
+            fs->adjustTime = 0;
+            fs->adjustPow = 0;
+        }
+    }
+    //正负计时
+    if (val > 0) {
+        //从负值跳回正值,清计数
+        if (fs->old < 0) {
+            if (fs->negativeTime > FE_TRIGGER_TIME)
+                _filter_event(fs, FE_NG_TO_PL);
+            fs->plusTime = intervalMs / 2;
+        }
+        else
+            fs->plusTime += intervalMs;
+    }
+    else {
+        //从正值跳回负值,清计数
+        if (fs->old > 0) {
+            if (fs->plusTime > FE_TRIGGER_TIME)
+                _filter_event(fs, FE_PL_TO_NG);
+            fs->negativeTime = intervalMs / 2;
+        }
+        else
+            fs->negativeTime += intervalMs;
+    }
+    //增减计时
+    if (val > fs->old) {
+        //本来下降开始上升,清计数
+        if (!fs->isUp) {
+            if (fs->downTime > FE_TRIGGER_TIME)
+                _filter_event(fs, FE_DOWN_TO_UP);
+            fs->upTime = intervalMs / 2;
+        }
+        else
+            fs->upTime += intervalMs;
+        fs->isUp = 1;
+    }
+    else {
+        //本来上升开始下降,清计数
+        if (fs->isUp) {
+            if (fs->upTime > FE_TRIGGER_TIME)
+                _filter_event(fs, FE_UP_TO_DOWN);
+            fs->downTime = intervalMs / 2;
+        }
+        else
+            fs->downTime += intervalMs;
+        fs->isUp = 0;
+    }
+    //bakup
+    fs->old = val;
+}
+
 void pe_inertial_navigation(PostureStruct *ps)
 {
     double speX, speY, aX, aY;
     //
+    //_filter(&ps->fsX, ps->intervalMs, ps->speX);
+    //_filter(&ps->fsY, ps->intervalMs, ps->speY);
+    //
     aX = ps->gX * PE_GRAVITY / PE_MASS;
     aY = ps->gY * PE_GRAVITY / PE_MASS;
     //g值积分得到速度
-    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX);
-    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY);
+    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) * (1 - ps->fsX.adjustPow);
+    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) * (1 - ps->fsY.adjustPow);
     //速度积分得到移动距离
     ps->movX += MOV_SUN_FUN(speX, ps->speX);
     ps->movY += MOV_SUN_FUN(speY, ps->speY);

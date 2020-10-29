@@ -226,7 +226,7 @@ int main(int argc, char **argv)
 #elif 0
         printf("dir x/%04d y%04d z%04d -- tmp %ld \r\n",
             ps->vCX, ps->vCY, ps->vCZ, ps->temper);
-#else
+#elif 0
         printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f -- %03d %03d %03d %03d\r\n",
             ps->gXYZ, ps->gX, ps->gY,
             ps->speX, ps->speY,

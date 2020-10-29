@@ -6,6 +6,37 @@
 
 #include <pthread.h>
 
+//加速度滤波事件触发时长(单位:ms)
+#define FE_TRIGGER_TIME 99
+//加速度滤波事件
+typedef enum
+{
+    FE_PL_TO_NG,
+    FE_NG_TO_PL,
+    FE_UP_TO_DOWN,
+    FE_DOWN_TO_UP,
+} FilterEvent;
+//加速度曲线滤波器
+typedef struct
+{
+    //矫正倍数
+    double adjustPow;
+    //矫正倒计时,为0时不矫正
+    int adjustTime;
+    //正值时长
+    int plusTime;
+    //负值时长
+    int negativeTime;
+    //增长时长
+    int upTime;
+    //递减时长
+    int downTime;
+    //在增长?
+    char isUp;
+    //旧值
+    double old;
+} FilterStruct;
+
 typedef struct
 {
     //线程及其运行标志
@@ -45,6 +76,8 @@ typedef struct
     double speX, speY;
     //空间坐标系下的横纵向偏移距离(单位:m)
     double movX, movY;
+    //加速度曲线滤波器
+    FilterStruct fsX, fsY;
     //
     int tt[4];
 } PostureStruct;
@@ -64,3 +97,4 @@ void pe_reset(PostureStruct *ps);
 double pe_dir(void);
 
 #endif
+

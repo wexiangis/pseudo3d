@@ -16,5 +16,6 @@ void delayms(unsigned int ms);
     _tick1 = getTickUs();
 
 long getTickUs(void);
+void showTickUs(char enter);
 
 #endif
