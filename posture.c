@@ -47,118 +47,10 @@
 #define MOV_SUN_FUN(new, old) \
 ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
-void _filter_event(FilterStruct *fs, FilterEvent event)
-{
-    switch(event) {
-        case FE_PL_TO_NG:
-            //showTickUs(0);
-            //printf(" plus to negative\r\n");
-            //fs->adjustPow = 0.2;
-            //fs->adjustTime = 200;
-            break;
-        case FE_NG_TO_PL:
-            //showTickUs(0);
-            //printf(" negative to plus\r\n");
-            //fs->adjustPow = 0.2;
-            //fs->adjustTime = 200;
-            break;
-        case FE_UP_TO_DOWN:
-            showTickUs(0);
-            printf(" up to down\r\n");
-            fs->adjustPow = 0.2;
-            fs->adjustTime = fs->upTime;
-            break;
-        case FE_DOWN_TO_UP:
-            showTickUs(0);
-            printf(" down to up\r\n");
-            fs->adjustPow = 0.2;
-            fs->adjustTime = fs->downTime;
-            break;
-    }
-}
-
-void _filter(FilterStruct *fs, int intervalMs, double val)
-{
-    if (fs->adjustTime > 0) {
-        fs->adjustTime -= intervalMs;
-        if (fs->adjustTime <= 0) {
-            fs->adjustTime = 0;
-            fs->adjustPow = 0;
-        }
-    }
-    //正负计时
-    if (val > 0) {
-        //从负值跳回正值,清计数
-        if (fs->old < 0) {
-            if (fs->negativeTime > FE_TRIGGER_TIME)
-                _filter_event(fs, FE_NG_TO_PL);
-            fs->plusTime = intervalMs / 2;
-        }
-        else
-            fs->plusTime += intervalMs;
-    }
-    else {
-        //从正值跳回负值,清计数
-        if (fs->old > 0) {
-            if (fs->plusTime > FE_TRIGGER_TIME)
-                _filter_event(fs, FE_PL_TO_NG);
-            fs->negativeTime = intervalMs / 2;
-        }
-        else
-            fs->negativeTime += intervalMs;
-    }
-    //增减计时
-    if (val > fs->old) {
-        //本来下降开始上升,清计数
-        if (!fs->isUp) {
-            if (fs->downTime > FE_TRIGGER_TIME)
-                _filter_event(fs, FE_DOWN_TO_UP);
-            fs->upTime = intervalMs / 2;
-        }
-        else
-            fs->upTime += intervalMs;
-        fs->isUp = 1;
-    }
-    else {
-        //本来上升开始下降,清计数
-        if (fs->isUp) {
-            if (fs->upTime > FE_TRIGGER_TIME)
-                _filter_event(fs, FE_UP_TO_DOWN);
-            fs->downTime = intervalMs / 2;
-        }
-        else
-            fs->downTime += intervalMs;
-        fs->isUp = 0;
-    }
-    //bakup
-    fs->old = val;
-}
-
-void pe_inertial_navigation(PostureStruct *ps)
-{
-    double speX, speY, aX, aY;
-    //
-    //_filter(&ps->fsX, ps->intervalMs, ps->speX);
-    //_filter(&ps->fsY, ps->intervalMs, ps->speY);
-    //
-    aX = ps->gX * PE_GRAVITY / PE_MASS;
-    aY = ps->gY * PE_GRAVITY / PE_MASS;
-    //g值积分得到速度
-    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) * (1 - ps->fsX.adjustPow);
-    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) * (1 - ps->fsY.adjustPow);
-    //速度积分得到移动距离
-    ps->movX += MOV_SUN_FUN(speX, ps->speX);
-    ps->movY += MOV_SUN_FUN(speY, ps->speY);
-    //bakup
-    ps->aX = aX;
-    ps->aY = aY;
-    ps->speX = speX;
-    ps->speY = speY;
-}
-
 void pe_accel(PostureStruct *ps, short *valA)
 {
-    double err = 0.0001;
+    double err = 0.0005, intMs = 100;
+    double gX, gY, gZ;
     double vXYZ[3], rXYZ[3];
     // bakup
     ps->vAX = valA[0];
@@ -179,17 +71,85 @@ void pe_accel(PostureStruct *ps, short *valA)
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
-    ps->gX = vXYZ[0] + ps->gXErr;
-    ps->gY = vXYZ[1] + ps->gYErr;
+    gX = vXYZ[0] + ps->gXErr;
+    gY = vXYZ[1] + ps->gYErr;
+    gZ = vXYZ[2] + ps->gZErr;
 #if 1
-    // adjust
-    if (ps->gX > err) ps->gXErr -= err;
-    else if (ps->gX < -err) ps->gXErr += err;
-    if (ps->gY > err) ps->gYErr -= err;
-    else if(ps->gY < -err) ps->gYErr += err;
+    //test
+//    if (ps->gX > err) ps->gXErr -= err;
+//    else if (ps->gX < -err) ps->gXErr += err;
+//    if (ps->gY > err) ps->gYErr -= err;
+//    else if(ps->gY < -err) ps->gYErr += err;
+    if (ps->gZ > err) ps->gZErr -= err;
+    else if(ps->gZ < -err) ps->gZErr += err;
 #endif
+#if 1
+    //test
+    if (gX > 0 && ps->gX < 0) {
+        if (ps->tt[2] > intMs)
+            ps->tt[0] -= (gX - ps->gX) / ps->intervalMs * 10;
+        ps->tt[2] = 0;
+    } else if (gX < 0 && ps->gX > 0) {
+        if (ps->tt[2] > intMs)
+            ps->tt[0] += (ps->gX - gX) / ps->intervalMs * 10;
+        ps->tt[2] = 0;
+    } else
+        ps->tt[2] += ps->intervalMs;
+    if (gY > 0 && ps->gY < 0) {
+        if (ps->tt[3] > intMs)
+            ps->tt[1] -= (gY - ps->gY) / ps->intervalMs * 10;
+        ps->tt[3] = 0;
+    } else if (gY < 0 && ps->gY > 0) {
+        if (ps->tt[3] > intMs)
+            ps->tt[1] += (ps->gY - gY) / ps->intervalMs * 10;
+        ps->tt[3] = 0;
+    } else
+        ps->tt[3] += ps->intervalMs;
+#endif
+    //bakup
+    ps->gX = gX;
+    ps->gY = gY;
+    ps->gZ = gZ;
     // 合受力(单位:g)
-    ps->gXYZ = sqrt(ps->vAX2 * ps->vAX2 + ps->vAY2 * ps->vAY2 + ps->vAZ2 * ps->vAZ2);
+    ps->gXYZ = sqrt(gX * gX + gY * gY + gZ * gZ);
+}
+
+void pe_inertial_navigation(PostureStruct *ps)
+{
+    double speX, speY, speZ, aX, aY, aZ;
+    //
+    aX = ps->gX * PE_GRAVITY / PE_MASS;
+    aY = ps->gY * PE_GRAVITY / PE_MASS;
+    aZ = ps->gZ * PE_GRAVITY / PE_MASS;
+    //g值积分得到速度
+    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) + 0;//ps->tt[0];
+    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) + 0;//ps->tt[1];
+    speZ = ps->speZ + SPE_SUN_FUN(aZ, ps->aZ) + 0;
+    //test
+    //ps->tt[0] = ps->tt[1] = ps->tt[2] = 0;
+    //速度积分得到移动距离
+    ps->movX += MOV_SUN_FUN(speX, ps->speX);
+    ps->movY += MOV_SUN_FUN(speY, ps->speY);
+    ps->movZ += MOV_SUN_FUN(speZ, ps->speZ);
+    //bakup
+    ps->aX = aX;
+    ps->aY = aY;
+    ps->aZ = aZ;
+    ps->speX = speX;
+    ps->speY = speY;
+    ps->speZ = speZ;
+}
+
+//复位(重置计算值)
+void pe_reset(PostureStruct *ps)
+{
+    ps->rGX = ps->rGY = ps->rGZ = 0;
+    ps->rAX = ps->rAY = ps->rAZ = 0;
+    ps->rZErr -= ps->rZ;
+    ps->aX = ps->aY = ps->aZ = 0;
+    ps->speX = ps->speY = ps->speZ = 0;
+    ps->movX = ps->movY = ps->movZ = 0;
+    ps->tt[0] = ps->tt[1] = ps->tt[2] = ps->tt[3] = 0;
 }
 
 void pe_gyro(PostureStruct *ps, short *valG)
@@ -269,18 +229,6 @@ void *pe_thread(void *argv)
         }
     }
     return NULL;
-}
-
-//复位(重置计算值)
-void pe_reset(PostureStruct *ps)
-{
-    ps->rGX = ps->rGY = ps->rGZ = 0;
-    ps->rAX = ps->rAY = ps->rAZ = 0;
-    ps->rZErr -= ps->rZ;
-    ps->aX = ps->aY = 0;
-    ps->speX = ps->speY = 0;
-    ps->movX = ps->movY = 0;
-    ps->tt[0] = ps->tt[1] = ps->tt[2] = ps->tt[3] = 0;
 }
 
 /*

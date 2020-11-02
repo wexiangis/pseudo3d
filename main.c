@@ -24,7 +24,7 @@
 #endif
 
 //采样间隔
-#define INTERVALUS 20000 //screen freq us
+#define INTERVALUS 10000 //screen freq us
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -47,6 +47,8 @@ int main(int argc, char **argv)
     //打点器1个
     Dot_Struct *ds;
 #endif
+    int log_count = 0;
+    DELAY_US_INIT;
 
     // open console
     if (argc > 1)
@@ -183,15 +185,19 @@ int main(int argc, char **argv)
 
     while (1)
     {
+        DELAY_US(INTERVALUS);
 
 #if (ENABLE_MPU6050)
 
-        wave_load(ws1, 0, (short)(ps->rX * 10000));
-        wave_load(ws1, 1, (short)(ps->rY * 10000));
-        wave_load(ws1, 2, (short)(ps->rZ * 10000));
-        wave_load(ws1, 3, (short)(ps->rAX * 10000));
-        wave_load(ws1, 4, (short)(ps->rAY * 10000));
-        wave_load(ws1, 5, (short)(ps->rAZ * 10000));
+        //wave_load(ws1, 0, (short)(ps->rX * 10000));
+        //wave_load(ws1, 1, (short)(ps->rY * 10000));
+        //wave_load(ws1, 2, (short)(ps->rZ * 10000));
+        //wave_load(ws1, 3, (short)(ps->rAX * 10000));
+        //wave_load(ws1, 4, (short)(ps->rAY * 10000));
+        //wave_load(ws1, 5, (short)(ps->rAZ * 10000));
+        wave_load(ws1, 0, (short)(ps->gX * 10000));
+        wave_load(ws1, 1, (short)(ps->gY * 10000));
+        wave_load(ws1, 2, (short)(ps->gZ * 10000));
 
         wave_load(ws2, 0, 10000);
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
@@ -218,6 +224,9 @@ int main(int argc, char **argv)
         dpat3->raxyz[1] = ps->rGY;
         dpat3->raxyz[2] = ps->rGZ;
 
+        log_count += INTERVALUS;
+        if (log_count >= 20000) {
+        log_count = 0;
 #if 0
         printf("x/%.4f y/%.4f z/%.4f AC x/%.4f y/%.4f z/%.4f AG x/%.4f y/%.4f z/%.4f \r\n",
             ps->rX, ps->rY, ps->rZ,
@@ -226,13 +235,14 @@ int main(int argc, char **argv)
 #elif 0
         printf("dir x/%04d y%04d z%04d -- tmp %ld \r\n",
             ps->vCX, ps->vCY, ps->vCZ, ps->temper);
-#elif 0
-        printf("g %7.4f x/%7.4f y/%7.4f -- spe x/%7.4f y/%7.4f -- mov x/%7.4f y/%7.4f -- %03d %03d %03d %03d\r\n",
-            ps->gXYZ, ps->gX, ps->gY,
-            ps->speX, ps->speY,
-            ps->movX, ps->movY,
+#elif 1
+        printf("g %7.4f x/%7.4f y/%7.4f z/%7.4f -- spe x/%7.4f y/%7.4f z/%7.4f -- mov x/%7.4f y/%7.4f z/%7.4f -- %7.4f %7.4f %7.4f %7.4f\r\n",
+            ps->gXYZ, ps->gX, ps->gY, ps->gZ,
+            ps->speX, ps->speY, ps->speZ,
+            ps->movX, ps->movY, ps->movZ,
             ps->tt[0], ps->tt[1], ps->tt[2], ps->tt[3]);
 #endif
+        }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->vAX2 * 100;
         xyz[1] = -ps->vAY2 * 100;
@@ -320,6 +330,5 @@ int main(int argc, char **argv)
             printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", dpat1->raxyz[0], dpat1->raxyz[1], dpat1->raxyz[2]);
         }
 
-        delayus(INTERVALUS);
     }
 }
