@@ -1290,8 +1290,10 @@ int mpu_set_lpf(unsigned short lpf)
         data = INV_FILTER_20HZ;
     else if (lpf >= 10)
         data = INV_FILTER_10HZ;
-    else
+    else if (lpf >= 5)
         data = INV_FILTER_5HZ;
+    else
+        data = lpf;
 
     if (st.chip_cfg.lpf == data)
         return 0;

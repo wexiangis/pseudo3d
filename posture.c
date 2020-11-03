@@ -49,7 +49,7 @@
 
 void pe_accel(PostureStruct *ps, short *valA)
 {
-    double err = 0.0005, intMs = 100;
+    double err = 0.0001, errZ = 0.001;
     double gX, gY, gZ;
     double vXYZ[3], rXYZ[3];
     // bakup
@@ -76,35 +76,12 @@ void pe_accel(PostureStruct *ps, short *valA)
     gZ = vXYZ[2] + ps->gZErr;
 #if 1
     //test
-//    if (ps->gX > err) ps->gXErr -= err;
-//    else if (ps->gX < -err) ps->gXErr += err;
-//    if (ps->gY > err) ps->gYErr -= err;
-//    else if(ps->gY < -err) ps->gYErr += err;
-    if (ps->gZ > err) ps->gZErr -= err;
-    else if(ps->gZ < -err) ps->gZErr += err;
-#endif
-#if 1
-    //test
-    if (gX > 0 && ps->gX < 0) {
-        if (ps->tt[2] > intMs)
-            ps->tt[0] -= (gX - ps->gX) / ps->intervalMs * 10;
-        ps->tt[2] = 0;
-    } else if (gX < 0 && ps->gX > 0) {
-        if (ps->tt[2] > intMs)
-            ps->tt[0] += (ps->gX - gX) / ps->intervalMs * 10;
-        ps->tt[2] = 0;
-    } else
-        ps->tt[2] += ps->intervalMs;
-    if (gY > 0 && ps->gY < 0) {
-        if (ps->tt[3] > intMs)
-            ps->tt[1] -= (gY - ps->gY) / ps->intervalMs * 10;
-        ps->tt[3] = 0;
-    } else if (gY < 0 && ps->gY > 0) {
-        if (ps->tt[3] > intMs)
-            ps->tt[1] += (ps->gY - gY) / ps->intervalMs * 10;
-        ps->tt[3] = 0;
-    } else
-        ps->tt[3] += ps->intervalMs;
+    if (ps->gX > err) ps->gXErr -= err;
+    else if (ps->gX < -err) ps->gXErr += err;
+    if (ps->gY > err) ps->gYErr -= err;
+    else if(ps->gY < -err) ps->gYErr += err;
+    if (ps->gZ > errZ) ps->gZErr -= errZ;
+    else if(ps->gZ < -errZ) ps->gZErr += errZ;
 #endif
     //bakup
     ps->gX = gX;
@@ -122,11 +99,9 @@ void pe_inertial_navigation(PostureStruct *ps)
     aY = ps->gY * PE_GRAVITY / PE_MASS;
     aZ = ps->gZ * PE_GRAVITY / PE_MASS;
     //g值积分得到速度
-    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) + 0;//ps->tt[0];
-    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) + 0;//ps->tt[1];
+    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) + 0;
+    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) + 0;
     speZ = ps->speZ + SPE_SUN_FUN(aZ, ps->aZ) + 0;
-    //test
-    //ps->tt[0] = ps->tt[1] = ps->tt[2] = 0;
     //速度积分得到移动距离
     ps->movX += MOV_SUN_FUN(speX, ps->speX);
     ps->movY += MOV_SUN_FUN(speY, ps->speY);

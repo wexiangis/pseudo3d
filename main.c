@@ -189,15 +189,12 @@ int main(int argc, char **argv)
 
 #if (ENABLE_MPU6050)
 
-        //wave_load(ws1, 0, (short)(ps->rX * 10000));
-        //wave_load(ws1, 1, (short)(ps->rY * 10000));
-        //wave_load(ws1, 2, (short)(ps->rZ * 10000));
+        wave_load(ws1, 0, (short)(ps->rX * 10000));
+        wave_load(ws1, 1, (short)(ps->rY * 10000));
+        wave_load(ws1, 2, (short)(ps->rZ * 10000));
         //wave_load(ws1, 3, (short)(ps->rAX * 10000));
         //wave_load(ws1, 4, (short)(ps->rAY * 10000));
         //wave_load(ws1, 5, (short)(ps->rAZ * 10000));
-        wave_load(ws1, 0, (short)(ps->gX * 10000));
-        wave_load(ws1, 1, (short)(ps->gY * 10000));
-        wave_load(ws1, 2, (short)(ps->gZ * 10000));
 
         wave_load(ws2, 0, 10000);
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
