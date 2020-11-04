@@ -20,7 +20,7 @@
 #include "fbmap.h"
 #include "dot.h"
 #include "wave.h"
-#define MPU6050_INTERVALMS 10 //sample freq ms
+#define MPU6050_INTERVALMS 5 //sample freq ms
 #endif
 
 //采样间隔

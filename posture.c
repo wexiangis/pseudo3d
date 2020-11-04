@@ -11,9 +11,15 @@
 #include "mpu6050.h"
 #include "pseudo3d.h"
 
+// 启用MMA8451
+//#define PE_MMA8451
+#ifdef PE_MMA8451
+#include "mma8451.h"
+#endif
+
 // 启用HMC5883罗盘
-#define PE_USE_HMC5883 0
-#if (PE_USE_HMC5883 != 0)
+#define PE_HMC5883
+#ifdef PE_HMC5883
 #include "hmc5883.h"
 #endif
 
@@ -52,6 +58,9 @@ void pe_accel(PostureStruct *ps, short *valA)
     double err = 0.0001, errZ = 0.001;
     double gX, gY, gZ;
     double vXYZ[3], rXYZ[3];
+#ifdef PE_MMA8451
+    mma8451_get(valA);
+#endif
     // bakup
     ps->vAX = valA[0];
     ps->vAY = valA[1];
@@ -166,6 +175,10 @@ void *pe_thread(void *argv)
     //初始化mpu6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
+#ifdef PE_MMA8451
+    //初始化mma8451
+    mma8451_init();
+#endif
     //周期采样
     while (ps->flagRun)
     {
@@ -236,7 +249,7 @@ void pe_exit(PostureStruct **ps)
 //获取罗盘角度(rad:[-pi, pi])
 double pe_dir(void)
 {
-#if (PE_USE_HMC5883 > 0)
+#ifdef PE_HMC5883
     return (double)hmc5883_get();
 #else
     return 0;
