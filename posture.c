@@ -11,6 +11,9 @@
 #include "mpu6050.h"
 #include "pseudo3d.h"
 
+// enable test
+//#define PE_IMU_TEST
+
 // 启用MMA8451
 //#define PE_MMA8451
 #ifdef PE_MMA8451
@@ -52,6 +55,56 @@
 // Mov积分得到移动距离(同上面 GYRO_SUM_FUN())
 #define MOV_SUN_FUN(new, old) \
 ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
+
+#ifdef PE_IMU_TEST
+void IMUupdate(double gx, double gy, double gz, double ax, double ay, double az, double *pry, int intervalMs)
+{
+    double Kp = 100.0;    // 比例增益支配率收敛到加速度计/磁强计
+    double Ki = 0.002;    // 积分增益支配率的陀螺仪偏见的衔接
+    double halfT = (double)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
+    static double q0 = 1, q1 = 0, q2 = 0, q3 = 0;  // 四元数的元素，代表估计方向
+    static double exInt = 0, eyInt = 0, ezInt = 0; // 按比例缩小积分误差
+    double norm;
+    double vx, vy, vz;
+    double ex, ey, ez;
+    // 测量正常化: 向量(ax,ay,az)除以自身模长,即变为单位向量,方向不变
+    norm = sqrt(ax * ax + ay * ay + az * az);
+    ax = ax / norm;
+    ay = ay / norm;
+    az = az / norm;
+    // 估计方向的重力
+    vx = 2 * (q1 * q3 - q0 * q2);
+    vy = 2 * (q0 * q1 + q2 * q3);
+    vz = q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3;
+    // 错误的领域和方向传感器测量参考方向之间的交叉乘积的总和
+    ex = (ay * vz - az * vy);
+    ey = (az * vx - ax * vz);
+    ez = (ax * vy - ay * vx);
+    // 积分误差比例积分增益
+    exInt = exInt + ex * Ki;
+    eyInt = eyInt + ey * Ki;
+    ezInt = ezInt + ez * Ki;
+    // 调整后的陀螺仪测量
+    gx = gx + Kp * ex + exInt;
+    gy = gy + Kp * ey + eyInt;
+    gz = gz + Kp * ez + ezInt;
+    // 整合四元数率和正常化
+    q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * halfT;
+    q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * halfT;
+    q2 = q2 + (q0 * gy - q1 * gz + q3 * gx) * halfT;
+    q3 = q3 + (q0 * gz + q1 * gy - q2 * gx) * halfT;
+    // 正常化四元: 向量除以自身模长,即转换为单位向量,方向不变
+    norm = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    q0 = q0 / norm;
+    q1 = q1 / norm;
+    q2 = q2 / norm;
+    q3 = q3 / norm;
+    //
+    pry[1] = asin(-2 * q1 * q3 + 2 * q0 * q2);                                      // pitch
+    pry[0] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);      // roll
+    pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
+}
+#endif
 
 void pe_accel(PostureStruct *ps, short *valA)
 {
@@ -197,6 +250,12 @@ void *pe_thread(void *argv)
         pe_accel(ps, valA);
         // 惯导参数计算
         pe_inertial_navigation(ps);
+#ifdef PE_IMU_TEST
+        IMUupdate(ps->vGX, ps->vGY, ps->vGZ, ps->vAX, ps->vAY, ps->vAZ, valR, ps->intervalMs);
+        ps->rX = valR[0];
+        ps->rY = valR[1];
+        ps->rZ = valR[2] + ps->rZErr;
+#endif
         //定时获取罗盘数据 & 温度数据
         timeCount += ps->intervalMs;
         if(timeCount >= 200){
