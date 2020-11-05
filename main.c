@@ -168,7 +168,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat3->_matrix_mode = 0;//使用xyz旋转矩阵
+    dpat3->_matrix_mode = 1;//使用zyx旋转矩阵
 
 #if (ENABLE_MPU6050)
     //初始化姿态计算器

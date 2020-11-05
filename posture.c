@@ -190,10 +190,6 @@ void *pe_thread(void *argv)
             ps->rX = valR[1];
             ps->rY = valR[0];
             ps->rZ = valR[2] + ps->rZErr;
-            // adjust gyro direction
-            valG[0] = -valG[0];
-            valG[1] = -valG[1];
-            valG[2] = -valG[2];
         }
         // gyro: 
         pe_gyro(ps, valG);
