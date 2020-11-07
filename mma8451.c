@@ -59,7 +59,7 @@ void mma8451_init(void)
     // enable high-pass ouput, range 2g
     data[0] = 0x10;
     i2c_default_rw(MMA8451_ID, XYZ_DATA_CFG, 1, data, 1);
-    // enable disable low-pass filter
+    // disable low-pass filter
     data[0] = 0x00;
     i2c_default_rw(MMA8451_ID, HP_FILTER_CUTOFF, 1, data, 1);
 }

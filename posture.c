@@ -11,8 +11,8 @@
 #include "mpu6050.h"
 #include "pseudo3d.h"
 
-// enable test
-//#define PE_IMU_TEST
+// enable quaternion test
+//#define PE_QUATERNION
 
 // 启用MMA8451
 //#define PE_MMA8451
@@ -56,22 +56,24 @@
 #define MOV_SUN_FUN(new, old) \
 ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
-#ifdef PE_IMU_TEST
-void IMUupdate(double gx, double gy, double gz, double ax, double ay, double az, double *pry, int intervalMs)
+#ifdef PE_QUATERNION
+void quaternion(short *valG, short *valA, double *pry, int intervalMs)
 {
-    double Kp = 100.0;    // 比例增益支配率收敛到加速度计/磁强计
-    double Ki = 0.002;    // 积分增益支配率的陀螺仪偏见的衔接
+    double Kp = 500.0;    // 比例增益支配率收敛到加速度计/磁强计
+    double Ki = 2.0;    // 积分增益支配率的陀螺仪偏见的衔接
     double halfT = (double)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
     static double q0 = 1, q1 = 0, q2 = 0, q3 = 0;  // 四元数的元素，代表估计方向
     static double exInt = 0, eyInt = 0, ezInt = 0; // 按比例缩小积分误差
     double norm;
+    double ax, ay, az;
+    double gx, gy, gz;
     double vx, vy, vz;
     double ex, ey, ez;
     // 测量正常化: 向量(ax,ay,az)除以自身模长,即变为单位向量,方向不变
-    norm = sqrt(ax * ax + ay * ay + az * az);
-    ax = ax / norm;
-    ay = ay / norm;
-    az = az / norm;
+    norm = sqrt(valA[0] * valA[0] + valA[1] * valA[1] + valA[2] * valA[2]);
+    ax = (double)valA[0] / norm;
+    ay = (double)valA[1] / norm;
+    az = (double)valA[2] / norm;
     // 估计方向的重力
     vx = 2 * (q1 * q3 - q0 * q2);
     vy = 2 * (q0 * q1 + q2 * q3);
@@ -85,9 +87,9 @@ void IMUupdate(double gx, double gy, double gz, double ax, double ay, double az,
     eyInt = eyInt + ey * Ki;
     ezInt = ezInt + ez * Ki;
     // 调整后的陀螺仪测量
-    gx = gx + Kp * ex + exInt;
-    gy = gy + Kp * ey + eyInt;
-    gz = gz + Kp * ez + ezInt;
+    gx = (double)valG[0] + Kp * ex + exInt;
+    gy = (double)valG[1] + Kp * ey + eyInt;
+    gz = (double)valG[2] + Kp * ez + ezInt;
     // 整合四元数率和正常化
     q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * halfT;
     q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * halfT;
@@ -111,9 +113,6 @@ void pe_accel(PostureStruct *ps, short *valA)
     double err = 0.0001, errZ = 0.001;
     double gX, gY, gZ;
     double vXYZ[3], rXYZ[3];
-#ifdef PE_MMA8451
-    mma8451_get(valA);
-#endif
     // bakup
     ps->vAX = valA[0];
     ps->vAY = valA[1];
@@ -244,18 +243,21 @@ void *pe_thread(void *argv)
             ps->rY = valR[0];
             ps->rZ = valR[2] + ps->rZErr;
         }
+#ifdef PE_MMA8451
+        mma8451_get(valA);
+#endif
+#ifdef PE_QUATERNION
+        quaternion(valG, valA, valR, ps->intervalMs);
+        ps->rX = valR[0];
+        ps->rY = valR[1];
+        ps->rZ = valR[2] + ps->rZErr;
+#endif
         // gyro: 
         pe_gyro(ps, valG);
         // accel: 
         pe_accel(ps, valA);
         // 惯导参数计算
         pe_inertial_navigation(ps);
-#ifdef PE_IMU_TEST
-        IMUupdate(ps->vGX, ps->vGY, ps->vGZ, ps->vAX, ps->vAY, ps->vAZ, valR, ps->intervalMs);
-        ps->rX = valR[0];
-        ps->rY = valR[1];
-        ps->rZ = valR[2] + ps->rZErr;
-#endif
         //定时获取罗盘数据 & 温度数据
         timeCount += ps->intervalMs;
         if(timeCount >= 200){
@@ -264,7 +266,6 @@ void *pe_thread(void *argv)
             if(mpu6050_compass(valC) == 0) {
                 ps->vCX = valC[0];
                 ps->vCY = valC[1];
-                ps->vCZ = valC[2];
                 ps->dir = atan2((float)ps->vCY, (float)ps->vCX);
             }
             //温度
