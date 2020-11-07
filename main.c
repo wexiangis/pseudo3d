@@ -233,11 +233,10 @@ int main(int argc, char **argv)
         printf("dir x/%04d y%04d z%04d -- tmp %ld \r\n",
             ps->vCX, ps->vCY, ps->vCZ, ps->temper);
 #elif 1
-        printf("g %7.4f x/%7.4f y/%7.4f z/%7.4f -- spe x/%7.4f y/%7.4f z/%7.4f -- mov x/%7.4f y/%7.4f z/%7.4f -- %7.4f %7.4f %7.4f %7.4f\r\n",
+        printf("g %7.4f x/%7.4f y/%7.4f z/%7.4f -- spe x/%7.4f y/%7.4f z/%7.4f -- mov x/%7.4f y/%7.4f z/%7.4f \r\n",
             ps->gXYZ, ps->gX, ps->gY, ps->gZ,
             ps->speX, ps->speY, ps->speZ,
-            ps->movX, ps->movY, ps->movZ,
-            ps->tt[0], ps->tt[1], ps->tt[2], ps->tt[3]);
+            ps->movX, ps->movY, ps->movZ);
 #endif
         }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置

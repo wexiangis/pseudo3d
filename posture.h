@@ -45,8 +45,6 @@ typedef struct
     double speX, speY, speZ;
     //空间坐标系下的横纵向偏移距离(单位:m)
     double movX, movY, movZ;
-    //
-    double tt[4];
 } PostureStruct;
 
 /*

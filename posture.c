@@ -11,7 +11,7 @@
 #include "mpu6050.h"
 #include "pseudo3d.h"
 
-// enable quaternion test
+// 启用四元数解算
 //#define PE_QUATERNION
 
 // 启用MMA8451
@@ -57,10 +57,16 @@
 ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
 #ifdef PE_QUATERNION
+/*
+ *  valG: 原始陀螺仪xyz轴输出值
+ *  valA: 原始加速度xyz轴输出值
+ *  pry: 输出绕xyz轴角度(单位:rad)
+ *  intervalMs: 采样间隔(单位:ms)
+ */
 void quaternion(short *valG, short *valA, double *pry, int intervalMs)
 {
-    double Kp = 500.0;    // 比例增益支配率收敛到加速度计/磁强计
-    double Ki = 2.0;    // 积分增益支配率的陀螺仪偏见的衔接
+    double Kp = 500.0;// 比例增益支配率收敛到加速度计/磁强计
+    double Ki = 2.0;  // 积分增益支配率的陀螺仪偏见的衔接
     double halfT = (double)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
     static double q0 = 1, q1 = 0, q2 = 0, q3 = 0;  // 四元数的元素，代表估计方向
     static double exInt = 0, eyInt = 0, ezInt = 0; // 按比例缩小积分误差
@@ -160,9 +166,9 @@ void pe_inertial_navigation(PostureStruct *ps)
     aY = ps->gY * PE_GRAVITY / PE_MASS;
     aZ = ps->gZ * PE_GRAVITY / PE_MASS;
     //g值积分得到速度
-    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX) + 0;
-    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY) + 0;
-    speZ = ps->speZ + SPE_SUN_FUN(aZ, ps->aZ) + 0;
+    speX = ps->speX + SPE_SUN_FUN(aX, ps->aX);
+    speY = ps->speY + SPE_SUN_FUN(aY, ps->aY);
+    speZ = ps->speZ + SPE_SUN_FUN(aZ, ps->aZ);
     //速度积分得到移动距离
     ps->movX += MOV_SUN_FUN(speX, ps->speX);
     ps->movY += MOV_SUN_FUN(speY, ps->speY);
@@ -185,7 +191,6 @@ void pe_reset(PostureStruct *ps)
     ps->aX = ps->aY = ps->aZ = 0;
     ps->speX = ps->speY = ps->speZ = 0;
     ps->movX = ps->movY = ps->movZ = 0;
-    ps->tt[0] = ps->tt[1] = ps->tt[2] = ps->tt[3] = 0;
 }
 
 void pe_gyro(PostureStruct *ps, short *valG)
@@ -238,7 +243,6 @@ void *pe_thread(void *argv)
         // 采样
         if (mpu6050_angle(valR, valG, valA) == 0)
         {
-            // dmp库用4元素法得到的欧拉角(单位:rad)
             ps->rX = valR[1];
             ps->rY = valR[0];
             ps->rZ = valR[2] + ps->rZErr;
