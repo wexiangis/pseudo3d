@@ -25,16 +25,18 @@ obj-c += ./ui/wave.c
 obj-c += ./ui/dot.c
 
 # MPU6050 驱动
-obj-c += mpu6050/mpu6050.c
-obj-c += mpu6050/inv_mpu.c
-obj-c += mpu6050/inv_mpu_dmp_motion_driver.c
+obj-c += sensor/mpu6050/mpu6050.c
+obj-c += sensor/mpu6050/inv_mpu.c
+obj-c += sensor/mpu6050/inv_mpu_dmp_motion_driver.c
 # HMC5883 驱动
-obj-c += hmc5883.c
+obj-c += sensor/hmc5883.c
 # MMA8451 驱动
-obj-c += mma8451.c
+obj-c += sensor/mma8451.c
+# tcp服务器接收来自android设备的数据
+obj-c += sensor/tcpServer.c
 
 target:
-	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./mpu6050 -I./ui -lm -lpthread
+	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./sensor -I./sensor/mpu6050 -I./ui -lm -lpthread
 
 clean:
 	@rm -rf out

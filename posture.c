@@ -14,20 +14,23 @@
 // 启用四元数解算
 //#define PE_QUATERNION
 
+// 启用tcpServer
+// #define PE_TCPSERVER
+#ifdef PE_TCPSERVER
+#include "tcpServer.h"
+#endif
+
 // 启用MMA8451
-//#define PE_MMA8451
+// #define PE_MMA8451
 #ifdef PE_MMA8451
 #include "mma8451.h"
 #endif
 
 // 启用HMC5883罗盘
-#define PE_HMC5883
+// #define PE_HMC5883
 #ifdef PE_HMC5883
 #include "hmc5883.h"
 #endif
-
-#define PE_PI 3.14159265358979323846
-#define PE_2PI (PE_PI * 2)
 
 // (unit:N/kg)
 #define PE_GRAVITY 9.8
@@ -229,6 +232,10 @@ void *pe_thread(void *argv)
     double valR[3];
     short valG[3], valA[3], valC[3];
     PostureStruct *ps = (PostureStruct*)argv;
+#ifdef PE_TCPSERVER
+    tcpServer_get(valR, valG, valA);
+    DELAY_US(ps->intervalMs * 1000);
+#else
     //初始化mpu6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
@@ -236,11 +243,20 @@ void *pe_thread(void *argv)
     //初始化mma8451
     mma8451_init();
 #endif
+#endif
     //周期采样
     while (ps->flagRun)
     {
         DELAY_US(ps->intervalMs * 1000);
         // 采样
+#ifdef PE_TCPSERVER
+        if (tcpServer_get(valR, valG, valA) == 0)
+        {
+            ps->rX = valR[1];
+            ps->rY = valR[0];
+            ps->rZ = valR[2] + ps->rZErr;
+        }
+#else
         if (mpu6050_angle(valR, valG, valA) == 0)
         {
             ps->rX = valR[1];
@@ -249,6 +265,7 @@ void *pe_thread(void *argv)
         }
 #ifdef PE_MMA8451
         mma8451_get(valA);
+#endif
 #endif
 #ifdef PE_QUATERNION
         quaternion(valG, valA, valR, ps->intervalMs);

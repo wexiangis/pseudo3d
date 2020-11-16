@@ -1,6 +1,9 @@
 #ifndef _MPU6050_H_
 #define _MPU6050_H_
 
+#define PE_PI 3.14159265358979323846
+#define PE_2PI (PE_PI * 2)
+
 //1弧度对应采样值,陀螺仪数据除以该值得到绕轴角加速度,单位rad/s
 #define GYRO_VAL_P_RED (32768 / 2000 * PE_PI / 180)
 
