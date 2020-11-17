@@ -230,6 +230,7 @@ void server_thread(void *arge)
 void server_callBack(Tcp_Server *ts, unsigned char *buff, unsigned int buffLen)
 {
     float *pFloat;
+    //printf("port/%d recv/%d\r\n", ts->port, buffLen);
     //3个float数大小
     while (buffLen >= 12)
     {

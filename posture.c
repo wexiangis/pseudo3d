@@ -15,7 +15,7 @@
 //#define PE_QUATERNION
 
 // 启用tcpServer
-// #define PE_TCPSERVER
+#define PE_TCPSERVER
 #ifdef PE_TCPSERVER
 #include "tcpServer.h"
 #endif
