@@ -13,38 +13,39 @@ typedef struct
     short flagRun;
     //采样周期
     unsigned short intervalMs;
-    //角速度原始数据
-    short vGX, vGY, vGZ;
-    //重力加速度原始数据
-    short vAX, vAY, vAZ;
-    //罗盘原始数据
-    short vCX, vCY, vCZ;
-    //水平方向(单位:rad)
-    double dir;
-    //温度(原始数值)
-    long temper;
-    //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
-    double rGX, rGY, rGZ;
-    //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
-    double rAX, rAY, rAZ;
-    //最终输出角度值(相对空间坐标,rad:[-pi, pi])
-    double rX, rY, rZ;
-    //偏航角较正
-    double rZErr;
-    //绕轴角速度(单位:rad/s)
-    double vGX2, vGY2, vGZ2;
+
+    //绕轴角速度(单位:deg/s)
+    float gyrXYZ[3];
     //各轴受力及合力(单位:g)
-    double vAX2, vAY2, vAZ2;
+    float accXYZ[3];
+
+    //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
+    float gyrRollXYZ[3];
+    float gyrRollXYZ2[3]; //degree mode
+    //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
+    float accRollXYZ[3];
+    //最终输出角度值(相对空间坐标,rad:[-pi, pi])
+    float rollXYZ[3];
+    //偏航角较正
+    float rollZErr;
+
     //空间坐标系下的横纵向g值(单位:g)
-    double gX, gY, gZ, gXYZ;
+    float gX, gY, gZ, gXYZ;
     //correct gX/gY (单位:g)
-    double gXErr, gYErr, gZErr;
+    float gXErr, gYErr, gZErr;
     //accel in horizomtal X/Y (unit:m/ss)
-    double aX, aY, aZ;
+    float aX, aY, aZ;
     //空间坐标系下的横纵向速度(单位:m/s)
-    double speX, speY, speZ;
+    float speX, speY, speZ;
     //空间坐标系下的横纵向偏移距离(单位:m)
-    double movX, movY, movZ;
+    float movX, movY, movZ;
+
+    //罗盘原始数据
+    float compassXYZ[3];
+    //水平方向(单位:rad)
+    float dir;
+    //温度(原始数值)
+    float temper;
 } PostureStruct;
 
 /*
@@ -59,7 +60,7 @@ void pe_exit(PostureStruct **ps);
 void pe_reset(PostureStruct *ps);
 
 //获取罗盘角度(rad:[-pi, pi])
-double pe_dir(void);
+float pe_dir(void);
 
 #endif
 

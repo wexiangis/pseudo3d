@@ -248,7 +248,7 @@ static Tcp_Server *tsGyr, *tsAcc, *tsPry;
 /*
  *  返回0正常
  */
-int tcpServer_get(double *pry, short *gyro, short *accel)
+int tcpServer_get(float *pry, float *gyro, float *accel)
 {
     pthread_t th;
     if (!tsGyr || !tsAcc || !tsPry)
@@ -276,15 +276,15 @@ int tcpServer_get(double *pry, short *gyro, short *accel)
     }
     if (gyro)
     {
-        gyro[0] = (short)(tsGyr->data[0] * GYRO_VAL_P_RED);
-        gyro[1] = (short)(tsGyr->data[1] * GYRO_VAL_P_RED);
-        gyro[2] = (short)(tsGyr->data[2] * GYRO_VAL_P_RED);
+        gyro[0] = tsGyr->data[0];
+        gyro[1] = tsGyr->data[1];
+        gyro[2] = tsGyr->data[2];
     }
     if (accel)
     {
-        accel[0] = (short)(tsAcc->data[0] * ACCEL_VAL_P_G);
-        accel[1] = (short)(tsAcc->data[1] * ACCEL_VAL_P_G);
-        accel[2] = (short)(tsAcc->data[2] * ACCEL_VAL_P_G);
+        accel[0] = tsAcc->data[0];
+        accel[1] = tsAcc->data[1];
+        accel[2] = tsAcc->data[2];
     }
     return 0;
 }

@@ -281,7 +281,7 @@ int _serialSensor_getPkg(Serial_Sensor *ss, uint8_t pkg[46])
     uint8_t crc;
     //定格写位置
     buff_w = ss->buff_w;
-try_again:
+// try_again:
     count = 0;
     buff_r = ss->buff_r;
     while (buff_r != buff_w && count < 46)
@@ -335,26 +335,26 @@ try_again:
     return 1;
 }
 
-int serialSensor_decode(Serial_Sensor *ss, double *pry, short *gyro, short *accel)
+int serialSensor_decode(Serial_Sensor *ss, float *pry, float *gyro, float *accel)
 {
     float vFloat[10];
     uint8_t pkg[46];
     //从循环缓冲区中取一包数据
     if (_serialSensor_getPkg(ss, pkg) != 0)
         return 1;
-    //包数据转参数
     memcpy(vFloat, &pkg[8], 9 * 4);
+    //包数据转参数
     if (accel)
     {
-        accel[0] = (short)(vFloat[0] * ACCEL_VAL_P_G);
-        accel[1] = (short)(vFloat[1] * ACCEL_VAL_P_G);
-        accel[2] = (short)(vFloat[2] * ACCEL_VAL_P_G);
+        accel[0] = vFloat[0];
+        accel[1] = vFloat[1];
+        accel[2] = vFloat[2];
     }
     if (gyro)
     {
-        gyro[0] = (short)(vFloat[3] * PE_PI / 180);// deg/s 转 rad/s
-        gyro[1] = (short)(vFloat[4] * PE_PI / 180);
-        gyro[2] = (short)(vFloat[5] * PE_PI / 180);
+        gyro[0] = vFloat[3];
+        gyro[1] = vFloat[4];
+        gyro[2] = vFloat[5];
     }
 
     // printf(" %8.6f %8.6f %8.6f // %8.6f %8.6f %8.6f\r\n", 
@@ -365,13 +365,14 @@ int serialSensor_decode(Serial_Sensor *ss, double *pry, short *gyro, short *acce
     //     vFloat[0], vFloat[1], vFloat[2], 
     //     vFloat[3], vFloat[4], vFloat[5], 
     //     vFloat[6], vFloat[7], vFloat[8]);
+
     return 0;
 }
 
 /*
  *  返回0正常
  */
-int serialSensor_get(double *pry, short *gyro, short *accel)
+int serialSensor_get(float *pry, float *gyro, float *accel)
 {
     //打开串口
     if (!serial_sensor || serial_sensor->fd < 1)

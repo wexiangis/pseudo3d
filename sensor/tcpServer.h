@@ -11,6 +11,6 @@
 /*
  *  返回0正常
  */
-int tcpServer_get(double *pry, short *gyro, short *accel);
+int tcpServer_get(float *pry, float *gyro, float *accel);
 
 #endif

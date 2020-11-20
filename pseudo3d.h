@@ -27,8 +27,8 @@ typedef struct P3D_PPLink
 //注释信息结构体
 typedef struct P3D_Comment
 {
-    double xyz[3];     //所在三维坐标
-    double xyzCopy[3]; //备份数组
+    float xyz[3];     //所在三维坐标
+    float xyzCopy[3]; //备份数组
     int xy[2];         //二维投影点坐标
     char *comment;     //注释内容
     int type;          //0/普通字符串(添加后固定不变)  1/传入指针
@@ -39,10 +39,10 @@ typedef struct P3D_Comment
 //管理多边形图像的结构体
 typedef struct
 {
-    double raxyz[3];      //xyz轴旋转量(0~2pi)
-    double mvxyz[3];      //xyz轴的平移量
-    double *xyzArray;     //3元数组 x1,y1,z1;x2,y2,z2;...
-    double *xyzArrayCopy; //3元数组 x1,y1,z1;x2,y2,z2;... 备份数组
+    float raxyz[3];      //xyz轴旋转量(0~2pi)
+    float mvxyz[3];      //xyz轴的平移量
+    float *xyzArray;     //3元数组 x1,y1,z1;x2,y2,z2;...
+    float *xyzArrayCopy; //3元数组 x1,y1,z1;x2,y2,z2;... 备份数组
     int pointNum;         //上面两数组的点数量
     int xyzArrayMemSize;  //上面两数组的实际内存长度(字节数)
     int *xyArray;         //2元数组 x1,y1;x2,y2;... 三维坐标投影到二维后的坐标
@@ -62,9 +62,9 @@ typedef struct
  */
 P3D_PointArray_Type *p3d_init(
     int pointNum,
-    double x,
-    double y,
-    double z,
+    float x,
+    float y,
+    float z,
     int color, ...);
 
 /*
@@ -96,9 +96,9 @@ void p3d_ppLink_add(
  */
 void p3d_comment_add(
     P3D_PointArray_Type *dpat,
-    double x,
-    double y,
-    double z,
+    float x,
+    float y,
+    float z,
     char *comment,
     int type,
     int color);
@@ -123,7 +123,7 @@ void p3d_draw2(
     int centreX,
     int centreY,
     int color, 
-    double *xyz);
+    float *xyz);
 
 // ---------- 额外提供的数学方法 ----------
 
@@ -133,7 +133,7 @@ void p3d_draw2(
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
  */
-void p3d_matrix_xyz(double raxyz[3], double point[3]);
+void p3d_matrix_xyz(float raxyz[3], float point[3]);
 
 /*
  *  把物体自身坐标point[3]转换为空间坐标
@@ -141,6 +141,6 @@ void p3d_matrix_xyz(double raxyz[3], double point[3]);
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
  */
-void p3d_matrix_zyx(double raxyz[3], double point[3]);
+void p3d_matrix_zyx(float raxyz[3], float point[3]);
 
 #endif

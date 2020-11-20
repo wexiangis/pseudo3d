@@ -64,12 +64,12 @@ void mma8451_init(void)
     i2c_default_rw(MMA8451_ID, HP_FILTER_CUTOFF, 1, data, 1);
 }
 
-void mma8451_get(short *accel)
+void mma8451_get(float *accel)
 {
     unsigned char data[6];
     i2c_default_rw(MMA8451_ID, OUT_X_MSB, 6, data, 0);
-    accel[1] = -(short)((data[0] << 8) | data[1]);
-    accel[0] = -(short)((data[2] << 8) | data[2]);
-    accel[2] = -(short)((data[4] << 8) | data[5]);
+    accel[1] = - (float)((data[0] << 8) | data[1]) / 32768 * 2;
+    accel[0] = - (float)((data[2] << 8) | data[2]) / 32768 * 2;
+    accel[2] = - (float)((data[4] << 8) | data[5]) / 32768 * 2;
 }
 

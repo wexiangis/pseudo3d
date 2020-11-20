@@ -3,6 +3,18 @@
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
 
+//1弧度对应采样值,陀螺仪数据除以该值得到绕轴角加速度,单位rad/s
+#define GYRO_VAL_P_RED (32768 / 2000)
+
+//1g对应采样值,加速度计数据除以该值得到轴向受力,单位g
+#define ACCEL_VAL_P_G (32768 / 2)
+
+//1uT对应采样值,罗盘数据除以该值得到轴向受力,单位uT (纠正中...)
+#define COMPASS_VAL_P_G (8192 / 4800)
+
+//1度对应采样值,温度据除以该值得到轴向受力,单位度 (纠正中...)
+#define TEMPER_VAL_P_G (32768)
+
 //q30格式,long转float时的除数.
 #define q30 1073741824.0f
 
@@ -144,19 +156,34 @@ int mpu6050_init(unsigned short Hz, char test)
 /*
  *  得到dmp处理后的数据
  *  pry: 欧拉角 pitch, roll, yaw, 单位rad
- *  gyro: 陀螺仪原始数据
- *  accel: 重力加速度原始数据
+ *  gyro: deg/s
+ *  accel: g
  *  返回值: 0/正常
  */
-int mpu6050_angle(double *pry, short *gyro, short *accel)
+int mpu6050_angle(float *pry, float *gyro, float *accel)
 {
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
     short sensors;
     unsigned char more;
     long quat[4];
-    if (dmp_read_fifo(gyro, accel, quat, &sensor_timestamp, &sensors, &more) != 0)
+    short _gyro[3], _accel[3];
+    //
+    if (dmp_read_fifo(_gyro, _accel, quat, &sensor_timestamp, &sensors, &more) != 0)
         return 1;
+    //
+    if (gyro)
+    {
+        gyro[0] = (float)_gyro[0] / GYRO_VAL_P_RED;
+        gyro[1] = (float)_gyro[1] / GYRO_VAL_P_RED;
+        gyro[2] = (float)_gyro[2] / GYRO_VAL_P_RED;
+    }
+    if (accel)
+    {
+        accel[0] = (float)_accel[0] / ACCEL_VAL_P_G;
+        accel[1] = (float)_accel[1] / ACCEL_VAL_P_G;
+        accel[2] = (float)_accel[2] / ACCEL_VAL_P_G;
+    }
     /* Unlike gyro and accel, quaternions are written to the FIFO in the body frame, q30.
 	 * The orientation is set by the scalar passed to dmp_set_orientation during initialization. 
 	**/
@@ -179,21 +206,35 @@ int mpu6050_angle(double *pry, short *gyro, short *accel)
 /*
  *  取罗盘数据
  */
-int mpu6050_compass(short *compass)
+int mpu6050_compass(float *compass)
 {
 #ifndef MPU9250
     return 0;
 #else
+    int ret;
+    short _compass[3];
     unsigned long sensor_timestamp;
-    return mpu_get_compass_reg(compass, &sensor_timestamp);
+    ret = mpu_get_compass_reg(_compass, &sensor_timestamp);
+    if (compass)
+    {
+        compass[0] = (float)_compass[0] / COMPASS_VAL_P_G;
+        compass[1] = (float)_compass[1] / COMPASS_VAL_P_G;
+        compass[2] = (float)_compass[2] / COMPASS_VAL_P_G;
+    }
+    return ret;
 #endif
 }
 
 /*
  *  取温度数据
  */
-int mpu6050_temper(long *temper)
+int mpu6050_temper(float *temper)
 {
+    int ret;
+    long _temper;
     unsigned long sensor_timestamp;
-    return mpu_get_temperature(temper, &sensor_timestamp);
+    ret = mpu_get_temperature(&_temper, &sensor_timestamp);
+    if (temper)
+        *temper = (float)_temper / TEMPER_VAL_P_G;
+    return ret;
 }

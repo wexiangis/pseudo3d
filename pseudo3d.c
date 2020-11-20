@@ -43,10 +43,10 @@
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
  */
-void p3d_matrix_xyz(double raxyz[3], double point[3])
+void p3d_matrix_xyz(float raxyz[3], float point[3])
 {
-    double x = point[0], y = point[1], z = point[2];
-    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
+    float x = point[0], y = point[1], z = point[2];
+    float A = raxyz[0], B = raxyz[1], C = raxyz[2];
     //这个宏用于切换坐标系方向,注意要和p3d_matrix_xyz()形成互为逆矩阵
 #if 1
     /*
@@ -151,10 +151,10 @@ void p3d_matrix_xyz(double raxyz[3], double point[3])
  *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
  *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
  */
-void p3d_matrix_zyx(double raxyz[3], double point[3])
+void p3d_matrix_zyx(float raxyz[3], float point[3])
 {
-    double x = point[0], y = point[1], z = point[2];
-    double A = raxyz[0], B = raxyz[1], C = raxyz[2];
+    float x = point[0], y = point[1], z = point[2];
+    float A = raxyz[0], B = raxyz[1], C = raxyz[2];
     //这个宏用于切换坐标系方向,注意要和p3d_matrix_xyz()形成互为逆矩阵
 #if 1
     /*
@@ -333,7 +333,7 @@ void p3d_ppLink_add(P3D_PointArray_Type *dpat, int color, int point, int targetN
  *      type: 注释类型,0/普通字符串(添加后固定不变)  1/传入指针
  *      color: 文字颜色
  */
-void p3d_comment_add(P3D_PointArray_Type *dpat, double x, double y, double z, char *comment, int type, int color)
+void p3d_comment_add(P3D_PointArray_Type *dpat, float x, float y, float z, char *comment, int type, int color)
 {
     P3D_Comment_Type *dct;
 
@@ -376,7 +376,7 @@ void p3d_comment_add(P3D_PointArray_Type *dpat, double x, double y, double z, ch
  * 
  *  注意: x, y, z 必须用 0.00 的格式赋值, 例如: 3 写成 3.00, -13 写成 -13.00
  */
-P3D_PointArray_Type *p3d_init(int pointNum, double x, double y, double z, int color, ...)
+P3D_PointArray_Type *p3d_init(int pointNum, float x, float y, float z, int color, ...)
 {
     int i, j;
     P3D_PointArray_Type *dpat;
@@ -388,10 +388,10 @@ P3D_PointArray_Type *p3d_init(int pointNum, double x, double y, double z, int co
     dpat = (P3D_PointArray_Type *)calloc(1, sizeof(P3D_PointArray_Type));
 
     dpat->pointNum = pointNum;
-    dpat->xyzArrayMemSize = pointNum * 3 * sizeof(double);
+    dpat->xyzArrayMemSize = pointNum * 3 * sizeof(float);
 
-    dpat->xyzArray = (double *)calloc(pointNum * 3 + 3, sizeof(double));
-    dpat->xyzArrayCopy = (double *)calloc(pointNum * 3 + 3, sizeof(double));
+    dpat->xyzArray = (float *)calloc(pointNum * 3 + 3, sizeof(float));
+    dpat->xyzArrayCopy = (float *)calloc(pointNum * 3 + 3, sizeof(float));
 
     dpat->xyArray = (int *)calloc(pointNum * 2 + 2, sizeof(int));
     dpat->color = (int *)calloc(pointNum + 1, sizeof(int));
@@ -419,10 +419,10 @@ P3D_PointArray_Type *p3d_init(int pointNum, double x, double y, double z, int co
 /*
  *  把三维坐标点投影到二维坐标点上
  */
-void p3d_3d_to_2d(double P3D_XYZ[3], int _2D_XY[2])
+void p3d_3d_to_2d(float P3D_XYZ[3], int _2D_XY[2])
 {
-    double tempX, tempY;
-    double x = P3D_XYZ[0], y = P3D_XYZ[1], z = P3D_XYZ[2];
+    float tempX, tempY;
+    float x = P3D_XYZ[0], y = P3D_XYZ[1], z = P3D_XYZ[2];
 
     //不同的坐标系摆放方式
     if (P3D_2D_XYZ_TYPE == 0)
@@ -476,7 +476,7 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
     {
 #if (P3D_INPUT_MODE != 1)
         //mode/0: 使用原始的坐标和累积的转角量,一次转换到目标坐标
-        memcpy(&dpat->xyzArray[j], &dpat->xyzArrayCopy[j], 3 * sizeof(double));
+        memcpy(&dpat->xyzArray[j], &dpat->xyzArrayCopy[j], 3 * sizeof(float));
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyzArray[3]
         if(dpat->_matrix_mode == 1)
@@ -496,7 +496,7 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
     {
 #if (P3D_INPUT_MODE != 1)
         //mode/0: 使用原始的坐标和累积的转角量,一次转换到目标坐标
-        memcpy(dct->xyz, dct->xyzCopy, 3 * sizeof(double));
+        memcpy(dct->xyz, dct->xyzCopy, 3 * sizeof(float));
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyz[3]
         if(dpat->_matrix_mode == 1)
@@ -630,7 +630,7 @@ void p3d_draw2(
     int centreX,
     int centreY,
     int color, 
-    double *xyz)
+    float *xyz)
 {
     int xy[2];
     //坐标转换

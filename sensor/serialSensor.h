@@ -7,6 +7,6 @@
 /*
  *  返回0正常
  */
-int serialSensor_get(double *pry, short *gyro, short *accel);
+int serialSensor_get(float *pry, float *gyro, float *accel);
 
 #endif
