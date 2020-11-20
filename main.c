@@ -174,7 +174,7 @@ int main(int argc, char **argv)
     //初始化姿态计算器
     ps = pe_init(MPU6050_INTERVALMS);
     //示波器初始化(上、下半屏)
-    ws1 = wave_init(0, 0, fb_width - VIEW_X_SIZE, fb_height / 2);
+    ws1 = wave_init(0, 0, 800 - VIEW_X_SIZE, fb_height / 2);
     ws2 = wave_init(0, fb_height / 2, fb_width - VIEW_X_SIZE, fb_height / 2);
     //打点器初始化(在姿态图像下方)
     ds = dot_init(
@@ -195,6 +195,9 @@ int main(int argc, char **argv)
         //wave_load(ws1, 3, (short)(ps->rAX * 10000));
         //wave_load(ws1, 4, (short)(ps->rAY * 10000));
         //wave_load(ws1, 5, (short)(ps->rAZ * 10000));
+        wave_load(ws1, 3, ps->vGX);
+        wave_load(ws1, 4, ps->vGY);
+        wave_load(ws1, 5, ps->vGZ);
 
         wave_load(ws2, 0, 10000);
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);

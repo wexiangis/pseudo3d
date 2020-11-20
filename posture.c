@@ -14,21 +14,23 @@
 // 启用四元数解算
 //#define PE_QUATERNION
 
-// 启用tcpServer
-#define PE_TCPSERVER
-#ifdef PE_TCPSERVER
+// 传感器5选1
+// #define SENSOR_MPU6050      //启用mpu6050
+#define SENSOR_SERIALSENSOR //启用serialSensor
+// #define SENSOR_TCPSERVER    //启用tcpServer
+// #define SENSOR_MMA8451 //启用MMA8451
+// #define SENSOR_HMC5883 //启用HMC5883罗盘
+
+#ifdef SENSOR_SERIALSENSOR
+#include "serialSensor.h"
+#endif
+#ifdef SENSOR_TCPSERVER
 #include "tcpServer.h"
 #endif
-
-// 启用MMA8451
-// #define PE_MMA8451
-#ifdef PE_MMA8451
+#ifdef SENSOR_MMA8451
 #include "mma8451.h"
 #endif
-
-// 启用HMC5883罗盘
-// #define PE_HMC5883
-#ifdef PE_HMC5883
+#ifdef SENSOR_HMC5883
 #include "hmc5883.h"
 #endif
 
@@ -37,27 +39,24 @@
 // (unit:kg)
 #define PE_MASS 1
 
-// 陀螺仪积分矫正倍数
-#define GYRO_REDUCE_POW 1000
-
 // 陀螺仪角度积分公式(这里用的梯形面积计算方式)
 // 采样间隔 intervalMs 变化时不需再调整参数
 #define GYRO_SUM_FUN(new, old) \
-((double)(new + old) / 2 * ps->intervalMs / 1000 / GYRO_REDUCE_POW)
+    ((double)(new + old) / 2 * ps->intervalMs / 1000)
 
 // Speed积分矫正倍数
 #define SPE_REDUCE_POW 1
 
 // Speed积分得到移动距离(同上面 GYRO_SUM_FUN())
 #define SPE_SUN_FUN(new, old) \
-((new + old) / 2 * ps->intervalMs / 1000 / SPE_REDUCE_POW)
+    ((new + old) / 2 * ps->intervalMs / 1000 / SPE_REDUCE_POW)
 
 // Mov积分矫正倍数
 #define MOV_REDUCE_POW 1
 
 // Mov积分得到移动距离(同上面 GYRO_SUM_FUN())
 #define MOV_SUN_FUN(new, old) \
-((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
+    ((new + old) / 2 * ps->intervalMs / 1000 / MOV_REDUCE_POW)
 
 #ifdef PE_QUATERNION
 /*
@@ -68,11 +67,11 @@
  */
 void quaternion(short *valG, short *valA, double *pry, int intervalMs)
 {
-    double Kp = 500.0;// 比例增益支配率收敛到加速度计/磁强计
-    double Ki = 2.0;  // 积分增益支配率的陀螺仪偏见的衔接
+    double Kp = 500.0;                                   // 比例增益支配率收敛到加速度计/磁强计
+    double Ki = 2.0;                                     // 积分增益支配率的陀螺仪偏见的衔接
     double halfT = (double)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
-    static double q0 = 1, q1 = 0, q2 = 0, q3 = 0;  // 四元数的元素，代表估计方向
-    static double exInt = 0, eyInt = 0, ezInt = 0; // 按比例缩小积分误差
+    static double q0 = 1, q1 = 0, q2 = 0, q3 = 0;        // 四元数的元素，代表估计方向
+    static double exInt = 0, eyInt = 0, ezInt = 0;       // 按比例缩小积分误差
     double norm;
     double ax, ay, az;
     double gx, gy, gz;
@@ -129,15 +128,19 @@ void pe_accel(PostureStruct *ps, short *valA)
     // accel计算姿态
     ps->rAX = atan2((double)ps->vAY, (double)ps->vAZ);
     ps->rAY = -atan2((double)ps->vAX,
-        (double)sqrt((double)ps->vAY * ps->vAY + (double)ps->vAZ * ps->vAZ));
+                     (double)sqrt((double)ps->vAY * ps->vAY + (double)ps->vAZ * ps->vAZ));
     ps->rAZ = 0;
     // 各轴向受力转换(单位:g)
     ps->vAX2 = (double)ps->vAX / ACCEL_VAL_P_G;
     ps->vAY2 = (double)ps->vAY / ACCEL_VAL_P_G;
     ps->vAZ2 = (double)ps->vAZ / ACCEL_VAL_P_G;
     //
-    vXYZ[0] = ps->vAX2; vXYZ[1] = ps->vAY2; vXYZ[2] = ps->vAZ2;
-    rXYZ[0] = ps->rX; rXYZ[1] = ps->rY; rXYZ[2] = ps->rZ;
+    vXYZ[0] = ps->vAX2;
+    vXYZ[1] = ps->vAY2;
+    vXYZ[2] = ps->vAZ2;
+    rXYZ[0] = ps->rX;
+    rXYZ[1] = ps->rY;
+    rXYZ[2] = ps->rZ;
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
     p3d_matrix_zyx(rXYZ, vXYZ);
     //则该向量在水平方向的分量即为横纵向的g值
@@ -146,12 +149,18 @@ void pe_accel(PostureStruct *ps, short *valA)
     gZ = vXYZ[2] + ps->gZErr;
 #if 1
     //test
-    if (ps->gX > err) ps->gXErr -= err;
-    else if (ps->gX < -err) ps->gXErr += err;
-    if (ps->gY > err) ps->gYErr -= err;
-    else if(ps->gY < -err) ps->gYErr += err;
-    if (ps->gZ > errZ) ps->gZErr -= errZ;
-    else if(ps->gZ < -errZ) ps->gZErr += errZ;
+    if (ps->gX > err)
+        ps->gXErr -= err;
+    else if (ps->gX < -err)
+        ps->gXErr += err;
+    if (ps->gY > err)
+        ps->gYErr -= err;
+    else if (ps->gY < -err)
+        ps->gYErr += err;
+    if (ps->gZ > errZ)
+        ps->gZErr -= errZ;
+    else if (ps->gZ < -errZ)
+        ps->gZErr += errZ;
 #endif
     //bakup
     ps->gX = gX;
@@ -231,41 +240,55 @@ void *pe_thread(void *argv)
     int timeCount = 0;
     double valR[3];
     short valG[3], valA[3], valC[3];
-    PostureStruct *ps = (PostureStruct*)argv;
-#ifdef PE_TCPSERVER
-    tcpServer_get(valR, valG, valA);
-    DELAY_US(ps->intervalMs * 1000);
-#else
-    //初始化mpu6050
+    PostureStruct *ps = (PostureStruct *)argv;
+    //传感器初始化
+#ifdef SENSOR_MPU6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
-#ifdef PE_MMA8451
+#endif
+#ifdef SENSOR_SERIALSENSOR
+    serialSensor_get(valR, valG, valA);
+    DELAY_US(ps->intervalMs * 1000);
+#endif
+#ifdef SENSOR_TCPSERVER
+    tcpServer_get(valR, valG, valA);
+    DELAY_US(ps->intervalMs * 1000);
+#endif
+#ifdef SENSOR_MMA8451
     //初始化mma8451
     mma8451_init();
-#endif
 #endif
     //周期采样
     while (ps->flagRun)
     {
         DELAY_US(ps->intervalMs * 1000);
         // 采样
-#ifdef PE_TCPSERVER
-        if (tcpServer_get(valR, valG, valA) == 0)
-        {
-            ps->rX = valR[1];
-            ps->rY = valR[0];
-            ps->rZ = valR[2] + ps->rZErr;
-        }
-#else
+#ifdef SENSOR_MPU6050
         if (mpu6050_angle(valR, valG, valA) == 0)
         {
             ps->rX = valR[1];
             ps->rY = valR[0];
             ps->rZ = valR[2] + ps->rZErr;
         }
-#ifdef PE_MMA8451
-        mma8451_get(valA);
 #endif
+#ifdef SENSOR_SERIALSENSOR
+        if (serialSensor_get(valR, valG, valA) == 0)
+        {
+            ps->rX = valR[1];
+            ps->rY = valR[0];
+            ps->rZ = valR[2] + ps->rZErr;
+        }
+#endif
+#ifdef SENSOR_TCPSERVER
+        if (tcpServer_get(valR, valG, valA) == 0)
+        {
+            ps->rX = valR[1];
+            ps->rY = valR[0];
+            ps->rZ = valR[2] + ps->rZErr;
+        }
+#endif
+#ifdef SENSOR_MMA8451
+        mma8451_get(valA);
 #endif
 #ifdef PE_QUATERNION
         quaternion(valG, valA, valR, ps->intervalMs);
@@ -273,18 +296,20 @@ void *pe_thread(void *argv)
         ps->rY = valR[1];
         ps->rZ = valR[2] + ps->rZErr;
 #endif
-        // gyro: 
+        // gyro:
         pe_gyro(ps, valG);
-        // accel: 
+        // accel:
         pe_accel(ps, valA);
         // 惯导参数计算
         pe_inertial_navigation(ps);
         //定时获取罗盘数据 & 温度数据
         timeCount += ps->intervalMs;
-        if(timeCount >= 200){
+        if (timeCount >= 200)
+        {
             timeCount = 0;
             //罗盘
-            if(mpu6050_compass(valC) == 0) {
+            if (mpu6050_compass(valC) == 0)
+            {
                 ps->vCX = valC[0];
                 ps->vCY = valC[1];
                 ps->dir = atan2((float)ps->vCY, (float)ps->vCX);
@@ -303,16 +328,16 @@ void *pe_thread(void *argv)
  */
 PostureStruct *pe_init(unsigned short intervalMs)
 {
-    PostureStruct *ps = (PostureStruct*)calloc(1, sizeof(PostureStruct));
+    PostureStruct *ps = (PostureStruct *)calloc(1, sizeof(PostureStruct));
     ps->intervalMs = intervalMs;
     ps->flagRun = 1;
-    pthread_create(&ps->th, NULL, &pe_thread, (void*)ps);
+    pthread_create(&ps->th, NULL, &pe_thread, (void *)ps);
     return ps;
 }
 
 void pe_exit(PostureStruct **ps)
 {
-    if(!ps || !(*ps))
+    if (!ps || !(*ps))
         return;
     if ((*ps)->flagRun)
     {
@@ -326,10 +351,9 @@ void pe_exit(PostureStruct **ps)
 //获取罗盘角度(rad:[-pi, pi])
 double pe_dir(void)
 {
-#ifdef PE_HMC5883
+#ifdef SENSOR_HMC5883
     return (double)hmc5883_get();
 #else
     return 0;
 #endif
 }
-

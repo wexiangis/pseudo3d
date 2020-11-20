@@ -34,6 +34,8 @@ obj-c += sensor/hmc5883.c
 obj-c += sensor/mma8451.c
 # tcp服务器接收来自android设备的数据
 obj-c += sensor/tcpServer.c
+# 来自serial传感器数据
+obj-c += sensor/serialSensor.c
 
 target:
 	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./sensor -I./sensor/mpu6050 -I./ui -lm -lpthread
