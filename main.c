@@ -14,8 +14,8 @@
 #include "view.h"
 
 //使用陀螺仪模块
-#define ENABLE_MPU6050 1
-#if (ENABLE_MPU6050)
+#define ENABLE_MPU6050
+#ifdef ENABLE_MPU6050
 #include "posture.h"
 #include "fbmap.h"
 #include "dot.h"
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     int fd;
     //测试点
     float xyz[3];
-#if (ENABLE_MPU6050)
+#ifdef ENABLE_MPU6050
     //姿态结构体
     PostureStruct *ps;
     //示波器2个
@@ -106,7 +106,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat1, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat1, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat1, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat1->_matrix_mode = 1;//使用zyx旋转矩阵
+    dpat1->_matrix_mode = 1; //使用zyx旋转矩阵
 
     //长方体2
     if ((dpat2 = p3d_init(8,
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat2, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat2, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat2, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat2->_matrix_mode = 1;//使用zyx旋转矩阵
+    dpat2->_matrix_mode = 1; //使用zyx旋转矩阵
 
     //长方体3
     if ((dpat3 = p3d_init(8,
@@ -168,9 +168,9 @@ int main(int argc, char **argv)
     p3d_comment_add(dpat3, -40.00, -30.00, -50.00, "F", 0, 0x00FFFF);
     p3d_comment_add(dpat3, 40.00, -30.00, -50.00, "G", 0, 0xFF8000);
     p3d_comment_add(dpat3, 40.00, 30.00, -50.00, "H", 0, 0x0080FF);
-    dpat3->_matrix_mode = 1;//使用zyx旋转矩阵
+    dpat3->_matrix_mode = 1; //使用zyx旋转矩阵
 
-#if (ENABLE_MPU6050)
+#ifdef ENABLE_MPU6050
     //初始化姿态计算器
     ps = pe_init(MPU6050_INTERVALMS);
     //示波器初始化(上、下半屏)
@@ -187,7 +187,7 @@ int main(int argc, char **argv)
     {
         DELAY_US(INTERVALUS);
 
-#if (ENABLE_MPU6050)
+#ifdef ENABLE_MPU6050
 
         wave_load(ws1, 0, (short)(ps->rollXYZ[0] * 10000));
         wave_load(ws1, 1, (short)(ps->rollXYZ[1] * 10000));
@@ -213,9 +213,11 @@ int main(int argc, char **argv)
         memcpy(dpat3->raxyz, ps->gyrRollXYZ, sizeof(float) * 3);
 
         log_count += INTERVALUS;
-        if (log_count >= 20000) {
-        log_count = 0;
-
+        if (log_count >= 20000)
+        {
+            log_count = 0;
+            // printf(" %8.4f %8.4f %8.4f \r\n", 
+            //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2]);
         }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->accXYZ[0] * 100;
@@ -289,7 +291,7 @@ int main(int argc, char **argv)
                 p3d_reset(dpat1);
                 p3d_reset(dpat2);
                 p3d_reset(dpat3);
-#if (ENABLE_MPU6050)
+#ifdef ENABLE_MPU6050
                 pe_reset(ps);
                 dot_clear(ds);
 #endif
@@ -303,6 +305,5 @@ int main(int argc, char **argv)
 
             printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", dpat1->raxyz[0], dpat1->raxyz[1], dpat1->raxyz[2]);
         }
-
     }
 }

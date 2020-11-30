@@ -16,7 +16,7 @@
 // 传感器5选1
 #define SENSOR_MPU6050      //启用mpu6050
 // #define SENSOR_SERIALSENSOR //启用serialSensor
-// #define SENSOR_TCPSERVER    //启用tcpServer
+// #define SENSOR_TCPSERVER //启用tcpServer
 // #define SENSOR_MMA8451 //启用MMA8451
 // #define SENSOR_HMC5883 //启用HMC5883罗盘
 
@@ -28,7 +28,7 @@
 // (unit:kg)
 #define PE_MASS 1
 
-// 梯形面积计算
+// 梯形面积计算方式求积分
 #define TRAPEZIOD_SUM(new, old) \
 ((new + old) / 2 * ps->intervalMs / 1000)
 
@@ -52,14 +52,14 @@
  *  pry: 输出绕xyz轴角度(单位:rad)
  *  intervalMs: 采样间隔(单位:ms)
  */
-void quaternion(float *valG, float *valA, float *pry, int intervalMs)
+void quaternion(float *valG, float *valA, float *pry, unsigned short intervalMs)
 {
-    float gyrPow = 16.4;
-    float Kp = 500.0;                                   // 比例增益支配率收敛到加速度计/磁强计
-    float Ki = 2.0;                                     // 积分增益支配率的陀螺仪偏见的衔接
+    float gyrPow = 16.4;                               // 16.4;
+    float Kp = 500.0;                                  // 比例增益支配率收敛到加速度计/磁强计
+    float Ki = 2.0;                                    // 积分增益支配率的陀螺仪偏见的衔接
     float halfT = (float)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
-    static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;        // 四元数的元素，代表估计方向
-    static float exInt = 0, eyInt = 0, ezInt = 0;       // 按比例缩小积分误差
+    static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;       // 四元数的元素，代表估计方向
+    static float exInt = 0, eyInt = 0, ezInt = 0;      // 按比例缩小积分误差
     float norm;
     float ax, ay, az;
     float gx, gy, gz;
@@ -67,6 +67,8 @@ void quaternion(float *valG, float *valA, float *pry, int intervalMs)
     float ex, ey, ez;
     // 测量正常化: 向量(ax,ay,az)除以自身模长,即变为单位向量,方向不变
     norm = sqrt(valA[0] * valA[0] + valA[1] * valA[1] + valA[2] * valA[2]);
+    if (isnan(norm))
+        return;
     ax = valA[0] / norm;
     ay = valA[1] / norm;
     az = valA[2] / norm;
@@ -93,6 +95,8 @@ void quaternion(float *valG, float *valA, float *pry, int intervalMs)
     q3 = q3 + (q0 * gz + q1 * gy - q2 * gx) * halfT;
     // 正常化四元: 向量除以自身模长,即转换为单位向量,方向不变
     norm = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
+    if (isnan(norm))
+        return;
     q0 = q0 / norm;
     q1 = q1 / norm;
     q2 = q2 / norm;
@@ -112,7 +116,7 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     memcpy(ps->accXYZ, valAcc, sizeof(float) * 3);
     // accel计算姿态
     ps->accRollXYZ[0] = atan2((float)valAcc[1], (float)valAcc[2]);
-    ps->accRollXYZ[1] = -atan2((float)valAcc[0], 
+    ps->accRollXYZ[1] = -atan2((float)valAcc[0],
         sqrt((float)valAcc[1] * valAcc[1] + (float)valAcc[2] * valAcc[2]));
     ps->accRollXYZ[2] = 0;
     //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
@@ -208,8 +212,9 @@ void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
     int timeCount = 0;
-    float valRoll[3];
-    float valGyr[3], valAcc[3];
+    float valRoll[3] = {0};
+    float valGyr[3] = {0};
+    float valAcc[3] = {0};
     PostureStruct *ps = (PostureStruct *)argv;
     //传感器初始化
 #ifdef SENSOR_MPU6050
