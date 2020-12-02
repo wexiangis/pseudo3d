@@ -4,11 +4,8 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-
-#define SERIAL_DEV "/dev/ttyUSB0"
-#define SERIAL_BAUND 460800
-#define SERIAL_INTERVALMS 2
-#define SERIAL_CIRCLE_BUFF_LEN 102400
+#include <unistd.h>
+#include <fcntl.h>
 
 // --------------------------------- serial
 
@@ -224,6 +221,7 @@ static int attr_set(int fd, SERIAL_ATTR_ST *serial_attr)
 #include <sys/types.h>
 
 #include "mpu6050.h"
+#include "serialSensor.h"
 
 typedef struct
 {
@@ -335,7 +333,7 @@ int _serialSensor_getPkg(Serial_Sensor *ss, uint8_t pkg[46])
     return 1;
 }
 
-int serialSensor_decode(Serial_Sensor *ss, float *pry, float *gyro, float *accel)
+int serialSensor_decode(Serial_Sensor *ss, float *gyro, float *accel)
 {
     float vFloat[10];
     uint8_t pkg[46];
@@ -372,7 +370,7 @@ int serialSensor_decode(Serial_Sensor *ss, float *pry, float *gyro, float *accel
 /*
  *  返回0正常
  */
-int serialSensor_get(float *pry, float *gyro, float *accel)
+int serialSensor_get(float *gyro, float *accel)
 {
     //打开串口
     if (!serial_sensor || serial_sensor->fd < 1)
@@ -393,5 +391,5 @@ int serialSensor_get(float *pry, float *gyro, float *accel)
         return 1;
     }
     //从循环缓冲区解析数据
-    return serialSensor_decode(serial_sensor, pry, gyro, accel);
+    return serialSensor_decode(serial_sensor, gyro, accel);
 }

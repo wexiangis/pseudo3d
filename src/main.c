@@ -193,12 +193,14 @@ int main(int argc, char **argv)
         wave_load(ws1, 1, (short)(ps->rollXYZ[1] * 10000));
         wave_load(ws1, 2, (short)(ps->rollXYZ[2] * 10000));
 
-        wave_load(ws2, 0, 10000);
+        wave_load(ws2, 0, 10000);//基准线
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
         wave_load(ws2, 2, (short)(ps->speY * 10000) + 10000);
-        wave_load(ws2, 3, -10000);
-        wave_load(ws2, 4, (short)(ps->gX * 50000) - 10000);
-        wave_load(ws2, 5, (short)(ps->gY * 50000) - 10000);
+        // wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
+        wave_load(ws2, 4, -10000);//基准线
+        wave_load(ws2, 5, (short)(ps->gX * 50000) - 10000);
+        wave_load(ws2, 6, (short)(ps->gY * 50000) - 10000);
+        // wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
 
         dot_set(ds, ps->gX, 0, 0xFF0000);
         dot_set(ds, 0, ps->gY, 0x0000FF);
@@ -216,7 +218,9 @@ int main(int argc, char **argv)
         if (log_count >= 20000)
         {
             log_count = 0;
-            // printf(" %8.4f %8.4f %8.4f \r\n", 
+            // printf(" acc %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f roll %8.4f %8.4f %8.4f \r\n", 
+            //     ps->accXYZ[0], ps->accXYZ[1], ps->accXYZ[2],
+            //     ps->gyrXYZ[0], ps->gyrXYZ[1], ps->gyrXYZ[2], 
             //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2]);
         }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置

@@ -6,6 +6,10 @@
 #include <string.h>
 #include <math.h>
 
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/types.h>
+
 #include "posture.h"
 #include "delayus.h"
 #include "mpu6050.h"
@@ -14,14 +18,21 @@
 #define POSTURE_PI 3.14159265358979323846
 
 // 传感器5选1
-#define SENSOR_MPU6050      //启用mpu6050
+#define SENSOR_MPU6050 //启用mpu6050
 // #define SENSOR_SERIALSENSOR //启用serialSensor
 // #define SENSOR_TCPSERVER //启用tcpServer
 // #define SENSOR_MMA8451 //启用MMA8451
 // #define SENSOR_HMC5883 //启用HMC5883罗盘
 
+// 存/读文件(选一个,读文件时不依赖传感器)
+// #define PE_SAVE_FILE "./data.txt"
+// #define PE_LOAD_FILE "./data.txt"
+
 // 启用四元数解算
 #define PE_QUATERNION
+
+// 计算额外受力
+#define PE_ACCFORCE
 
 // (unit:N/kg)
 #define PE_GRAVITY 9.8
@@ -30,7 +41,7 @@
 
 // 梯形面积计算方式求积分
 #define TRAPEZIOD_SUM(new, old) \
-((new + old) / 2 * ps->intervalMs / 1000)
+    ((new + old) / 2 * ps->intervalMs / 1000)
 
 #ifdef SENSOR_SERIALSENSOR
 #include "serialSensor.h"
@@ -52,14 +63,13 @@
  *  pry: 输出绕xyz轴角度(单位:rad)
  *  intervalMs: 采样间隔(单位:ms)
  */
-void quaternion(float *valG, float *valA, float *pry, unsigned short intervalMs)
+void quaternion(float *valG, float *valA, float *pry, int intervalMs)
 {
-    float gyrPow = 16.4;                               // 16.4;
-    float Kp = 500.0;                                  // 比例增益支配率收敛到加速度计/磁强计
-    float Ki = 2.0;                                    // 积分增益支配率的陀螺仪偏见的衔接
-    float halfT = (float)intervalMs / 2 / 1000 / 1000; // 采样周期的一半
-    static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;       // 四元数的元素，代表估计方向
-    static float exInt = 0, eyInt = 0, ezInt = 0;      // 按比例缩小积分误差
+    float Kp = 1000.0;                            // 比例增益支配率收敛到加速度计/磁强计
+    float Ki = 10.0;                              // 积分增益支配率的陀螺仪偏见的衔接
+    float halfT = (float)intervalMs / 2 / 1000;   // 采样周期的一半
+    static float q0 = 1, q1 = 0, q2 = 0, q3 = 0;  // 四元数的元素，代表估计方向
+    static float exInt = 0, eyInt = 0, ezInt = 0; // 按比例缩小积分误差
     float norm;
     float ax, ay, az;
     float gx, gy, gz;
@@ -85,9 +95,9 @@ void quaternion(float *valG, float *valA, float *pry, unsigned short intervalMs)
     eyInt = eyInt + ey * Ki;
     ezInt = ezInt + ez * Ki;
     // 调整后的陀螺仪测量
-    gx = valG[0] * gyrPow + Kp * ex + exInt;
-    gy = valG[1] * gyrPow + Kp * ey + eyInt;
-    gz = valG[2] * gyrPow + Kp * ez + ezInt;
+    gx = valG[0] + Kp * ex + exInt;
+    gy = valG[1] + Kp * ey + eyInt;
+    gz = valG[2] + Kp * ez + ezInt;
     // 整合四元数率和正常化
     q0 = q0 + (-q1 * gx - q2 * gy - q3 * gz) * halfT;
     q1 = q1 + (q0 * gx + q2 * gz - q3 * gy) * halfT;
@@ -111,22 +121,32 @@ void quaternion(float *valG, float *valA, float *pry, unsigned short intervalMs)
 void pe_accel(PostureStruct *ps, float *valAcc)
 {
     float err = 0.0001, errZ = 0.001;
-    float accXYZ2[3];
+    float valTmp[3];
+    // 用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
+    memcpy(valTmp, valAcc, sizeof(float) * 3);
+    p3d_matrix_zyx(ps->rollXYZ, valTmp);
+    // 则该向量在水平方向的分量即为横纵向的g值
+    ps->gX = valTmp[0] + ps->gXErr;
+    ps->gY = valTmp[1] + ps->gYErr;
+    ps->gZ = valTmp[2] + ps->gZErr;
+#ifdef PE_ACCFORCE
+    // 把空间坐标系下的水平分量旋转回物体参考系
+    ps->accForce[0] = ps->gX;
+    ps->accForce[1] = ps->gY;
+    ps->accForce[2] = 0;//ps->gZ;
+    p3d_matrix_xyz(ps->rollXYZ, ps->accForce);
+#endif
+    // 得到剔除额外受力(仅受重力)的加速度计数据
+    valTmp[0] = valAcc[0] - ps->accForce[0];
+    valTmp[1] = valAcc[1] - ps->accForce[1];
+    valTmp[2] = valAcc[2] - ps->accForce[2];
+    // accel计算姿态
+    ps->accRollXYZ[0] = atan2(valTmp[1], valTmp[2]);
+    ps->accRollXYZ[1] = -atan2(valTmp[0], sqrt(valTmp[1] * valTmp[1] + valTmp[2] * valTmp[2]));
+    ps->accRollXYZ[2] = 0;
     // bakup
     memcpy(ps->accXYZ, valAcc, sizeof(float) * 3);
-    // accel计算姿态
-    ps->accRollXYZ[0] = atan2((float)valAcc[1], (float)valAcc[2]);
-    ps->accRollXYZ[1] = -atan2((float)valAcc[0],
-        sqrt((float)valAcc[1] * valAcc[1] + (float)valAcc[2] * valAcc[2]));
-    ps->accRollXYZ[2] = 0;
-    //用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
-    memcpy(accXYZ2, ps->accXYZ, sizeof(float) * 3);
-    p3d_matrix_zyx(ps->rollXYZ, accXYZ2);
-    //则该向量在水平方向的分量即为横纵向的g值
-    ps->gX = accXYZ2[0] + ps->gXErr;
-    ps->gY = accXYZ2[1] + ps->gYErr;
-    ps->gZ = accXYZ2[2] + ps->gZErr;
-#if 1
+#if 0
     //test
     if (ps->gX > err)
         ps->gXErr -= err;
@@ -175,6 +195,7 @@ void pe_reset(PostureStruct *ps)
     memset(ps->gyrRollXYZ, 0, sizeof(float) * 3);
     memset(ps->gyrRollXYZ2, 0, sizeof(float) * 3);
     memset(ps->accRollXYZ, 0, sizeof(float) * 3);
+    memset(ps->accForce, 0, sizeof(float) * 3);
     ps->rollZErr -= ps->rollXYZ[2];
     ps->aX = ps->aY = ps->aZ = 0;
     ps->speX = ps->speY = ps->speZ = 0;
@@ -208,6 +229,25 @@ void pe_gyro(PostureStruct *ps, float *valGyr)
     memcpy(ps->gyrXYZ, valGyr, sizeof(float) * 3);
 }
 
+// void *pe_dataCheck(float *gyr, float *acc)
+// {
+//     static float gyrBak[3] = {0};
+//     static float accBak[3] = {0};
+//     int i;
+//     for (i = 0; i < 3; i++)
+//     {
+//         if (isnan(gyr[i]))
+//             gyr[i] = gyrBak[i];
+//     }
+//     for (i = 0; i < 3; i++)
+//     {
+//         if (isnan(acc[i]))
+//             acc[i] = accBak[i];
+//     }
+//     memcpy(gyrBak, gyr, sizeof(float) * 3);
+//     memcpy(accBak, acc, sizeof(float) * 3);
+// }
+
 void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
@@ -215,14 +255,31 @@ void *pe_thread(void *argv)
     float valRoll[3] = {0};
     float valGyr[3] = {0};
     float valAcc[3] = {0};
+    float valAcc2[3] = {0}; //参与四元数运算时用的acc
     PostureStruct *ps = (PostureStruct *)argv;
+    //存/读文件数据
+#ifdef PE_SAVE_FILE
+    FILE *f_fp = fopen(PE_SAVE_FILE, "w");
+    if (f_fp)
+        fprintf(f_fp, "%dms\r\n", ps->intervalMs);
+#endif
+#ifdef PE_LOAD_FILE
+    int tmpInt;
+    FILE *f_fp = fopen(PE_LOAD_FILE, "r");
+    if (f_fp)
+    {
+        if (fscanf(f_fp, "%dms\r\n", &ps->intervalMs) == 1)
+            printf("load file interval %dms\r\n", ps->intervalMs);
+    }
+#endif
+
     //传感器初始化
 #ifdef SENSOR_MPU6050
     if (mpu6050_init(1000 / ps->intervalMs, 0) != 0)
         return NULL;
 #endif
 #ifdef SENSOR_SERIALSENSOR
-    serialSensor_get(valRoll, valGyr, valAcc);
+    serialSensor_get(valGyr, valAcc);
     DELAY_US(ps->intervalMs * 1000);
 #endif
 #ifdef SENSOR_TCPSERVER
@@ -233,10 +290,12 @@ void *pe_thread(void *argv)
     //初始化mma8451
     mma8451_init();
 #endif
+
     //周期采样
     while (ps->flagRun)
     {
         DELAY_US(ps->intervalMs * 1000);
+
         // 采样
 #ifdef SENSOR_MPU6050
         if (mpu6050_angle(valRoll, valGyr, valAcc) == 0)
@@ -247,12 +306,7 @@ void *pe_thread(void *argv)
         }
 #endif
 #ifdef SENSOR_SERIALSENSOR
-        if (serialSensor_get(valRoll, valGyr, valAcc) == 0)
-        {
-            ps->rollXYZ[0] = valRoll[1];
-            ps->rollXYZ[1] = valRoll[0];
-            ps->rollXYZ[2] = valRoll[2] + ps->rollZErr;
-        }
+        serialSensor_get(valGyr, valAcc);
 #endif
 #ifdef SENSOR_TCPSERVER
         if (tcpServer_get(valRoll, valGyr, valAcc) == 0)
@@ -263,14 +317,52 @@ void *pe_thread(void *argv)
         }
 #endif
 #ifdef SENSOR_MMA8451
-        mma8451_get(valA);
+        mma8451_get(valAcc);
 #endif
+        // 陀螺仪和加速度数据检查
+        // pe_dataCheck(valGyr, valAcc);
+#ifdef PE_LOAD_FILE
+        if (f_fp)
+        {
+            if (fscanf(f_fp, "%f;%f;%f;%f;%f;%f;%f;%f;%f;\r\n",
+                       &valAcc[0], &valAcc[1], &valAcc[2],
+                       &valGyr[0], &valGyr[1], &valGyr[2],
+                       &valRoll[0], &valRoll[1], &valRoll[2]) < 0)
+            {
+                fseek(f_fp, 0, SEEK_SET);
+                fscanf(f_fp, "%dms\r\n", &tmpInt);
+            }
+            else
+            {
+                ps->rollXYZ[0] = valRoll[1];
+                ps->rollXYZ[1] = valRoll[0];
+                ps->rollXYZ[2] = valRoll[2] + ps->rollZErr;
+            }
+        }
+#endif
+
 #ifdef PE_QUATERNION
+        // 得到剔除额外受力(仅受重力)的加速度计数据
+        valAcc2[0] = valAcc[0] - ps->accForce[0];
+        valAcc2[1] = valAcc[1] - ps->accForce[1];
+        valAcc2[2] = valAcc[2] - ps->accForce[2];
         quaternion(valGyr, valAcc, valRoll, ps->intervalMs);
+        // 得到姿态欧拉角,其中绕z轴添加偏差矫正
         ps->rollXYZ[0] = valRoll[1];
         ps->rollXYZ[1] = valRoll[0];
         ps->rollXYZ[2] = valRoll[2] + ps->rollZErr;
 #endif
+#ifdef PE_SAVE_FILE
+        if (f_fp)
+        {
+            fprintf(f_fp, "%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;%.6f;\r\n",
+                    valAcc[0], valAcc[1], valAcc[2],
+                    valGyr[0], valGyr[1], valGyr[2],
+                    valRoll[0], valRoll[1], valRoll[2]);
+            fflush(f_fp);
+        }
+#endif
+
         // gyro:
         pe_gyro(ps, valGyr);
         // accel:
@@ -297,9 +389,12 @@ void *pe_thread(void *argv)
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值: 2, 5, 10(推荐),20,25,50
  */
-PostureStruct *pe_init(unsigned short intervalMs)
+PostureStruct *pe_init(int intervalMs)
 {
-    PostureStruct *ps = (PostureStruct *)calloc(1, sizeof(PostureStruct));
+    PostureStruct *ps;
+    if (intervalMs < 1)
+        return NULL;
+    ps = (PostureStruct *)calloc(1, sizeof(PostureStruct));
     ps->intervalMs = intervalMs;
     ps->flagRun = 1;
     pthread_create(&ps->th, NULL, &pe_thread, (void *)ps);

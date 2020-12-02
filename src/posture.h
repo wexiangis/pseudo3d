@@ -12,12 +12,15 @@ typedef struct
     pthread_t th;
     short flagRun;
     //采样周期
-    unsigned short intervalMs;
+    int intervalMs;
 
     //绕轴角速度(单位:deg/s)
     float gyrXYZ[3];
-    //各轴受力及合力(单位:g)
+    //三轴合受力(单位:g)
     float accXYZ[3];
+    //除重力以外的合受力(单位:g)
+    //也就是说上面accXYZ[3]减去下面的向量就是仅重力的受力
+    float accForce[3];
 
     //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
     float gyrRollXYZ[3];
@@ -53,7 +56,7 @@ typedef struct
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
  */
-PostureStruct *pe_init(unsigned short intervalMs);
+PostureStruct *pe_init(int intervalMs);
 void pe_exit(PostureStruct **ps);
 
 //复位(重置计算值)

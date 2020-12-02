@@ -1,44 +1,45 @@
+# 编译器选择
+CC = gcc
 
-CROSS_COMPILE=
+# ----- 文件夹列表 -----
 
-obj-c += main.c
-obj-c += delayus.c
+DIR_SRC = src
+DIR_COMMON = common
+DIR_SENSOR = sensor
+DIR_SENSOR_MPU = sensor/mpu6050
+DIR_UI = ui
 
-# bmp文件读写
-obj-c += bmp.c
-# 自制乞丐版3D引擎
-obj-c += pseudo3d.c
-# I2C通用总线驱动
-obj-c += i2c_transfer.c
-# 根据MPU6050数据计算姿态
-obj-c += posture.c
+# obj目录用于缓存编译生成的.o文件
+DIR_OBJ = obj
 
-# fb矩阵输出
-obj-c += ./ui/fbmap.c
-# 图像输出到fb0
-obj-c += ./ui/view.c
-# 根据utf8字符串获取文字点阵
-obj-c += ./ui/gbk2312.c
-# 自制简易版示波器,图像输出到fb0
-obj-c += ./ui/wave.c
-# 
-obj-c += ./ui/dot.c
+# ----- 文件夹编译及.o文件转储 -----
 
-# MPU6050 驱动
-obj-c += sensor/mpu6050/mpu6050.c
-obj-c += sensor/mpu6050/inv_mpu.c
-obj-c += sensor/mpu6050/inv_mpu_dmp_motion_driver.c
-# HMC5883 驱动
-obj-c += sensor/hmc5883.c
-# MMA8451 驱动
-obj-c += sensor/mma8451.c
-# tcp服务器接收来自android设备的数据
-obj-c += sensor/tcpServer.c
-# 来自serial传感器数据
-obj-c += sensor/serialSensor.c
+# 头文件目录列表
+INC = -I$(DIR_SRC) -I$(DIR_COMMON) -I$(DIR_SENSOR) -I$(DIR_SENSOR_MPU) -I$(DIR_UI)
 
-target:
-	$(CROSS_COMPILE)gcc -Wall -o out $(obj-c) -I./ -I./sensor -I./sensor/mpu6050 -I./ui -lm -lpthread
+%.o:../$(DIR_SRC)/%.c
+	@$(CC) -Wall -c $< $(INC) -o $@
+%.o:../$(DIR_COMMON)/%.c
+	@$(CC) -Wall -c $< $(INC) -o $@
+%.o:../$(DIR_SENSOR)/%.c
+	@$(CC) -Wall -c $< $(INC) -o $@
+%.o:../$(DIR_SENSOR_MPU)/%.c
+	@$(CC) -Wall -c $< $(INC) -o $@
+%.o:../$(DIR_UI)/%.c
+	@$(CC) -Wall -c $< $(INC) -o $@
+
+# ----- obj中的.o文件统计 -----
+
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_SRC)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_COMMON)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_SENSOR)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_SENSOR_MPU)/*.c}}}
+obj += ${patsubst %.c,$(DIR_OBJ)/%.o,${notdir ${wildcard $(DIR_UI)/*.c}}}
+
+#----- 把所有.o文件链接,最终编译 -----
+
+out: $(obj)
+	@$(CC) -Wall -o out $(obj) $(INC) -lm -lpthread
 
 clean:
-	@rm -rf out
+	@rm ./obj/* out
