@@ -29,6 +29,7 @@ typedef struct
     float accRollXYZ[3];
     //最终输出角度值(相对空间坐标,rad:[-pi, pi])
     float rollXYZ[3];
+    float rollXYZ2[3]; //器件自身输出
     //偏航角较正
     float rollZErr;
 

@@ -125,22 +125,4 @@ void p3d_draw2(
     int color, 
     float *xyz);
 
-// ---------- 额外提供的数学方法 ----------
-
-/*
- *  把空间坐标point[3]转换为物体自身坐标系
- *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- */
-void p3d_matrix_xyz(float raxyz[3], float point[3]);
-
-/*
- *  把物体自身坐标point[3]转换为空间坐标
- *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- */
-void p3d_matrix_zyx(float raxyz[3], float point[3]);
-
 #endif

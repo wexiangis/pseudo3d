@@ -193,10 +193,13 @@ int mpu6050_angle(float *pry, float *gyro, float *accel)
         q1 = quat[1] / q30;
         q2 = quat[2] / q30;
         q3 = quat[3] / q30;
-        //计算得到俯仰角/横滚角/航向角
-        pry[0] = asin(-2 * q1 * q3 + 2 * q0 * q2);                                      // pitch
-        pry[1] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);      // roll
-        pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
+        if (pry)
+        {
+            //计算得到俯仰角/横滚角/航向角
+            pry[0] = asin(-2 * q1 * q3 + 2 * q0 * q2);                                      // pitch
+            pry[1] = atan2(2 * q2 * q3 + 2 * q0 * q1, -2 * q1 * q1 - 2 * q2 * q2 + 1);      // roll
+            pry[2] = atan2(2 * (q1 * q2 + q0 * q3), q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3); // yaw
+        }
     }
     else
         return 2;

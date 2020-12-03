@@ -3,7 +3,9 @@
  */
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <string.h>
+#include <math.h>
 #include <unistd.h>
 #include <fcntl.h>
 
@@ -231,34 +233,60 @@ typedef struct
     //当前读写位置
     uint32_t buff_r, buff_w;
     //缓冲区
-    uint8_t buff[SERIAL_CIRCLE_BUFF_LEN];
+    float accX[SERIAL_CIRCLE_BUFF_POINT];
+    float accY[SERIAL_CIRCLE_BUFF_POINT];
+    float accZ[SERIAL_CIRCLE_BUFF_POINT];
+    float gyrX[SERIAL_CIRCLE_BUFF_POINT];
+    float gyrY[SERIAL_CIRCLE_BUFF_POINT];
+    float gyrZ[SERIAL_CIRCLE_BUFF_POINT];
 } Serial_Sensor;
 
 static Serial_Sensor *serial_sensor = NULL;
+
+static bool _dataCheck(float value, float max, float min)
+{
+    if (min < value && value < max)
+        return true;
+    return false;
+}
 
 void serialSensor_thread(void *argv)
 {
     Serial_Sensor *ss = (Serial_Sensor *)argv;
     size_t ret = 0;
     uint8_t buff[1024];
+    uint8_t *pBuff;
+    float vFloat[10];
     printf("serialSensor: thread start \r\n");
     while (ss->fd > 0)
     {
         ret = read(ss->fd, buff, sizeof(buff));//阻塞读
         if (ret > 0)
         {
-            if (ss->buff_w + ret < SERIAL_CIRCLE_BUFF_LEN)
+            // printf("ret/%d %02X %02X %02X %02X \r\n",
+            //     ret, buff[0], buff[1], buff[2], buff[3]);
+
+            pBuff = (uint8_t *)buff;
+            while(ret >= 46)
             {
-                memcpy(&ss->buff[ss->buff_w], buff, ret);
-                ss->buff_w += ret;
-            }
-            else
-            {
-                memcpy(&ss->buff[ss->buff_w], buff, SERIAL_CIRCLE_BUFF_LEN - ss->buff_w);
-                ret -= SERIAL_CIRCLE_BUFF_LEN - ss->buff_w;
-                if (ret > 0)
-                    memcpy(&ss->buff[ss->buff_w], buff, ret);
-                ss->buff_w = ret;
+                if (pBuff[0] == 0x7E && pBuff[1] == 0x7E && pBuff[2] == 0x0C)
+                {
+                    memcpy(vFloat, &pBuff[8], 9 * 4);
+
+                    ss->accY[ss->buff_w] = _dataCheck(vFloat[0], 10, -10) ? (-vFloat[0]) : 0;
+                    ss->accX[ss->buff_w] = _dataCheck(vFloat[1], 10, -10) ? (-vFloat[1]) : 0;
+                    ss->accZ[ss->buff_w] = _dataCheck(vFloat[2], 10, -10) ? (-vFloat[2]) : 0;
+                    ss->gyrY[ss->buff_w] = _dataCheck(vFloat[3], 720, -720) ? (-vFloat[3]) : 0;
+                    ss->gyrX[ss->buff_w] = _dataCheck(vFloat[4], 720, -720) ? (-vFloat[4]) : 0;
+                    ss->gyrZ[ss->buff_w] = _dataCheck(vFloat[5], 720, -720) ? (-vFloat[5]) : 0;
+
+                    if (ss->buff_w + 1 >= SERIAL_CIRCLE_BUFF_POINT)
+                        ss->buff_w = 0;
+                    else
+                        ss->buff_w += 1;
+                }
+                pBuff += 46;
+                ret -= 46;
             }
         }
         else if (ret < 0)
@@ -267,104 +295,6 @@ void serialSensor_thread(void *argv)
     close(ss->fd);
     ss->fd = 0;
     printf("serialSensor: thread exit \r\n");
-}
-
-int _serialSensor_getPkg(Serial_Sensor *ss, uint8_t pkg[46])
-{
-    //读写位置暂停
-    uint32_t buff_r;
-    uint32_t buff_w;
-    uint32_t count;
-    uint8_t head[4] = {0};
-    uint8_t crc;
-    //定格写位置
-    buff_w = ss->buff_w;
-// try_again:
-    count = 0;
-    buff_r = ss->buff_r;
-    while (buff_r != buff_w && count < 46)
-    {
-        if (count == 0)
-        {
-            //滚雪球
-            head[0] = head[1];
-            head[1] = head[2];
-            head[2] = head[3];
-            head[3] = ss->buff[buff_r];
-            //凑够这个特殊顺序,召唤神龙
-            if (head[0] == 0x7E && head[1] == 0x7E && head[2] == 0x0C)
-            {
-                //开始收包
-                count = 4;
-                memcpy(pkg, head, 4);
-            }
-        }
-        else
-            pkg[count++] = ss->buff[buff_r];
-        //循环
-        buff_r += 1;
-        if (buff_r >= SERIAL_CIRCLE_BUFF_LEN)
-            buff_r = 0;
-    }
-    //校验
-    if (count == 46)
-    {
-        //更新读标志
-        ss->buff_r = buff_r;
-        //尾标志不对
-        if (pkg[45] != 0xBF)
-        {
-            printf(" tail error : state code %02X \r\n", pkg[3]);
-            // goto try_again;
-        }
-        //校验
-        for (crc = 0, count = 0; count < 44; count++)
-            crc ^= pkg[count];
-        if (crc != pkg[44])
-        {
-            printf(" crc error : state code %02X \r\n", pkg[3]);
-            // goto try_again;
-        }
-        // printf("find pkg / %d \r\n", *((uint32_t *)&pkg[4]));
-        //成功
-        return 0;
-    }
-    //不满一包
-    return 1;
-}
-
-int serialSensor_decode(Serial_Sensor *ss, float *gyro, float *accel)
-{
-    float vFloat[10];
-    uint8_t pkg[46];
-    //从循环缓冲区中取一包数据
-    if (_serialSensor_getPkg(ss, pkg) != 0)
-        return 1;
-    memcpy(vFloat, &pkg[8], 9 * 4);
-    //包数据转参数
-    if (accel)
-    {
-        accel[0] = vFloat[0];
-        accel[1] = vFloat[1];
-        accel[2] = vFloat[2];
-    }
-    if (gyro)
-    {
-        gyro[0] = vFloat[3];
-        gyro[1] = vFloat[4];
-        gyro[2] = vFloat[5];
-    }
-
-    // printf(" %8.6f %8.6f %8.6f // %8.6f %8.6f %8.6f\r\n", 
-    //     vFloat[0], vFloat[1], vFloat[2], 
-    //     vFloat[3], vFloat[4], vFloat[5]);
-
-    // printf(" %8.6f %8.6f %8.6f // %8.6f %8.6f %8.6f // %8.6f %8.6f %8.6f \r\n", 
-    //     vFloat[0], vFloat[1], vFloat[2], 
-    //     vFloat[3], vFloat[4], vFloat[5], 
-    //     vFloat[6], vFloat[7], vFloat[8]);
-
-    return 0;
 }
 
 /*
@@ -390,6 +320,24 @@ int serialSensor_get(float *gyro, float *accel)
         pthread_create(&serial_sensor->th, NULL, (void *)serialSensor_thread, (void *)serial_sensor);
         return 1;
     }
-    //从循环缓冲区解析数据
-    return serialSensor_decode(serial_sensor, gyro, accel);
+
+    if (serial_sensor->buff_r == serial_sensor->buff_w)
+        return 1;
+    if (accel)
+    {
+        accel[0] = serial_sensor->accX[serial_sensor->buff_r];
+        accel[1] = serial_sensor->accY[serial_sensor->buff_r];
+        accel[2] = serial_sensor->accZ[serial_sensor->buff_r];
+    }
+    if (gyro)
+    {
+        gyro[0] = serial_sensor->gyrX[serial_sensor->buff_r];
+        gyro[1] = serial_sensor->gyrY[serial_sensor->buff_r];
+        gyro[2] = serial_sensor->gyrZ[serial_sensor->buff_r];
+    }
+    if (serial_sensor->buff_r + 1 >= SERIAL_CIRCLE_BUFF_POINT)
+        serial_sensor->buff_r = 0;
+    else
+        serial_sensor->buff_r += 1;
+    return 0;
 }

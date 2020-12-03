@@ -12,6 +12,7 @@
 #include "delayus.h"
 #include "pseudo3d.h"
 #include "view.h"
+#include "pe_math.h"
 
 //使用陀螺仪模块
 #define ENABLE_MPU6050
@@ -24,7 +25,7 @@
 #endif
 
 //采样间隔
-#define INTERVALUS 10000 //screen freq us
+#define INTERVALMS 10 //screen freq ms
 //旋转分度值
 #define DIV_SCROLL (P3D_PI / 16)
 //平移分度值
@@ -174,7 +175,7 @@ int main(int argc, char **argv)
     //初始化姿态计算器
     ps = pe_init(MPU6050_INTERVALMS);
     //示波器初始化(上、下半屏)
-    ws1 = wave_init(0, 0, 800 - VIEW_X_SIZE, fb_height / 2);
+    ws1 = wave_init(0, 0, fb_width - VIEW_X_SIZE, fb_height / 2);
     ws2 = wave_init(0, fb_height / 2, fb_width - VIEW_X_SIZE, fb_height / 2);
     //打点器初始化(在姿态图像下方)
     ds = dot_init(
@@ -185,10 +186,19 @@ int main(int argc, char **argv)
 
     while (1)
     {
-        DELAY_US(INTERVALUS);
+        DELAY_US(INTERVALMS * 1000);
 
 #ifdef ENABLE_MPU6050
 
+#if 0
+        wave_load(ws1, 0, (short)(ps->gyrXYZ[0] * 50));
+        wave_load(ws1, 1, (short)(ps->gyrXYZ[1] * 50));
+        wave_load(ws1, 2, (short)(ps->gyrXYZ[2] * 50));
+
+        wave_load(ws2, 0, (short)(ps->accXYZ[0] * 10000));
+        wave_load(ws2, 1, (short)(ps->accXYZ[1] * 10000));
+        wave_load(ws2, 2, (short)(ps->accXYZ[2] * 10000));
+#elif 1
         wave_load(ws1, 0, (short)(ps->rollXYZ[0] * 10000));
         wave_load(ws1, 1, (short)(ps->rollXYZ[1] * 10000));
         wave_load(ws1, 2, (short)(ps->rollXYZ[2] * 10000));
@@ -196,11 +206,12 @@ int main(int argc, char **argv)
         wave_load(ws2, 0, 10000);//基准线
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
         wave_load(ws2, 2, (short)(ps->speY * 10000) + 10000);
-        // wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
+        wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
         wave_load(ws2, 4, -10000);//基准线
         wave_load(ws2, 5, (short)(ps->gX * 50000) - 10000);
         wave_load(ws2, 6, (short)(ps->gY * 50000) - 10000);
-        // wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
+        wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
+#endif
 
         dot_set(ds, ps->gX, 0, 0xFF0000);
         dot_set(ds, 0, ps->gY, 0x0000FF);
@@ -210,33 +221,45 @@ int main(int argc, char **argv)
         wave_output(ws2);
         dot_output(ds);
 
+        //拷贝姿态角度+调整
         memcpy(dpat1->raxyz, ps->rollXYZ, sizeof(float) * 3);
+        dpat1->raxyz[0] = -dpat1->raxyz[0];
+        dpat1->raxyz[2] = -dpat1->raxyz[2];
         memcpy(dpat2->raxyz, ps->accRollXYZ, sizeof(float) * 3);
+        dpat2->raxyz[0] = -dpat2->raxyz[0];
+        dpat2->raxyz[2] = -dpat2->raxyz[2];
         memcpy(dpat3->raxyz, ps->gyrRollXYZ, sizeof(float) * 3);
+        dpat3->raxyz[0] = -dpat3->raxyz[0];
+        dpat3->raxyz[2] = -dpat3->raxyz[2];
 
-        log_count += INTERVALUS;
-        if (log_count >= 20000)
+        log_count += INTERVALMS;
+        if (log_count >= 20)
         {
             log_count = 0;
-            // printf(" acc %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f roll %8.4f %8.4f %8.4f \r\n", 
+
+            // printf(" acc %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f roll %8.4f %8.4f %8.4f rgyr %8.4f %8.4f %8.4f \r\n", 
             //     ps->accXYZ[0], ps->accXYZ[1], ps->accXYZ[2],
             //     ps->gyrXYZ[0], ps->gyrXYZ[1], ps->gyrXYZ[2], 
-            //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2]);
+            //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2],
+            //     ps->gyrRollXYZ[0], ps->gyrRollXYZ[1], ps->gyrRollXYZ[2]);
+
+            // printf(" g %8.4f %8.4f %8.4f gXYZ %8.4f \r\n",
+            //     ps->gX, ps->gY, ps->gZ, ps->gXYZ);
         }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
         xyz[0] = -ps->accXYZ[0] * 100;
-        xyz[1] = -ps->accXYZ[1] * 100;
+        xyz[1] = ps->accXYZ[1] * 100;
         xyz[2] = -ps->accXYZ[2] * 100;
-        p3d_matrix_zyx(dpat1->raxyz, xyz);
+        matrix_zyx(dpat1->raxyz, xyz);
 #else
         //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
         xyz[0] = 0;
         xyz[1] = 0;
         xyz[2] = -100;
         //转为物体坐标系
-        p3d_matrix_zyx(dpat1->raxyz, xyz);
+        matrix_zyx(dpat1->raxyz, xyz);
         //转回空间坐标系
-        p3d_matrix_xyz(dpat1->raxyz, xyz);
+        matrix_xyz(dpat1->raxyz, xyz);
 #endif
 
         PRINT_CLEAR();

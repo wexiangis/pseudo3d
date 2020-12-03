@@ -7,7 +7,7 @@
 #define SERIAL_DEV "/dev/ttyUSB0"
 #define SERIAL_BAUND 460800
 #define SERIAL_INTERVALMS 2
-#define SERIAL_CIRCLE_BUFF_LEN 102400
+#define SERIAL_CIRCLE_BUFF_POINT 500 //缓存500个点(10ms间隔则5秒数据量)
 
 /*
  *  返回0正常
