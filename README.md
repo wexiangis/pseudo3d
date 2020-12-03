@@ -29,4 +29,4 @@
 
 * 5. 切换dmp解算和自己的四元数解算
 
-* 在 src/posture.c 最上面, 通过定义 #define PE_QUATERNION 来启用本地四元数解算, 但需自行调整 quaternion() 函数内的 Kp 和 Ki 参数.
+* 在 src/posture.c 最上面, 通过定义 #define PE_QUATERNION 来启用本地四元数解算, 但需自行调整 quat() 函数内的 Kp 和 Ki 参数.

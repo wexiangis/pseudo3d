@@ -10,11 +10,16 @@
 #include <fcntl.h>
 #include <sys/types.h>
 
-#include "posture.h"
 #include "delayus.h"
-#include "mpu6050.h"
+#include "posture.h"
 #include "pseudo3d.h"
 #include "pe_math.h"
+
+#include "mpu6050.h"
+#include "serialSensor.h"
+#include "tcpServer.h"
+#include "mma8451.h"
+#include "hmc5883.h"
 
 #define POSTURE_PI 3.14159265358979323846
 
@@ -43,19 +48,6 @@
 // 梯形面积计算方式求积分
 #define TRAPEZIOD_SUM(new, old) \
     ((new + old) / 2 * ps->intervalMs / 1000)
-
-#ifdef SENSOR_SERIALSENSOR
-#include "serialSensor.h"
-#endif
-#ifdef SENSOR_TCPSERVER
-#include "tcpServer.h"
-#endif
-#ifdef SENSOR_MMA8451
-#include "mma8451.h"
-#endif
-#ifdef SENSOR_HMC5883
-#include "hmc5883.h"
-#endif
 
 void pe_accel(PostureStruct *ps, float *valAcc)
 {
@@ -272,7 +264,7 @@ void *pe_thread(void *argv)
 #ifdef PE_QUATERNION
         memcpy(valAcc2, valAcc, sizeof(float) * 3);
         memcpy(valGyr2, valGyr, sizeof(float) * 3);
-        quaternion(valGyr2, valAcc2, valRoll2, ps->intervalMs);
+        quat(valGyr2, valAcc2, valRoll2, ps->intervalMs);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
         ps->rollXYZ[0] = valRoll2[1];
         ps->rollXYZ[1] = valRoll2[0];

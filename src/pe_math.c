@@ -4,15 +4,17 @@
 #include <math.h>
 
 /*
- *  valG: 陀螺仪xyz轴输出rad/s
- *  valA: 加速度xyz轴输出g
- *  pry: 输出绕xyz轴角度(单位:rad)
- *  intervalMs: 采样间隔(单位:ms)
+ *  quaternion解算
+ *  参数:
+ *      valG: 陀螺仪xyz轴输出rad/s
+ *      valA: 加速度xyz轴输出g
+ *      pry: 输出绕xyz轴角度(单位:rad)
+ *      intervalMs: 采样间隔(单位:ms)
  */
-void quaternion(float *valG, float *valA, float *pry, int intervalMs)
+void quat(float *valG, float *valA, float *pry, int intervalMs)
 {
-    float Kp = 500.0f; // 100.0f;
-    float Ki = 0.01f;  // 0.002f;
+    float Kp = 200.0f; // 100.0f;
+    float Ki = 0.002f; // 0.002f;
     // 四元数的元素，代表估计方向
     static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     // 按比例缩小积分误差

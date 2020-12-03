@@ -7,7 +7,7 @@
  *  pry: 输出绕xyz轴角度(单位:rad)
  *  intervalMs: 采样间隔(单位:ms)
  */
-void quaternion(float *valG, float *valA, float *pry, int intervalMs);
+void quat(float *valG, float *valA, float *pry, int intervalMs);
 
 /*
  *  把空间坐标point[3]转换为物体自身坐标系
