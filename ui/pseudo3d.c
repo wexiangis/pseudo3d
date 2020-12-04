@@ -38,6 +38,15 @@
 #define P3D_2D_Y 1.0
 #define P3D_2D_Z 1.0
 
+//选择旋转方式
+#if 1
+#define ROLL_XYZ(a, b) matrix_xyz(a, b)
+#define ROLL_ZYX(a, b) matrix_zyx(a, b)
+#else
+#define ROLL_XYZ(a, b) quat_xyz(a, b)
+#define ROLL_ZYX(a, b) quat_zyx(a, b)
+#endif
+
 /*
  *  重置三维图形到初始化时的状态
  */
@@ -265,9 +274,9 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyzArray[3]
         if(dpat->_matrix_mode == 1)
-            matrix_zyx(dpat->raxyz, &dpat->xyzArray[j]);
+            ROLL_ZYX(dpat->raxyz, &dpat->xyzArray[j]);
         else
-            matrix_xyz(dpat->raxyz, &dpat->xyzArray[j]);
+            ROLL_XYZ(dpat->raxyz, &dpat->xyzArray[j]);
         //平移量(相对于绝对坐标系)
         dpat->xyzArray[j] += dpat->mvxyz[0];
         dpat->xyzArray[j + 1] += dpat->mvxyz[1];
@@ -285,9 +294,9 @@ void p3d_refresh(P3D_PointArray_Type *dpat)
 #endif
         //用旋转角度 raxyz[3] 处理3维坐标点 xyz[3]
         if(dpat->_matrix_mode == 1)
-            matrix_zyx(dpat->raxyz, dct->xyz);
+            ROLL_ZYX(dpat->raxyz, dct->xyz);
         else
-            matrix_xyz(dpat->raxyz, dct->xyz);
+            ROLL_XYZ(dpat->raxyz, dct->xyz);
         //平移量(相对于绝对坐标系)
         dct->xyz[0] += dpat->mvxyz[0];
         dct->xyz[1] += dpat->mvxyz[1];

@@ -170,8 +170,6 @@ void *pe_thread(void *argv)
     float valGyr[3] = {0};
     float valAcc[3] = {0};
 #ifdef PE_QUATERNION
-    float valGyr2[3] = {0};
-    float valAcc2[3] = {0};
     float valRoll2[3] = {0};
 #endif
     PostureStruct *ps = (PostureStruct *)argv;
@@ -262,9 +260,7 @@ void *pe_thread(void *argv)
 #endif
 
 #ifdef PE_QUATERNION
-        memcpy(valAcc2, valAcc, sizeof(float) * 3);
-        memcpy(valGyr2, valGyr, sizeof(float) * 3);
-        quat(valGyr2, valAcc2, valRoll2, ps->intervalMs);
+        quat_pry(valGyr, valAcc, valRoll2, ps->intervalMs);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
         ps->rollXYZ[0] = valRoll2[1];
         ps->rollXYZ[1] = valRoll2[0];
