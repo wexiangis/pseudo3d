@@ -261,8 +261,8 @@ void *pe_thread(void *argv)
 #ifdef PE_QUATERNION
         quat_pry(valGyr, valAcc, valRoll2, ps->intervalMs);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
-        ps->rollXYZ[0] = valRoll2[1];
-        ps->rollXYZ[1] = valRoll2[0];
+        ps->rollXYZ[0] = valRoll2[0];
+        ps->rollXYZ[1] = valRoll2[1];
         ps->rollXYZ[2] = valRoll2[2] + ps->rollZErr;
 #endif
 

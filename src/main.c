@@ -13,6 +13,7 @@
 #include "pseudo3d.h"
 #include "view.h"
 #include "pe_math.h"
+#include "fbmap.h"
 
 //使用陀螺仪模块
 #define ENABLE_MPU6050
@@ -35,21 +36,23 @@ int main(int argc, char **argv)
 {
     //初始化一个多边形
     P3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
-    //终端输入
-    char input[16];
-    int fd;
     //测试点
     float xyz[3];
+    float raxyz[3] = {0};
+    float mvxyz[3] = {0};
+    float quat[4] = {1, 0, 0, 0};
+    //终端输入
+    char input[16];
+    DELAY_US_INIT;
 #ifdef ENABLE_MPU6050
+    int log_count = 0;
+    int fd;
     //姿态结构体
     PostureStruct *ps;
     //示波器2个
     Wave_Struct *ws1, *ws2;
     //打点器1个
     Dot_Struct *ds;
-#endif
-    int log_count = 0;
-    DELAY_US_INIT;
 
     // open console
     if (argc > 1)
@@ -58,6 +61,7 @@ int main(int argc, char **argv)
         fd = open("/dev/console", O_RDONLY);
     //非阻塞设置
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL, 0) | O_NONBLOCK);
+#endif
 
     //XYZ
     if ((dpat0 = p3d_init(6,
@@ -174,6 +178,7 @@ int main(int argc, char **argv)
 #ifdef ENABLE_MPU6050
     //初始化姿态计算器
     ps = pe_init(MPU6050_INTERVALMS);
+    fb_output(NULL, 0, 0, 0, 0);
     //示波器初始化(上、下半屏)
     ws1 = wave_init(0, 0, fb_width - VIEW_X_SIZE, fb_height / 2);
     ws2 = wave_init(0, fb_height / 2, fb_width - VIEW_X_SIZE, fb_height / 2);
@@ -251,15 +256,6 @@ int main(int argc, char **argv)
         xyz[1] = ps->accXYZ[1] * 100;
         xyz[2] = -ps->accXYZ[2] * 100;
         matrix_zyx(dpat1->raxyz, xyz, xyz);
-#else
-        //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
-        xyz[0] = 0;
-        xyz[1] = 0;
-        xyz[2] = -100;
-        //转为物体坐标系
-        matrix_zyx(dpat1->raxyz, xyz);
-        //转回空间坐标系
-        matrix_xyz(dpat1->raxyz, xyz);
 #endif
 
         PRINT_CLEAR();
@@ -272,49 +268,52 @@ int main(int argc, char **argv)
 
         PRINT_EN();
 
-        // dpat1->raxyz[0] += DIV_SCROLL;
-        // dpat1->raxyz[1] += DIV_SCROLL;
-        // dpat1->raxyz[2] += DIV_SCROLL;
-
-        // if(scanf("%s", input))
+#ifdef ENABLE_MPU6050
         memset(input, 0, sizeof(input));
         if (read(fd, input, sizeof(input)) > 0)
+#else
+        if(scanf("%s", input))
+#endif
         {
             //x scroll
             if (input[0] == '3')
-                dpat1->raxyz[0] += DIV_SCROLL * strlen(input);
+                raxyz[0] += DIV_SCROLL * strlen(input);
             else if (input[0] == '1')
-                dpat1->raxyz[0] -= DIV_SCROLL * strlen(input);
+                raxyz[0] -= DIV_SCROLL * strlen(input);
             //y scroll
             else if (input[0] == 'w')
-                dpat1->raxyz[1] += DIV_SCROLL * strlen(input);
+                raxyz[1] += DIV_SCROLL * strlen(input);
             else if (input[0] == '2')
-                dpat1->raxyz[1] -= DIV_SCROLL * strlen(input);
+                raxyz[1] -= DIV_SCROLL * strlen(input);
             //z scroll
             else if (input[0] == 'q')
-                dpat1->raxyz[2] += DIV_SCROLL * strlen(input);
+                raxyz[2] += DIV_SCROLL * strlen(input);
             else if (input[0] == 'e')
-                dpat1->raxyz[2] -= DIV_SCROLL * strlen(input);
+                raxyz[2] -= DIV_SCROLL * strlen(input);
 
             //z move
             if (input[0] == 's')
-                dpat1->mvxyz[2] += DIV_MOVE * strlen(input);
+                mvxyz[2] += DIV_MOVE * strlen(input);
             else if (input[0] == 'x')
-                dpat1->mvxyz[2] -= DIV_MOVE * strlen(input);
+                mvxyz[2] -= DIV_MOVE * strlen(input);
             //y move
             else if (input[0] == 'z')
-                dpat1->mvxyz[1] += DIV_MOVE * strlen(input);
+                mvxyz[1] += DIV_MOVE * strlen(input);
             else if (input[0] == 'c')
-                dpat1->mvxyz[1] -= DIV_MOVE * strlen(input);
+                mvxyz[1] -= DIV_MOVE * strlen(input);
             //x move
             else if (input[0] == 'd')
-                dpat1->mvxyz[0] += DIV_MOVE * strlen(input);
+                mvxyz[0] += DIV_MOVE * strlen(input);
             else if (input[0] == 'a')
-                dpat1->mvxyz[0] -= DIV_MOVE * strlen(input);
+                mvxyz[0] -= DIV_MOVE * strlen(input);
 
             //reset
             else if (input[0] == 'r')
             {
+                memset(raxyz, 0, sizeof(raxyz));
+                memset(mvxyz, 0, sizeof(mvxyz));
+                memset(quat, 0, sizeof(quat));
+                quat[0] = 1;
                 p3d_reset(dpat1);
                 p3d_reset(dpat2);
                 p3d_reset(dpat3);
@@ -324,13 +323,21 @@ int main(int argc, char **argv)
 #endif
             }
 
-            memcpy(dpat2->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
-            memcpy(dpat3->raxyz, dpat1->raxyz, sizeof(dpat1->raxyz));
+            quat_diff(quat, raxyz);
+            quat_to_pry(quat, raxyz);
 
-            memcpy(dpat2->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
-            memcpy(dpat3->mvxyz, dpat1->mvxyz, sizeof(dpat1->mvxyz));
+            memcpy(dpat1->raxyz, raxyz, sizeof(float) * 3);
+            memcpy(dpat2->raxyz, raxyz, sizeof(float) * 3);
+            memcpy(dpat3->raxyz, raxyz, sizeof(float) * 3);
 
-            printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", dpat1->raxyz[0], dpat1->raxyz[1], dpat1->raxyz[2]);
+            memcpy(dpat1->mvxyz, mvxyz, sizeof(float) * 3);
+            memcpy(dpat2->mvxyz, mvxyz, sizeof(float) * 3);
+            memcpy(dpat3->mvxyz, mvxyz, sizeof(float) * 3);
+
+            memset(raxyz, 0, sizeof(float) * 3);
+
+            printf("rX/%.4f, rY/%.4f, rZ/%.4f \r\n", 
+                raxyz[0], raxyz[1], raxyz[2]);
         }
     }
 }

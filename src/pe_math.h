@@ -13,14 +13,23 @@
  */
 void quat_pry(float *valG, float *valA, float *pry, int intervalMs);
 
+// 四元数角增量(龙格塔微分方程)
+void quat_diff(float q[4], float roll_xyz[3]);
+// roll_xyz使用单位: 度
+void quat_diff2(float q[4], float roll_xyz[3]);
+
 // 四元数乘法
 void quat_multiply(float q1[4], float q2[4], float ret[4]);
 
 // 欧拉角转四元数(zyx顺序)
 void pry_to_quat(float pry[3], float q[4]);
+// pry使用单位: 度
+void pry_to_quat2(float pry[3], float q[4]);
 
 // 四元数转欧拉角
 void quat_to_pry(float q[4], float pry[3]);
+// pry使用单位: 度
+void quat_to_pry2(float q[4], float pry[3]);
 
 /*
  *  四元数方式旋转和逆旋转
@@ -50,7 +59,7 @@ void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
  *      xyz: 目标点
  *      retXyz: 旋转和平移后结果写到此
  */
-void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]);
+void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]); // 待验证
 void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
 
 /*
@@ -62,7 +71,7 @@ void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
  */
 void matrix_xyz(float roll_xyz[3], float xyz[3], float retXyz[3]);
 void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
-// roll_xyz[3] 使用度格式
+// roll_xyz使用单位: 度
 void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3]);
 void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3]);
 

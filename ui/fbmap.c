@@ -98,6 +98,8 @@ void fb_output(unsigned char *data, int offsetX, int offsetY, int width, int hei
     //初始化检查
     if (fb_init())
         return;
+    if (!data)
+        return;
     //起始坐标限制
     if (offsetX < 0)
         offsetX = 0;
