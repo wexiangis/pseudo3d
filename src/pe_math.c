@@ -16,14 +16,14 @@
  */
 void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
 {
-    float Kp = 200.0f; // 100.0f;
-    float Ki = 0.002f; // 0.002f;
+    float Kp = 2.0f;
+    float Ki = 0.001f;
     // 四元数的元素，代表估计方向
     static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     // 按比例缩小积分误差
     static float eIntBak[3] = {0.0f, 0.0f, 0.0f};
     // 时间间隔一半, 后面 pi/180 用于 deg/s 转 rad/s
-    float halfT = (float)intervalMs / 2 / 1000 * (MATH_PI / 180);
+    float halfT = (float)intervalMs / 2 / 1000;
     float q[4];
     float eInt[3];
     float norm;
@@ -58,7 +58,7 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
             }
             else if (norm > 1.0 && norm < 2.0f)
             {
-                norm = pow(norm - 1.0f, 5);
+                norm = pow(2.0f - norm, 5);
                 Kp *= norm;
                 Ki *= norm;
             }
@@ -76,9 +76,9 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     eInt[1] += ey * Ki;
     eInt[2] += ez * Ki;
     // 调整后的陀螺仪测量
-    gx = valG[0] + Kp * ex + eInt[0];
-    gy = valG[1] + Kp * ey + eInt[1];
-    gz = valG[2] + Kp * ez + eInt[2];
+    gx = valG[0] * MATH_PI / 180 + Kp * ex + eInt[0];
+    gy = valG[1] * MATH_PI / 180 + Kp * ey + eInt[1];
+    gz = valG[2] * MATH_PI / 180 + Kp * ez + eInt[2];
     // 四元数微分方程
     q[0] += (-q[1] * gx - q[2] * gy - q[3] * gz) * halfT;
     q[1] += (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
@@ -144,16 +144,27 @@ void quat_roll(float quat[4], float roll_vector[3], float roll_rad, float vector
 {
     float *q = quat;
     float _q[4], qT[4];
+    float rv[3];
     float v[4], ret[4];
-    // float norm;
+    float norm;
 
     if (!q)
     {
+        //对旋转轴进行单位向量处理(否则旋转后会附带缩放效果)
+        memcpy(rv, roll_vector, sizeof(float) * 3);
+        norm = sqrt(rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2]);
+        if (!isnan(norm))
+        {
+            rv[0] /= norm;
+            rv[1] /= norm;
+            rv[2] /= norm;
+        }
+        //
         q = _q;
         q[0] = cos(roll_rad / 2);
-        q[1] = sin(roll_rad / 2) * roll_vector[0];
-        q[2] = sin(roll_rad / 2) * roll_vector[1];
-        q[3] = sin(roll_rad / 2) * roll_vector[2];
+        q[1] = sin(roll_rad / 2) * rv[0];
+        q[2] = sin(roll_rad / 2) * rv[1];
+        q[3] = sin(roll_rad / 2) * rv[2];
     }
 
     qT[0] = q[0];

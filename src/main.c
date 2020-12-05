@@ -206,11 +206,11 @@ int main(int argc, char **argv)
         wave_load(ws2, 0, 10000);//基准线
         wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
         wave_load(ws2, 2, (short)(ps->speY * 10000) + 10000);
-        wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
+        // wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
         wave_load(ws2, 4, -10000);//基准线
         wave_load(ws2, 5, (short)(ps->gX * 50000) - 10000);
         wave_load(ws2, 6, (short)(ps->gY * 50000) - 10000);
-        wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
+        // wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
 #endif
 
         dot_set(ds, ps->gX, 0, 0xFF0000);
