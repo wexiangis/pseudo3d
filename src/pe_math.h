@@ -1,5 +1,5 @@
-#ifndef _PE_MATK_H_
-#define _PE_MATK_H_
+#ifndef _PE_MATH_H_
+#define _PE_MATH_H_
 
 #include <stdbool.h>
 
@@ -12,6 +12,15 @@
  *      intervalMs: 采样间隔,单位:ms (必要参数)
  */
 void quat_pry(float *valG, float *valA, float *pry, int intervalMs);
+
+// 四元数乘法
+void quat_multiply(float q1[4], float q2[4], float ret[4]);
+
+// 欧拉角转四元数(zyx顺序)
+void pry_to_quat(float pry[3], float q[4]);
+
+// 四元数转欧拉角
+void quat_to_pry(float q[4], float pry[3]);
 
 /*
  *  四元数方式旋转和逆旋转
@@ -26,23 +35,58 @@ void quat_roll(float quat[4], float roll_vector[3], float roll_rad, float vector
 
 /*
  *  四元数依次三轴旋转
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_xyz(float roll_xyz[3], float xyz[3]);
-void quat_zyx(float roll_xyz[3], float xyz[3]);
+void quat_xyz(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
 
 /*
  *  使用现有四元数进行旋转矩阵运算
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_matrix_xyz(float quat[4], float xyz[3]);
-void quat_matrix_zyx(float quat[4], float xyz[3]);
+void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]);
+void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
 
 /*
- *  旋转矩阵
+ *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)
  *  参数:
- *      raxyz[3] : 绕三轴转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void matrix_xyz(float raxyz[3], float point[3]);
-void matrix_zyx(float raxyz[3], float point[3]);
+void matrix_xyz(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
+// roll_xyz[3] 使用度格式
+void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3]);
+void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3]);
+
+/*
+ *  透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
+ * 
+ *  参数:
+ *      openAngle: 相机开角(单位:度,范围:[1,359])
+ *      xyz[3]: 要计算的空间坐标
+ *      ar: 相机的屏幕的宽高比
+ *      nearZ: 相机近端距离
+ *      farZ: 相机远端距离
+ *      retXY: 计算结果,一个二维平面坐标(注意其坐标原点是屏幕中心)
+ *      retDepth: 计算结果,深度值(远离屏幕的距离,单位:点)
+ * 
+ *  返回: 0/不再相框内  1/在相框内
+ */
+bool projection(
+    float openAngle,
+    float xyz[3],
+    float ar,
+    int nearZ,
+    int farZ,
+    float *retXY,
+    float *retDepth);
 
 #endif

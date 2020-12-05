@@ -250,7 +250,7 @@ int main(int argc, char **argv)
         xyz[0] = -ps->accXYZ[0] * 100;
         xyz[1] = ps->accXYZ[1] * 100;
         xyz[2] = -ps->accXYZ[2] * 100;
-        matrix_zyx(dpat1->raxyz, xyz);
+        matrix_zyx(dpat1->raxyz, xyz, xyz);
 #else
         //逆矩阵测试,该坐标转为物体坐标系后再转回来需没有变化
         xyz[0] = 0;

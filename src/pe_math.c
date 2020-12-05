@@ -110,7 +110,7 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
 }
 
 // 四元数乘法
-static void _quat_multiply(float q1[4], float q2[4], float ret[4])
+void quat_multiply(float q1[4], float q2[4], float ret[4])
 {
     float _ret[4];
     _ret[0] = q1[0] * q2[0] - q1[1] * q2[1] - q1[2] * q2[2] - q1[3] * q2[3];
@@ -123,8 +123,28 @@ static void _quat_multiply(float q1[4], float q2[4], float ret[4])
     ret[3] = _ret[3];
 }
 
+// 欧拉角转四元数(zyx顺序)
+void pry_to_quat(float pry[3], float q[4])
+{
+    float Qp[4] = {0};
+    float Qr[4] = {0};
+    float Qy[4] = {0};
+
+    Qp[0] = cos(pry[0] / 2);
+    Qp[1] = sin(pry[0] / 2);
+
+    Qr[0] = cos(pry[1] / 2);
+    Qr[2] = sin(pry[1] / 2);
+
+    Qy[0] = cos(pry[2] / 2);
+    Qy[3] = sin(pry[2] / 2);
+
+    quat_multiply(Qy, Qr, q);
+    quat_multiply(q, Qp, q);
+}
+
 // 四元数转欧拉角
-static void _quat_to_pry(float q[4], float pry[3])
+void quat_to_pry(float q[4], float pry[3])
 {
     pry[0] = asin(-2 * q[1] * q[3] + 2 * q[0] * q[2]);
     pry[1] = atan2(2 * q[2] * q[3] + 2 * q[0] * q[1], -2 * q[1] * q[1] - 2 * q[2] * q[2] + 1);
@@ -179,13 +199,13 @@ void quat_roll(float quat[4], float roll_vector[3], float roll_rad, float vector
 
     if (T)
     {
-        _quat_multiply(qT, v, ret);
-        _quat_multiply(ret, q, ret);
+        quat_multiply(qT, v, ret);
+        quat_multiply(ret, q, ret);
     }
     else
     {
-        _quat_multiply(q, v, ret);
-        _quat_multiply(ret, qT, ret);
+        quat_multiply(q, v, ret);
+        quat_multiply(ret, qT, ret);
     }
 
     // norm = sqrt(ret[1] * ret[1] + ret[2] * ret[2] + ret[3] * ret[3]);
@@ -207,7 +227,7 @@ void quat_roll(float quat[4], float roll_vector[3], float roll_rad, float vector
     memcpy(vector, &ret[1], sizeof(float) * 3);
 }
 
-static void _quat_roll_xyz(float roll_xyz[3], float vector[3], bool zyx)
+static void _quat_roll_xyz(float roll_xyz[3], float xyz[3], float retXyz[3], bool zyx)
 {
     float qx[4] = {0}, qy[4] = {0}, qz[4] = {0};
     float qxT[4] = {0}, qyT[4] = {0}, qzT[4] = {0};
@@ -226,146 +246,115 @@ static void _quat_roll_xyz(float roll_xyz[3], float vector[3], bool zyx)
     qzT[3] = -qz[3];
 
     v[0] = 0;
-    v[1] = vector[0];
-    v[2] = vector[1];
-    v[3] = vector[2];
+    v[1] = xyz[0];
+    v[2] = xyz[1];
+    v[3] = xyz[2];
 
     if (zyx)
     {
-        _quat_multiply(qz, qy, ret);
-        _quat_multiply(ret, qx, ret);
-        _quat_multiply(ret, v, ret);
-        _quat_multiply(ret, qxT, ret);
-        _quat_multiply(ret, qyT, ret);
-        _quat_multiply(ret, qzT, ret);
+        quat_multiply(qz, qy, ret);
+        quat_multiply(ret, qx, ret);
+        quat_multiply(ret, v, ret);
+        quat_multiply(ret, qxT, ret);
+        quat_multiply(ret, qyT, ret);
+        quat_multiply(ret, qzT, ret);
 
-        // _quat_multiply(qxT, qyT, ret);
-        // _quat_multiply(ret, qzT, ret);
-        // _quat_multiply(ret, v, ret);
-        // _quat_multiply(ret, qz, ret);
-        // _quat_multiply(ret, qy, ret);
-        // _quat_multiply(ret, qx, ret);
+        // quat_multiply(qxT, qyT, ret);
+        // quat_multiply(ret, qzT, ret);
+        // quat_multiply(ret, v, ret);
+        // quat_multiply(ret, qz, ret);
+        // quat_multiply(ret, qy, ret);
+        // quat_multiply(ret, qx, ret);
     }
     else
     {
-        _quat_multiply(qx, qy, ret);
-        _quat_multiply(ret, qz, ret);
-        _quat_multiply(ret, v, ret);
-        _quat_multiply(ret, qzT, ret);
-        _quat_multiply(ret, qyT, ret);
-        _quat_multiply(ret, qxT, ret);
+        quat_multiply(qx, qy, ret);
+        quat_multiply(ret, qz, ret);
+        quat_multiply(ret, v, ret);
+        quat_multiply(ret, qzT, ret);
+        quat_multiply(ret, qyT, ret);
+        quat_multiply(ret, qxT, ret);
     }
 
-    memcpy(vector, &ret[1], sizeof(float) * 3);
+    memcpy(retXyz, &ret[1], sizeof(float) * 3);
 }
 
 /*
  *  四元数依次三轴旋转
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_xyz(float roll_xyz[3], float xyz[3])
+void quat_xyz(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
-    _quat_roll_xyz(roll_xyz, xyz, false);
+    _quat_roll_xyz(roll_xyz, xyz, retXyz, false);
 }
-void quat_zyx(float roll_xyz[3], float xyz[3])
+void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
-    _quat_roll_xyz(roll_xyz, xyz, true);
+    _quat_roll_xyz(roll_xyz, xyz, retXyz, true);
 }
 
 /*
  *  使用现有四元数进行旋转矩阵运算
+ *  参数:
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void quat_matrix_xyz(float quat[4], float xyz[3])
+void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3])
 {
     float q0 = quat[0];
     float q1 = quat[1];
     float q2 = quat[2];
     float q3 = quat[3];
-    float ret[3];
-    // float norm;
 
-    ret[0] =
+    retXyz[0] =
         xyz[0] * (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) +
         xyz[1] * 2 * (q1 * q2 - q0 * q3) +
         xyz[2] * 2 * (q1 * q3 + q0 * q2);
-    ret[1] =
+    retXyz[1] =
         xyz[0] * 2 * (q1 * q2 + q0 * q3) +
         xyz[1] * (q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3) +
         xyz[2] * 2 * (q2 * q3 + q0 * q1);
-    ret[2] =
+    retXyz[2] =
         xyz[0] * 2 * (q1 * q3 - q0 * q2) +
         xyz[1] * 2 * (q1 * q2 + q0 * q3) +
         xyz[2] * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
-    
-    // norm = sqrt(ret[0] * ret[0] + ret[1] * ret[1] + ret[2] * ret[2]);
-    // if (!isnan(norm))
-    // {
-    //     ret[0] /= norm;
-    //     ret[1] /= norm;
-    //     ret[2] /= norm;
-
-    //     norm = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
-    //     if (!isnan(norm))
-    //     {
-    //         ret[0] *= norm;
-    //         ret[1] *= norm;
-    //         ret[2] *= norm;
-    //     }
-    // }
-
-    memcpy(xyz, ret, sizeof(float) * 3);
 }
-void quat_matrix_zyx(float quat[4], float xyz[3])
+void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3])
 {
     float q0 = quat[0];
     float q1 = quat[1];
     float q2 = quat[2];
     float q3 = quat[3];
-    float ret[3];
-    // float norm;
 
-    ret[0] =
+    retXyz[0] =
         xyz[0] * (q0 * q0 + q1 * q1 - q2 * q2 - q3 * q3) +
         xyz[1] * 2 * (q1 * q2 + q0 * q3) +
         xyz[2] * 2 * (q1 * q3 - q0 * q2);
-    ret[1] =
+    retXyz[1] =
         xyz[0] * 2 * (q1 * q2 - q0 * q3) +
         xyz[1] * (q0 * q0 - q1 * q1 + q2 * q2 - q3 * q3) +
         xyz[2] * 2 * (q2 * q3 + q0 * q1);
-    ret[2] =
+    retXyz[2] =
         xyz[0] * 2 * (q1 * q3 + q0 * q2) +
         xyz[1] * 2 * (q2 * q3 + q0 * q1) +
         xyz[2] * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
-    
-    // norm = sqrt(ret[0] * ret[0] + ret[1] * ret[1] + ret[2] * ret[2]);
-    // if (!isnan(norm))
-    // {
-    //     ret[0] /= norm;
-    //     ret[1] /= norm;
-    //     ret[2] /= norm;
-
-    //     norm = sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
-    //     if (!isnan(norm))
-    //     {
-    //         ret[0] *= norm;
-    //         ret[1] *= norm;
-    //         ret[2] *= norm;
-    //     }
-    // }
-
-    memcpy(xyz, ret, sizeof(float) * 3);
 }
 
 /*
- *  把空间坐标point[3]转换为物体自身坐标系
+ *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)
  *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
+ *      roll_xyz: 绕三轴旋转,单位:rad
+ *      xyz: 目标点
+ *      retXyz: 旋转和平移后结果写到此
  */
-void matrix_xyz(float raxyz[3], float point[3])
+void matrix_xyz(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
-    float x = point[0], y = point[1], z = point[2];
-    float A = raxyz[0], B = raxyz[1], C = raxyz[2];
-    //这个宏用于切换坐标系方向,注意要和matrix_xyz()形成互为转置矩阵
+    float x = xyz[0], y = xyz[1], z = xyz[2];
+    float A = roll_xyz[0], B = roll_xyz[1], C = roll_xyz[2];
+    //这个宏用于切换坐标系方向,注意要和 matrix_zyx() 形成互为转置矩阵
 #if 1
     /*
     *       [roll X]
@@ -395,21 +384,21 @@ void matrix_xyz(float raxyz[3], float point[3])
     *         = |cC*sB*sA - sC*cA, sC*sB*sA + cC*cA, cB*sA||x|
     *           |cC*sB*cA + sC*sA, sC*sB*cA - cC*sA, cB*cA||z|
     *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
+    *           |retXyz[0]|
+    *         = |retXyz[1]|
+    *           |retXyz[2]|
     *
-    *  point[*] is equal to the follow ...
+    *  retXyz[*] is equal to the follow ...
     */
-    point[0] =
+    retXyz[0] =
         x * cos(C) * cos(B) +
         y * sin(C) * cos(B) +
         z * (-sin(B));
-    point[1] =
+    retXyz[1] =
         x * (cos(C) * sin(B) * sin(A) - sin(C) * cos(A)) +
         y * (sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
         z * cos(B) * sin(A);
-    point[2] =
+    retXyz[2] =
         x * (cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
         y * (sin(C) * sin(B) * cos(A) - cos(C) * sin(A)) +
         z * cos(B) * cos(A);
@@ -442,38 +431,31 @@ void matrix_xyz(float raxyz[3], float point[3])
     *         = |cC*sB*sA + sC*cA,  -sC*sB*sA + cC*cA, -cB*sA||x|
     *           |-cC*sB*cA + sC*sA, sC*sB*cA + cC*sA,  cB*cA ||z|
     *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
+    *           |retXyz[0]|
+    *         = |retXyz[1]|
+    *           |retXyz[2]|
     *
-    *  point[*] is equal to the follow ...
+    *  retXyz[*] is equal to the follow ...
     */
-    point[0] =
+    retXyz[0] =
         x * cos(C) * cos(B) +
         y * (-sin(C) * cos(B)) +
         z * sin(B);
-    point[1] =
+    retXyz[1] =
         x * (cos(C) * sin(B) * sin(A) + sin(C) * cos(A)) +
         y * (-sin(C) * sin(B) * sin(A) + cos(C) * cos(A)) +
         z * (-cos(B) * sin(A));
-    point[2] =
+    retXyz[2] =
         x * (-cos(C) * sin(B) * cos(A) + sin(C) * sin(A)) +
         y * (sin(C) * sin(B) * cos(A) + cos(C) * sin(A)) +
         z * cos(B) * cos(A);
 #endif
 }
-
-/*
- *  把物体自身坐标point[3]转换为空间坐标
- *  参数:
- *      raxyz[3] : 绕X/Y/Z轴的转角(rad: 0~2pi)
- *      point[3] : 要修正的空间向量的坐标,输出值回写到这里面
- */
-void matrix_zyx(float raxyz[3], float point[3])
+void matrix_zyx(float roll_xyz[3], float xyz[3], float retXyz[3])
 {
-    float x = point[0], y = point[1], z = point[2];
-    float A = raxyz[0], B = raxyz[1], C = raxyz[2];
-    //这个宏用于切换坐标系方向,注意要和matrix_xyz()形成互为转置矩阵
+    float x = xyz[0], y = xyz[1], z = xyz[2];
+    float A = roll_xyz[0], B = roll_xyz[1], C = roll_xyz[2];
+    //这个宏用于切换坐标系方向,注意要和 matrix_xyz() 形成互为转置矩阵
 #if 1
     /*
     *       [roll Z]
@@ -503,21 +485,21 @@ void matrix_zyx(float raxyz[3], float point[3])
     *         = |cB*sC, cA*cC + sA*sB*sC,  -sA*cC + cA*sB*sC||x|
     *           |-sB,   sA*cB,             cA*cB            ||z|
     *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
+    *           |retXyz[0]|
+    *         = |retXyz[1]|
+    *           |retXyz[2]|
     *
-    *  point[*] is equal to the follow ...
+    *  retXyz[*] is equal to the follow ...
     */
-    point[0] =
+    retXyz[0] =
         x * cos(B) * cos(C) +
         y * (-cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
         z * (sin(A) * sin(C) + cos(A) * sin(B) * cos(C));
-    point[1] =
+    retXyz[1] =
         x * cos(B) * sin(C) +
         y * (cos(A) * cos(C) + sin(A) * sin(B) * sin(C)) +
         z * (-sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
-    point[2] =
+    retXyz[2] =
         x * (-sin(B)) +
         y * sin(A) * cos(B) +
         z * cos(A) * cos(B);
@@ -550,23 +532,130 @@ void matrix_zyx(float raxyz[3], float point[3])
     *         = |-cB*sC, cA*cC - sA*sB*sC, sA*cC + cA*sB*sC||x|
     *           |sB,     -sA*cB,           cA*cB           ||z|
     *
-    *           |point[0]|
-    *         = |point[1]|
-    *           |point[2]|
+    *           |retXyz[0]|
+    *         = |retXyz[1]|
+    *           |retXyz[2]|
     *
-    *  point[*] is equal to the follow ...
+    *  retXyz[*] is equal to the follow ...
     */
-    point[0] =
+    retXyz[0] =
         x * cos(B) * cos(C) +
         y * (cos(A) * sin(C) + sin(A) * sin(B) * cos(C)) +
         z * (sin(A) * sin(C) - cos(A) * sin(B) * cos(C));
-    point[1] =
+    retXyz[1] =
         x * (-cos(B) * sin(C)) +
         y * (cos(A) * cos(C) - sin(A) * sin(B) * sin(C)) +
         z * (sin(A) * cos(C) + cos(A) * sin(B) * sin(C));
-    point[2] =
+    retXyz[2] =
         x * sin(B) +
         y * (-sin(A) * cos(B)) +
         z * cos(A) * cos(B);
 #endif
+}
+
+// roll_xyz[3] 使用度格式
+void matrix_xyz2(float roll_xyz[3], float xyz[3], float retXyz[3])
+{
+    float _roll_xyz[3];
+    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    matrix_xyz(_roll_xyz, xyz, retXyz);
+}
+void matrix_zyx2(float roll_xyz[3], float xyz[3], float retXyz[3])
+{
+    float _roll_xyz[3];
+    _roll_xyz[0] = roll_xyz[0] * MATH_PI / 180;
+    _roll_xyz[1] = roll_xyz[1] * MATH_PI / 180;
+    _roll_xyz[2] = roll_xyz[2] * MATH_PI / 180;
+    matrix_zyx(_roll_xyz, xyz, retXyz);
+}
+
+/*
+ *  矩阵运算: 透视矩阵点乘三维坐标,然后除以z(透视除法),返回投影坐标[-ar, ar]U[-1, 1]
+ * 
+ *  参数:
+ *      openAngle: 相机开角(单位:rad,范围:(0,pi))
+ *      xyz[3]: 要计算的空间坐标
+ *      ar: 相机的屏幕的宽高比
+ *      nearZ: 相机近端距离
+ *      farZ: 相机远端距离
+ *      retXY: 计算结果,一个二维平面坐标(注意其坐标原点是屏幕中心)
+ *      retDepth: 计算结果,深度值(远离屏幕的距离,单位:点)
+ * 
+ *  返回: false/不再相框内  true/在相框内
+ */
+bool projection(
+    float openAngle,
+    float xyz[3],
+    float ar,
+    int nearZ,
+    int farZ,
+    float *retXY,
+    float *retDepth)
+{
+    float hMax, hMin, wMax, wMin;
+    float retX, retY, retZ;
+
+    //快速检查
+    if (openAngle >= 360 || openAngle < 1)
+        return false;
+    if (ar <= 0 ||
+        xyz == NULL ||
+        nearZ >= farZ ||
+        xyz[0] < nearZ ||
+        xyz[0] > farZ)
+        return false;
+
+    //度转rad
+    openAngle = openAngle * MATH_PI / 180;
+
+    //屏幕高、宽范围(这里是假设屏幕高为2时的数值)
+    hMax = 1;
+    hMin = -1;
+    wMax = ar;
+    wMin = -ar;
+
+    /*                          [project matrix]
+    *
+    *   1/ar/tan(a/2)           0               0               0   
+    *       0               1/tan(a/2)          0               0
+    *       0                   0     ((-nZ)-fZ)/(nZ-fZ)  2*fZ*nZ/(nZ-fZ)
+    *       0                   0               1               0
+    *
+    *   ar: camera width/height
+    *   a: camera open angle
+    *   nZ: camera near Z
+    *   fZ: camera far Z
+    *
+    *                   |x|               |retX|
+    *   [project matrix]|y| and then /z = |retY|
+    *                   |z|               |retZ|
+    *                   |1|               | 1  |
+    *
+    *   output point request: retX in the range of (-ar, ar)
+    *                         retY in the range of (-1, 1)
+    *                         retZ in the range of (-1, 1)
+    */
+    retX = xyz[1] / ar / tan(openAngle / 2) / xyz[0];
+    retY = xyz[2] / tan(openAngle / 2) / xyz[0];
+    retZ = ((-nearZ) - farZ) / (nearZ - farZ) + 2 * farZ * nearZ / (nearZ - farZ) / xyz[0];
+
+    //返回二维坐标
+    if (retXY)
+    {
+        retXY[0] = retX;
+        retXY[1] = retY;
+    }
+    //深度
+    if (retDepth)
+        *retDepth = xyz[0] - nearZ;
+    //是否在相框范围内
+    if (wMax > retX && retX > wMin &&
+        hMax > retY && retY > hMin &&
+        1 > retZ && retZ > -1)
+    {
+        return true;
+    }
+    return false;
 }

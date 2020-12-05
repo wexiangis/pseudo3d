@@ -55,8 +55,7 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     float err = 0.0001, errZ = 0.001;
     float valTmp[3];
     // 用逆矩阵把三轴受力的合向量转为空间坐标系下的向量
-    memcpy(valTmp, valAcc, sizeof(float) * 3);
-    matrix_zyx(ps->rollXYZ, valTmp);
+    matrix_zyx(ps->rollXYZ, valAcc, valTmp);
     // 则该向量在水平方向的分量即为横纵向的g值,空间坐标系三轴向G值(单位:g)
     ps->gX = valTmp[0] + ps->gXErr;
     ps->gY = valTmp[1] + ps->gYErr;
@@ -68,7 +67,7 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     ps->accForce[0] = ps->gX;
     ps->accForce[1] = ps->gY;
     ps->accForce[2] = 0;//ps->gZ;
-    matrix_xyz(ps->rollXYZ, ps->accForce);
+    matrix_xyz(ps->rollXYZ, ps->accForce, ps->accForce);
 #endif
     // 得到剔除额外受力(仅受重力)的加速度计数据
     valTmp[0] = valAcc[0] - ps->accForce[0];
