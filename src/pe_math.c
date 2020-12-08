@@ -9,19 +9,21 @@
 /*
  *  quaternion解算
  *  参数:
- *      valG: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
- *      valA: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
- *      pry: 输出绕xyz轴角度,单位:rad (可以置NULL)
+ *      quat_err[7]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0} (必要参数)
+ *      valG[3]: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
+ *      valA[3]: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
+ *      pry[3]: 输出绕xyz轴角度,单位:rad (可以置NULL)
+ *      gravity[3]: 返回重力向量 (可以置NULL)
  *      intervalMs: 采样间隔,单位:ms (必要参数)
  */
-void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
+void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], float gravity[3], int intervalMs)
 {
     float Kp = 2.0f;
     float Ki = 0.001f;
     // 四元数的元素，代表估计方向
-    static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+    // static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     // 按比例缩小积分误差
-    static float eIntBak[3] = {0.0f, 0.0f, 0.0f};
+    // static float eIntBak[3] = {0.0f, 0.0f, 0.0f};
     // 时间间隔一半, 后面 pi/180 用于 deg/s 转 rad/s
     float halfT = (float)intervalMs / 2 / 1000;
     float q[4];
@@ -34,12 +36,20 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
     if (!valG)
         return;
     // stack out
-    memcpy(q, qBak, sizeof(float) * 4);
-    memcpy(eInt, eIntBak, sizeof(float) * 3);
+    // memcpy(q, qBak, sizeof(float) * 4);
+    // memcpy(eInt, eIntBak, sizeof(float) * 3);
+    memcpy(q, &quat_err[0], sizeof(float) * 4);
+    memcpy(eInt, &quat_err[4], sizeof(float) * 3);
     // 估计重力的方向(vx, vy, vz)
     vx = ax = 2 * (q[1] * q[3] - q[0] * q[2]);
     vy = ay = 2 * (q[0] * q[1] + q[2] * q[3]);
     vz = az = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
+    if (gravity)
+    {
+        gravity[0] = vx;
+        gravity[1] = vy;
+        gravity[2] = vz;
+    }
     // 加速度向量转为单位向量
     if (valA)
     {
@@ -50,19 +60,19 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
             ay = valA[1] / norm;
             az = valA[2] / norm;
             // 动态参数,当重力失真(自由落体/超重)时减少对加速度计依赖
-            if (norm < 1.0f)
+            if (norm <= 0.99f && norm > 0.79f)
             {
-                norm = pow(norm, 5);
+                norm = pow(norm - 0.79f, 1) / 0.2f;
                 Kp *= norm;
                 Ki *= norm;
             }
-            else if (norm > 1.0 && norm < 2.0f)
+            else if (norm > 0.99 && norm < 1.19f)
             {
-                norm = pow(2.0f - norm, 5);
+                norm = pow(1.19f - norm, 1) / 0.2f;
                 Kp *= norm;
                 Ki *= norm;
             }
-            else if (norm >= 2.0f)
+            else
                 Kp = Ki = 0.0f;
         }
     }
@@ -103,10 +113,10 @@ void quat_pry(float *valG, float *valA, float *pry, int intervalMs)
         pry[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
     }
     // stack in
-    memcpy(qBak, q, sizeof(float) * 4);
-    memcpy(eIntBak, eInt, sizeof(float) * 3);
-    // printf(" Q %.4f %.4f %.4f %.4f // %.4f %.4f %.4f \r\n",
-    //     q[0], q[1], q[2], q[3], eInt[0], eInt[1], eInt[2]);
+    // memcpy(qBak, q, sizeof(float) * 4);
+    // memcpy(eIntBak, eInt, sizeof(float) * 3);
+    memcpy(&quat_err[0], q, sizeof(float) * 4);
+    memcpy(&quat_err[4], eInt, sizeof(float) * 3);
 }
 
 // 四元数角增量(龙格塔微分方程)

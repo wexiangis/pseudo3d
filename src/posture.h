@@ -8,11 +8,16 @@
 
 typedef struct
 {
+    void *obj;
+    void (*callback)(void*);
     //线程及其运行标志
     pthread_t th;
     short flagRun;
     //采样周期
     int intervalMs;
+    //使用四元数法时用
+    float quat_err[7];//计算姿态时用
+    float quat_err2[7];//计算陀螺仪姿态时用
 
     //绕轴角速度(单位:deg/s)
     float gyrXYZ[3];
@@ -21,10 +26,11 @@ typedef struct
     //除重力以外的合受力(单位:g)
     //也就是说上面accXYZ[3]减去下面的向量就是仅重力的受力
     float accForce[3];
+    //
+    float gravity[3];
 
     //角速度累加得到的角度值(相对自身坐标,rad:[-pi, pi])
     float gyrRollXYZ[3];
-    float gyrRollXYZ2[3]; //degree mode
     //重力加速度得到的角度值(相对空间坐标,rad:[-pi, pi])
     float accRollXYZ[3];
     //最终输出角度值(相对空间坐标,rad:[-pi, pi])
@@ -57,7 +63,7 @@ typedef struct
  * 
  *  intervalMs: 采样间隔, 越小误差积累越小, 建议值:10(推荐),20,25,50
  */
-PostureStruct *pe_init(int intervalMs);
+PostureStruct *pe_init(int intervalMs, void *obj, void (*callback)(void*));
 void pe_exit(PostureStruct **ps);
 
 //复位(重置计算值)

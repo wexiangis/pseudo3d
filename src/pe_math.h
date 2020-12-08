@@ -6,12 +6,14 @@
 /*
  *  quaternion解算
  *  参数:
- *      valG: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
- *      valA: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
- *      pry: 输出绕xyz轴角度,单位:rad (可以置NULL)
+ *      quat_err[7]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0} (必要参数)
+ *      valG[3]: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
+ *      valA[3]: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
+ *      pry[3]: 输出绕xyz轴角度,单位:rad (可以置NULL)
+ *      gravity[3]: 返回重力向量 (可以置NULL)
  *      intervalMs: 采样间隔,单位:ms (必要参数)
  */
-void quat_pry(float *valG, float *valA, float *pry, int intervalMs);
+void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], float gravity[3], int intervalMs);
 
 // 四元数角增量(龙格塔微分方程)
 void quat_diff(float q[4], float roll_xyz[3]);

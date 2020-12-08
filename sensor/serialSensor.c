@@ -250,6 +250,18 @@ static bool _dataCheck(float value, float max, float min)
     return false;
 }
 
+static bool _crcCheck(uint8_t *buff)
+{
+    int i;
+    uint8_t crc = 0;
+    for (i = 0; i < 44; i++)
+        crc ^= buff[i];
+    if (crc == buff[i])
+        return true;
+    printf(" serialSensor: crc error\r\n");
+    return false;
+}
+
 void serialSensor_thread(void *argv)
 {
     Serial_Sensor *ss = (Serial_Sensor *)argv;
@@ -271,6 +283,7 @@ void serialSensor_thread(void *argv)
             {
                 if (pBuff[0] == 0x7E && pBuff[1] == 0x7E && pBuff[2] == 0x0C)
                 {
+                    _crcCheck(pBuff);
                     memcpy(vFloat, &pBuff[8], 9 * 4);
 
                     ss->accY[ss->buff_w] = _dataCheck(vFloat[0], 10, -10) ? (-vFloat[0]) : 0;

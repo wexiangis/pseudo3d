@@ -1,7 +1,11 @@
 
+#include <stdio.h>
 #include <math.h>
 #include "inv_mpu.h"
 #include "inv_mpu_dmp_motion_driver.h"
+
+//使用dmp库
+#define ENABLE_MPU_DMP
 
 //1弧度对应采样值,陀螺仪数据除以该值得到绕轴角加速度,单位rad/s
 #define GYRO_VAL_P_RED (32768 / 2000)
@@ -144,9 +148,11 @@ int mpu6050_init(unsigned short Hz, char test)
             if (run_self_test() != 0)
                 return 9;
         }
+#ifdef ENABLE_MPU_DMP
         //使能DMP
         if (mpu_set_dmp_state(1) != 0)
             return 10;
+#endif
     }
     else
         return 99;
@@ -155,19 +161,21 @@ int mpu6050_init(unsigned short Hz, char test)
 
 /*
  *  得到dmp处理后的数据
- *  pry: 欧拉角 pitch, roll, yaw, 单位rad
- *  gyro: deg/s
- *  accel: g
+ *  参数:
+ *      pry: 欧拉角 pitch, roll, yaw, 单位rad
+ *      gyro: deg/s
+ *      accel: g
  *  返回值: 0/正常
  */
 int mpu6050_angle(float *pry, float *gyro, float *accel)
 {
+    short _gyro[3], _accel[3];
+#ifdef ENABLE_MPU_DMP
     float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;
     unsigned long sensor_timestamp;
     short sensors;
     unsigned char more;
     long quat[4];
-    short _gyro[3], _accel[3];
     //
     if (dmp_read_fifo(_gyro, _accel, quat, &sensor_timestamp, &sensors, &more) != 0)
         return 1;
@@ -203,6 +211,20 @@ int mpu6050_angle(float *pry, float *gyro, float *accel)
     }
     else
         return 2;
+#else
+    if (mpu_get_gyro_reg(_gyro, NULL) == 0)
+    {
+        gyro[0] = (float)_gyro[0] / GYRO_VAL_P_RED;
+        gyro[1] = (float)_gyro[1] / GYRO_VAL_P_RED;
+        gyro[2] = (float)_gyro[2] / GYRO_VAL_P_RED;
+    }
+    if (mpu_get_accel_reg(_accel, NULL) == 0)
+    {
+        accel[0] = (float)_accel[0] / ACCEL_VAL_P_G;
+        accel[1] = (float)_accel[1] / ACCEL_VAL_P_G;
+        accel[2] = (float)_accel[2] / ACCEL_VAL_P_G;
+    }
+#endif
     return 0;
 }
 
