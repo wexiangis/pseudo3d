@@ -283,6 +283,7 @@ void serialSensor_thread(void *argv)
             {
                 if (pBuff[0] == 0x7E && pBuff[1] == 0x7E && pBuff[2] == 0x0C)
                 {
+                    
                     _crcCheck(pBuff);
                     memcpy(vFloat, &pBuff[8], 9 * 4);
 
@@ -292,6 +293,15 @@ void serialSensor_thread(void *argv)
                     ss->gyrY[ss->buff_w] = _dataCheck(vFloat[3], 720, -720) ? (-vFloat[3]) : 0;
                     ss->gyrX[ss->buff_w] = _dataCheck(vFloat[4], 720, -720) ? (-vFloat[4]) : 0;
                     ss->gyrZ[ss->buff_w] = _dataCheck(vFloat[5], 720, -720) ? (-vFloat[5]) : 0;
+
+                    // printf("%02X %02X %02X %02X %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\r\n",
+                    //     pBuff[0], pBuff[1], pBuff[2], pBuff[3],
+                    //     ss->accX[ss->buff_w],
+                    //     ss->accY[ss->buff_w],
+                    //     ss->accZ[ss->buff_w],
+                    //     ss->gyrX[ss->buff_w],
+                    //     ss->gyrY[ss->buff_w],
+                    //     ss->gyrZ[ss->buff_w]);
 
                     if (ss->buff_w + 1 >= SERIAL_CIRCLE_BUFF_POINT)
                         ss->buff_w = 0;

@@ -1,0 +1,51 @@
+
+/*
+ *  通过mpu6050计算姿态信息，并输出成3D图像显示
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+
+#include "delayus.h"
+#include "wave.h"
+#include "fbmap.h"
+
+#include "serialSensor.h"
+
+int main(void)
+{
+    Wave_Struct *ws1, *ws2;
+    float acc[3] = {0}, gyr[3] = {0};
+    DELAY_US_INIT;
+
+    fb_output(NULL, 0, 0, 0, 0);
+
+    ws1 = wave_init(0, 0, fb_width, fb_height / 2);
+    ws2 = wave_init(0, fb_height / 2, fb_width, fb_height / 2);
+
+    serialSensor_get(gyr, acc);
+    delayms(1000);
+
+    while(1)
+    {
+        DELAY_US(10000);
+        
+        serialSensor_get(gyr, acc);
+        
+        wave_load(ws1, 0, (short)(gyr[0] * 50));
+        wave_load(ws1, 1, (short)(gyr[1] * 50));
+        wave_load(ws1, 2, (short)(gyr[2] * 50));
+
+        wave_load(ws2, 0, (short)(acc[0] * 10000));
+        wave_load(ws2, 1, (short)(acc[1] * 10000));
+        wave_load(ws2, 2, (short)(acc[2] * 10000));
+
+        wave_output(ws1);
+        wave_output(ws2);
+    }
+
+    return 0;
+}
