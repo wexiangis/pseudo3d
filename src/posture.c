@@ -24,8 +24,8 @@
 #define POSTURE_PI 3.14159265358979323846
 
 // 传感器5选1
-#define SENSOR_MPU6050 //启用mpu6050
-// #define SENSOR_SERIALSENSOR //启用serialSensor
+// #define SENSOR_MPU6050 //启用mpu6050
+#define SENSOR_SERIALSENSOR //启用serialSensor
 // #define SENSOR_TCPSERVER //启用tcpServer
 // #define SENSOR_MMA8451 //启用MMA8451
 // #define SENSOR_HMC5883 //启用HMC5883罗盘
@@ -49,14 +49,14 @@
 void pe_accel(PostureStruct *ps, float *valAcc)
 {
     // 三轴向加速度归零差值
-    float err = 0.0001, errZ = 0.0001;
+    float err = 0.0001, errZ = 0.001, errMax = 10.0;
     float valTmp[3];
     // bakup
     memcpy(ps->accXYZ, valAcc, sizeof(float) * 3);
 #if 1
     matrix_zyx(ps->rollXYZ, valAcc, ps->accForce);
     // ps->accForce[2] -= 0.99f;
-    ps->accForce[2] -= 1.00f;
+    // ps->accForce[2] -= 1.00f;
 #else
     // 把空间坐标系下的水平分量旋转回物体参考系
     ps->accForce[0] = valAcc[0] - ps->gravity[0];
@@ -75,21 +75,35 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     ps->accRollXYZ[0] = atan2(ps->gravity[1], ps->gravity[2]);
     ps->accRollXYZ[1] = -atan2(ps->gravity[0],
         sqrt(ps->gravity[1] * ps->gravity[1] + ps->gravity[2] * ps->gravity[2]));
-    ps->accRollXYZ[2] = 0;
-#if 1
+    // ps->accRollXYZ[0] = atan2(valAcc[1], valAcc[2]);
+    // ps->accRollXYZ[1] = -atan2(valAcc[0], sqrt(valAcc[1] * valAcc[1] + valAcc[2] * valAcc[2]));
+    // ps->accRollXYZ[2] = 0;
+#if 0
     //test
-    if (ps->gX > err)
-        ps->gXErr -= err;
-    else if (ps->gX < -err)
-        ps->gXErr += err;
-    if (ps->gY > err)
-        ps->gYErr -= err;
-    else if (ps->gY < -err)
-        ps->gYErr += err;
-    if (ps->gZ > errZ)
-        ps->gZErr -= errZ;
-    else if (ps->gZ < -errZ)
-        ps->gZErr += errZ;
+    if (ps->gX > err) {
+        if (ps->gXErr > -errMax)
+            ps->gXErr -= err;
+    }
+    else if (ps->gX < -err) {
+        if (ps->gXErr < errMax)
+            ps->gXErr += err;
+    }
+    if (ps->gY > err) {
+        if (ps->gYErr > -errMax)
+            ps->gYErr -= err;
+    }
+    else if (ps->gY < -err) {
+        if (ps->gYErr < errMax)
+            ps->gYErr += err;
+    }
+    if (ps->gZ > errZ) {
+        if (ps->gZErr > -errMax)
+            ps->gZErr -= errZ;
+    }
+    else if (ps->gZ < -errZ) {
+        if (ps->gZErr < errMax)
+            ps->gZErr += errZ;
+    }
 #endif
 }
 
@@ -104,14 +118,16 @@ void pe_gyro(PostureStruct *ps, float *valGyr)
 
 void pe_inertial_navigation(PostureStruct *ps)
 {
-    float speX, speY, speZ, aX, aY, aZ;
+    float speX, speY, speZ, speXYZ, aX, aY, aZ, aXYZ;
     aX = ps->gX * PE_GRAVITY / PE_MASS;
     aY = ps->gY * PE_GRAVITY / PE_MASS;
-    aZ = ps->gZ * PE_GRAVITY / PE_MASS;
+    aZ = (ps->gZ - 1.0) * PE_GRAVITY / PE_MASS;
+    aXYZ = (ps->gXYZ - 1.0) * PE_GRAVITY / PE_MASS;
     //g值积分得到速度
     speX = ps->speX + TRAPEZIOD_SUM(aX, ps->aX);
     speY = ps->speY + TRAPEZIOD_SUM(aY, ps->aY);
     speZ = ps->speZ + TRAPEZIOD_SUM(aZ, ps->aZ);
+    speXYZ = ps->speXYZ + TRAPEZIOD_SUM(aXYZ, ps->aXYZ);
     //速度积分得到移动距离
     ps->movX += TRAPEZIOD_SUM(speX, ps->speX);
     ps->movY += TRAPEZIOD_SUM(speY, ps->speY);
@@ -120,9 +136,11 @@ void pe_inertial_navigation(PostureStruct *ps)
     ps->aX = aX;
     ps->aY = aY;
     ps->aZ = aZ;
+    ps->aXYZ = aXYZ;
     ps->speX = speX;
     ps->speY = speY;
     ps->speZ = speZ;
+    ps->speXYZ = speXYZ;
 }
 
 //复位(重置计算值)
@@ -132,74 +150,17 @@ void pe_reset(PostureStruct *ps)
     memset(ps->accRollXYZ, 0, sizeof(float) * 3);
     memset(ps->accForce, 0, sizeof(float) * 3);
     
-    ps->aX = ps->aY = ps->aZ = 0;
-    ps->speX = ps->speY = ps->speZ = 0;
+    ps->aX = ps->aY = ps->aZ = ps->aXYZ = 0;
+    ps->speX = ps->speY = ps->speZ = ps->speXYZ = 0;
     ps->movX = ps->movY = ps->movZ = 0;
 
     ps->rollZErr -= ps->rollXYZ[2];
+    // pry_to_quat(ps->accRollXYZ, ps->quat_err);
 
     // memset(ps->quat_err, 0, sizeof(float) * 7);
     // ps->quat_err[0] = 1.0f;
     memset(ps->quat_err2, 0, sizeof(float) * 7);
     ps->quat_err2[0] = 1.0f;
-}
-
-static float _xxx(float w[5], float h)
-{
-    return (
-            251 * w[0] +
-            64 * w[1] -
-            264 * w[2] +
-            106 * w[3] -
-            19 * w[4]
-        ) * h / 720
-        + 
-        (
-            65 / 554 * w[1] * w[0] -
-            118 / 5259 * w[2] * w[0] +
-            100 / 24163 * w[3] * w[0] -
-            40 / 104201 * w[4] * w[0]
-        ) * h * h;
-}
-
-void _aaa(float valGyr[3], int intervalMs)
-{
-    static float w[3][5] = {
-        {0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-        {0.0f, 0.0f, 0.0f, 0.0f, 0.0f},
-    };
-    float h = (float)intervalMs / 1000;
-    int i, j;
-    //w移位
-    for (j = 0; j < 3; j++) {
-        for (i = 0; i < 4; i++)
-            w[j][i + 1] = w[j][i];
-    }
-    w[0][0] = valGyr[0];
-    w[1][0] = valGyr[1];
-    w[2][0] = valGyr[2];
-    //
-    for (i = 0; i < 3; i++)
-        valGyr[i] += _xxx(w[i], h);
-}
-
-void _bbb(float valAcc[3])
-{
-#define BBB_COUNT 2
-    static float acc[3 * BBB_COUNT] = {0.0f};
-    static int r = 0, w = 3 * (BBB_COUNT - 1);
-    int i;
-    // in
-    for (i = 0; i < 3; i++, w++)
-        acc[w] = valAcc[i];
-    if (w >= 3 * BBB_COUNT)
-        w = 0;
-    // out
-    for (i = 0; i < 3; i++, r++)
-        valAcc[i] = acc[r];
-    if (r >= 3 * BBB_COUNT)
-        r = 0;
 }
 
 void *pe_thread(void *argv)
@@ -236,7 +197,7 @@ void *pe_thread(void *argv)
 #endif
 #ifdef SENSOR_SERIALSENSOR
     serialSensor_get(valGyr, valAcc);
-    delayms(200);
+    // delayms(200);
 #endif
 #ifdef SENSOR_TCPSERVER
     tcpServer_get(valRoll, valGyr, valAcc);
@@ -249,7 +210,13 @@ void *pe_thread(void *argv)
     //周期采样
     while (ps->flagRun)
     {
+#ifndef SENSOR_SERIALSENSOR
         DELAY_US(ps->intervalMs * 1000);
+#else
+        ps->intervalMs = 10;
+        while(serialSensor_get(valGyr, valAcc))
+            DELAY_US(50);
+#endif
 
         // 采样
 #ifdef SENSOR_MPU6050
@@ -259,10 +226,6 @@ void *pe_thread(void *argv)
             ps->rollXYZ[1] = ps->rollXYZ2[1] = valRoll[0];
             ps->rollXYZ[2] = ps->rollXYZ2[2] = valRoll[2] + ps->rollZErr;
         }
-#endif
-#ifdef SENSOR_SERIALSENSOR
-        ps->intervalMs = 10;
-        serialSensor_get(valGyr, valAcc);
 #endif
 #ifdef SENSOR_TCPSERVER
         if (tcpServer_get(valRoll, valGyr, valAcc) == 0)
@@ -297,7 +260,6 @@ void *pe_thread(void *argv)
 #endif
 
 #ifdef PE_QUATERNION
-        _aaa(valGyr, ps->intervalMs);
         quat_pry(ps->quat_err, valGyr, valAcc, valRoll2, ps->gravity, ps->intervalMs);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
         ps->rollXYZ[0] = valRoll2[0];

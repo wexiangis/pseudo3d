@@ -44,9 +44,9 @@ typedef struct
     //correct gX/gY (单位:g)
     float gXErr, gYErr, gZErr;
     //accel in horizomtal X/Y (unit:m/ss)
-    float aX, aY, aZ;
+    float aX, aY, aZ, aXYZ;
     //空间坐标系下的横纵向速度(单位:m/s)
-    float speX, speY, speZ;
+    float speX, speY, speZ, speXYZ;
     //空间坐标系下的横纵向偏移距离(单位:m)
     float movX, movY, movZ;
 
@@ -56,6 +56,8 @@ typedef struct
     float dir;
     //温度(原始数值)
     float temper;
+
+    float vDir[2], vNorm;
 } PostureStruct;
 
 /*

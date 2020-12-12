@@ -195,7 +195,7 @@ int main(int argc, char **argv)
 
 #ifdef ENABLE_MPU6050
 
-#if 1
+#if 0
         wave_load(ws1, 0, (short)(ps->gyrXYZ[0] * 50));
         wave_load(ws1, 1, (short)(ps->gyrXYZ[1] * 50));
         wave_load(ws1, 2, (short)(ps->gyrXYZ[2] * 50));
@@ -204,34 +204,23 @@ int main(int argc, char **argv)
         wave_load(ws2, 1, (short)(ps->accXYZ[1] * 10000));
         wave_load(ws2, 2, (short)(ps->accXYZ[2] * 10000));
 #elif 1
-        // wave_load(ws1, 0, (short)(ps->rollXYZ[0] * 10000));
-        // wave_load(ws1, 1, (short)(ps->rollXYZ[1] * 10000));
-        // wave_load(ws1, 2, (short)(ps->rollXYZ[2] * 10000));
-        // wave_load(ws1, 3, (short)(ps->gyrRollXYZ[0] * 10000));
-        // wave_load(ws1, 4, (short)(ps->gyrRollXYZ[1] * 10000));
-        // wave_load(ws1, 5, (short)(ps->gyrRollXYZ[2] * 10000));
-        // wave_load(ws1, 6, (short)(ps->accRollXYZ[0] * 10000));
-        // wave_load(ws1, 7, (short)(ps->accRollXYZ[1] * 10000));
-        // wave_load(ws1, 8, (short)(ps->accRollXYZ[2] * 10000));
+        wave_load(ws1, 0, 10000);//基准线
+        wave_load(ws1, 1, (short)(ps->speX * 10000) + 10000);
+        wave_load(ws1, 3, (short)(ps->speY * 10000) + 10000);
 
-        // wave_load(ws2, 0, 10000);//基准线
-        // wave_load(ws2, 1, (short)(ps->speX * 10000) + 10000);
-        // wave_load(ws2, 2, (short)(ps->speY * 10000) + 10000);
-        // // wave_load(ws2, 3, (short)(ps->speZ * 10000) + 10000);
-        // wave_load(ws2, 4, -10000);//基准线
-        // wave_load(ws2, 5, (short)(ps->gX * 50000) - 10000);
-        // wave_load(ws2, 6, (short)(ps->gY * 50000) - 10000);
-        // // wave_load(ws2, 7, (short)(ps->gZ * 50000) - 10000);
+        wave_load(ws1, 4, (short)(ps->speZ * 10000));
 
-        wave_load(ws1, 0, (short)(ps->speX * 10000));
-        wave_load(ws1, 1, (short)(ps->speY * 10000));
-        wave_load(ws1, 2, (short)(ps->speZ * 10000));
+        wave_load(ws1, 5, (short)(ps->speXYZ * 10000) - 10000);
+        wave_load(ws1, 6, -10000);//基准线
 
         wave_load(ws2, 0, 10000);//基准线
-        wave_load(ws2, 1, (short)(ps->gZ * 50000) + 10000);
-        wave_load(ws2, 4, -10000);//基准线
-        wave_load(ws2, 5, (short)(ps->gX * 50000) - 10000);
-        wave_load(ws2, 6, (short)(ps->gY * 50000) - 10000);
+        wave_load(ws2, 1, (short)(ps->gX * 50000) + 10000);
+        wave_load(ws2, 3, (short)(ps->gY * 50000) + 10000);
+
+        wave_load(ws2, 4, (short)((ps->gZ - 1.0) * 50000));
+
+        wave_load(ws2, 5, (short)((ps->gXYZ - 1.0) * 50000) - 10000);
+        wave_load(ws2, 6, -10000);//基准线
 #endif
 
         dot_set(ds, ps->gX, 0, 0xFF0000);
@@ -258,11 +247,15 @@ int main(int argc, char **argv)
         {
             log_count = 0;
 
-            // printf(" acc %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f roll %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f \r\n", 
+            // printf(" acc %8.4f %8.4f %8.4f gyr %8.4f %8.4f %8.4f roll %8.4f %8.4f %8.4f gyrRoll %8.4f %8.4f %8.4f \r\n", 
             //     ps->accXYZ[0], ps->accXYZ[1], ps->accXYZ[2],
             //     ps->gyrXYZ[0], ps->gyrXYZ[1], ps->gyrXYZ[2], 
             //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2],
             //     ps->gyrRollXYZ[0], ps->gyrRollXYZ[1], ps->gyrRollXYZ[2]);
+
+            // printf(" spe %8.4f %8.4f %8.4f mov %8.4f %8.4f %8.4f \r\n",
+            //     ps->speX, ps->speY, ps->speZ,
+            //     ps->movX, ps->movY, ps->movZ);
 
             // printf(" g %8.4f %8.4f %8.4f gXYZ %8.4f \r\n",
             //     ps->gX, ps->gY, ps->gZ, ps->gXYZ);

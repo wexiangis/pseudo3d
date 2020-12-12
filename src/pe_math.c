@@ -18,8 +18,8 @@
  */
 void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], float gravity[3], int intervalMs)
 {
-    float Kp = 2.0f;
-    float Ki = 0.001f;
+    float Kp = 1.0f;
+    float Ki = 0.0001f;
     // 四元数的元素，代表估计方向
     // static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
     // 按比例缩小积分误差
@@ -60,20 +60,20 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
             ay = valA[1] / norm;
             az = valA[2] / norm;
             // 动态参数,当重力失真(自由落体/超重)时减少对加速度计依赖
-            if (norm <= 0.99f && norm > 0.79f)
-            {
-                norm = pow(norm - 0.79f, 1) / 0.2f;
-                Kp *= norm;
-                Ki *= norm;
-            }
-            else if (norm > 0.99 && norm < 1.19f)
-            {
-                norm = pow(1.19f - norm, 1) / 0.2f;
-                Kp *= norm;
-                Ki *= norm;
-            }
-            else
-                Kp = Ki = 0.0f;
+            // if (norm <= 0.99f && norm > 0.89f)
+            // {
+            //     norm = pow(norm - 0.89f, 1) / 0.1f;
+            //     Kp *= norm;
+            //     Ki *= norm;
+            // }
+            // else if (norm > 0.99 && norm < 1.09f)
+            // {
+            //     norm = pow(1.09f - norm, 1) / 0.1f;
+            //     Kp *= norm;
+            //     Ki *= norm;
+            // }
+            // else
+            //     Kp = Ki = 0.0f;
         }
     }
     // 叉积补偿滤波(互补滤波) https://blog.csdn.net/weixin_40378598/article/details/108133032

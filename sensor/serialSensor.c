@@ -239,16 +239,15 @@ typedef struct
     float gyrX[SERIAL_CIRCLE_BUFF_POINT];
     float gyrY[SERIAL_CIRCLE_BUFF_POINT];
     float gyrZ[SERIAL_CIRCLE_BUFF_POINT];
+
+    float addX[SERIAL_CIRCLE_BUFF_POINT];
+    float addY[SERIAL_CIRCLE_BUFF_POINT];
+    float addZ[SERIAL_CIRCLE_BUFF_POINT];
+
+    float addXErr, addYErr, addZErr;
 } Serial_Sensor;
 
 static Serial_Sensor *serial_sensor = NULL;
-
-static bool _dataCheck(float value, float max, float min)
-{
-    if (min < value && value < max)
-        return true;
-    return false;
-}
 
 static bool _crcCheck(uint8_t *buff)
 {
@@ -276,7 +275,7 @@ void serialSensor_thread(void *argv)
         if (ret > 0)
         {
             // printf("ret/%d %02X %02X %02X %02X \r\n",
-            //     ret, buff[0], buff[1], buff[2], buff[3]);
+            //      ret, buff[0], buff[1], buff[2], buff[3]);
 
             pBuff = (uint8_t *)buff;
             while(ret >= 46)
@@ -287,21 +286,26 @@ void serialSensor_thread(void *argv)
                     _crcCheck(pBuff);
                     memcpy(vFloat, &pBuff[8], 9 * 4);
 
-                    ss->accY[ss->buff_w] = _dataCheck(vFloat[0], 10, -10) ? (-vFloat[0]) : 0;
-                    ss->accX[ss->buff_w] = _dataCheck(vFloat[1], 10, -10) ? (-vFloat[1]) : 0;
-                    ss->accZ[ss->buff_w] = _dataCheck(vFloat[2], 10, -10) ? (-vFloat[2]) : 0;
-                    ss->gyrY[ss->buff_w] = _dataCheck(vFloat[3], 720, -720) ? (-vFloat[3]) : 0;
-                    ss->gyrX[ss->buff_w] = _dataCheck(vFloat[4], 720, -720) ? (-vFloat[4]) : 0;
-                    ss->gyrZ[ss->buff_w] = _dataCheck(vFloat[5], 720, -720) ? (-vFloat[5]) : 0;
+                    ss->accY[ss->buff_w] = vFloat[0];
+                    ss->accX[ss->buff_w] = vFloat[1];
+                    ss->accZ[ss->buff_w] = vFloat[2];
+
+                    ss->gyrY[ss->buff_w] = -vFloat[3];
+                    ss->gyrX[ss->buff_w] = -vFloat[4];
+                    ss->gyrZ[ss->buff_w] = -vFloat[5];
+
+                    ss->addY[ss->buff_w] = -vFloat[6];
+                    ss->addX[ss->buff_w] = -vFloat[7];
+                    ss->addZ[ss->buff_w] = -vFloat[8];
 
                     // printf("%02X %02X %02X %02X %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\r\n",
                     //     pBuff[0], pBuff[1], pBuff[2], pBuff[3],
                     //     ss->accX[ss->buff_w],
                     //     ss->accY[ss->buff_w],
                     //     ss->accZ[ss->buff_w],
-                    //     ss->gyrX[ss->buff_w],
-                    //     ss->gyrY[ss->buff_w],
-                    //     ss->gyrZ[ss->buff_w]);
+                    //     ss->addX[ss->buff_w],
+                    //     ss->addY[ss->buff_w],
+                    //     ss->addZ[ss->buff_w]);
 
                     if (ss->buff_w + 1 >= SERIAL_CIRCLE_BUFF_POINT)
                         ss->buff_w = 0;
@@ -323,7 +327,7 @@ void serialSensor_thread(void *argv)
 /*
  *  返回0正常
  */
-int serialSensor_get(float *gyro, float *accel)
+int serialSensor_get(float gyro[3], float accel[3])
 {
     //打开串口
     if (!serial_sensor || serial_sensor->fd < 1)
@@ -354,9 +358,15 @@ int serialSensor_get(float *gyro, float *accel)
     }
     if (gyro)
     {
+#if 0
+        gyro[0] = (serial_sensor->addX[serial_sensor->buff_r] + serial_sensor->addXErr) / 0.01;
+        gyro[1] = (serial_sensor->addY[serial_sensor->buff_r] + serial_sensor->addYErr) / 0.01;
+        gyro[2] = (serial_sensor->addZ[serial_sensor->buff_r] + serial_sensor->addZErr) / 0.01;
+#else
         gyro[0] = serial_sensor->gyrX[serial_sensor->buff_r];
         gyro[1] = serial_sensor->gyrY[serial_sensor->buff_r];
         gyro[2] = serial_sensor->gyrZ[serial_sensor->buff_r];
+#endif
     }
     if (serial_sensor->buff_r + 1 >= SERIAL_CIRCLE_BUFF_POINT)
         serial_sensor->buff_r = 0;

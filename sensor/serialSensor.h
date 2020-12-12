@@ -12,6 +12,6 @@
 /*
  *  返回0正常
  */
-int serialSensor_get(float *gyro, float *accel);
+int serialSensor_get(float gyro[3], float accel[3]);
 
 #endif
