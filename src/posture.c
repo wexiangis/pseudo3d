@@ -54,7 +54,9 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     // bakup
     memcpy(ps->accXYZ, valAcc, sizeof(float) * 3);
 #if 1
-    matrix_zyx(ps->rollXYZ, valAcc, ps->accForce);
+    memcpy(valTmp, valAcc, sizeof(float) * 3);
+    quat_roll(ps->quat_err, NULL, 0, valTmp, false);
+    memcpy(ps->accForce, valTmp, sizeof(float) * 3);
     // ps->accForce[2] -= 0.99f;
     // ps->accForce[2] -= 1.00f;
 #else
@@ -72,12 +74,12 @@ void pe_accel(PostureStruct *ps, float *valAcc)
     // 合受力(单位:g)
     ps->gXYZ = sqrt(ps->gX * ps->gX + ps->gY * ps->gY + ps->gZ * ps->gZ);
     // accel计算姿态
-    ps->accRollXYZ[0] = atan2(ps->gravity[1], ps->gravity[2]);
-    ps->accRollXYZ[1] = -atan2(ps->gravity[0],
-        sqrt(ps->gravity[1] * ps->gravity[1] + ps->gravity[2] * ps->gravity[2]));
-    // ps->accRollXYZ[0] = atan2(valAcc[1], valAcc[2]);
-    // ps->accRollXYZ[1] = -atan2(valAcc[0], sqrt(valAcc[1] * valAcc[1] + valAcc[2] * valAcc[2]));
-    // ps->accRollXYZ[2] = 0;
+    // ps->accRollXYZ[0] = atan2(ps->gravity[1], ps->gravity[2]);
+    // ps->accRollXYZ[1] = -atan2(ps->gravity[0],
+    //     sqrt(ps->gravity[1] * ps->gravity[1] + ps->gravity[2] * ps->gravity[2]));
+    ps->accRollXYZ[0] = atan2(valAcc[1], valAcc[2]);
+    ps->accRollXYZ[1] = -atan2(valAcc[0], sqrt(valAcc[1] * valAcc[1] + valAcc[2] * valAcc[2]));
+    ps->accRollXYZ[2] = 0;
 #if 0
     //test
     if (ps->gX > err) {

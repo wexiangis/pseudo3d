@@ -20,10 +20,6 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
 {
     float Kp = 1.0f;
     float Ki = 0.0001f;
-    // 四元数的元素，代表估计方向
-    // static float qBak[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-    // 按比例缩小积分误差
-    // static float eIntBak[3] = {0.0f, 0.0f, 0.0f};
     // 时间间隔一半, 后面 pi/180 用于 deg/s 转 rad/s
     float halfT = (float)intervalMs / 2 / 1000;
     float q[4];
@@ -36,11 +32,9 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
     if (!valG)
         return;
     // stack out
-    // memcpy(q, qBak, sizeof(float) * 4);
-    // memcpy(eInt, eIntBak, sizeof(float) * 3);
     memcpy(q, &quat_err[0], sizeof(float) * 4);
     memcpy(eInt, &quat_err[4], sizeof(float) * 3);
-    // 估计重力的方向(vx, vy, vz)
+    // 估计重力的方向,即(0,0,1)向量经过四元数的"逆旋转",即Crb
     vx = ax = 2 * (q[1] * q[3] - q[0] * q[2]);
     vy = ay = 2 * (q[0] * q[1] + q[2] * q[3]);
     vz = az = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
@@ -59,21 +53,6 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
             ax = valA[0] / norm;
             ay = valA[1] / norm;
             az = valA[2] / norm;
-            // 动态参数,当重力失真(自由落体/超重)时减少对加速度计依赖
-            // if (norm <= 0.99f && norm > 0.89f)
-            // {
-            //     norm = pow(norm - 0.89f, 1) / 0.1f;
-            //     Kp *= norm;
-            //     Ki *= norm;
-            // }
-            // else if (norm > 0.99 && norm < 1.09f)
-            // {
-            //     norm = pow(1.09f - norm, 1) / 0.1f;
-            //     Kp *= norm;
-            //     Ki *= norm;
-            // }
-            // else
-            //     Kp = Ki = 0.0f;
         }
     }
     // 叉积补偿滤波(互补滤波) https://blog.csdn.net/weixin_40378598/article/details/108133032
@@ -97,10 +76,7 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
     // 单位化
     norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
     if (isnan(norm))
-    {
-        // printf(" quat_pry: nan \r\n");
         return;
-    }
     q[0] /= norm;
     q[1] /= norm;
     q[2] /= norm;
@@ -113,8 +89,6 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
         pry[2] = atan2(2 * (q[1] * q[2] + q[0] * q[3]), q[0] * q[0] + q[1] * q[1] - q[2] * q[2] - q[3] * q[3]);
     }
     // stack in
-    // memcpy(qBak, q, sizeof(float) * 4);
-    // memcpy(eIntBak, eInt, sizeof(float) * 3);
     memcpy(&quat_err[0], q, sizeof(float) * 4);
     memcpy(&quat_err[4], eInt, sizeof(float) * 3);
 }
