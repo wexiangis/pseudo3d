@@ -216,7 +216,7 @@ P3D_PointArray_Type *p3d_init(int pointNum, float x, float y, float z, int color
 void p3d_3d_to_2d(float P3D_XYZ[3], int _2D_XY[2])
 {
     float tempX, tempY;
-    float x = P3D_XYZ[0], y = P3D_XYZ[1], z = P3D_XYZ[2];
+    float x = P3D_XYZ[0], y = -P3D_XYZ[1], z = P3D_XYZ[2];
 
     //不同的坐标系摆放方式
     if (P3D_2D_XYZ_TYPE == 0)

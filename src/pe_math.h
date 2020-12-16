@@ -6,14 +6,13 @@
 /*
  *  quaternion解算
  *  参数:
- *      quat_err[7]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0} (必要参数)
+ *      quat_err[10]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0,0,0,0} (必要参数)
  *      valG[3]: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
  *      valA[3]: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
  *      pry[3]: 输出绕xyz轴角度,单位:rad (可以置NULL)
- *      gravity[3]: 返回重力向量 (可以置NULL)
  *      intervalMs: 采样间隔,单位:ms (必要参数)
  */
-void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], float gravity[3], int intervalMs);
+void quat_pry(float quat_err[10], float valG[3], float valA[3], float pry[3], int intervalMs, float miscRate);
 
 // 四元数角增量(龙格塔微分方程)
 void quat_diff(float q[4], float roll_xyz[3]);
@@ -63,6 +62,21 @@ void quat_zyx(float roll_xyz[3], float xyz[3], float retXyz[3]);
  */
 void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]); // 待验证
 void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
+
+/*
+ *  向量取模
+ */
+float vector_norm(float v[3]);
+
+/*
+ *  向量单位化
+ */
+void vector_to_unit(float v[3], float ret[3]);
+
+/*
+ *  向量叉乘, v1 x v2 = ret
+ */
+void vector_cross_product(float v1[3], float v2[3], float ret[3]);
 
 /*
  *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)

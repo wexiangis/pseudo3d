@@ -9,21 +9,22 @@
 /*
  *  quaternion解算
  *  参数:
- *      quat_err[7]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0} (必要参数)
+ *      quat_err[10]: 四元数和误差积累数组,初始值用 {1,0,0,0,0,0,0,0,0,0} (必要参数)
  *      valG[3]: 陀螺仪xyz轴输出,单位:deg/s (必要参数)
  *      valA[3]: 加速度xyz轴输出,单位:g  (可以置NULL,等于纯陀螺仪计算姿态)
  *      pry[3]: 输出绕xyz轴角度,单位:rad (可以置NULL)
- *      gravity[3]: 返回重力向量 (可以置NULL)
  *      intervalMs: 采样间隔,单位:ms (必要参数)
+ *      miscRate: xxx
  */
-void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], float gravity[3], int intervalMs)
+void quat_pry(float quat_err[10], float valG[3], float valA[3], float pry[3], int intervalMs, float miscRate)
 {
-    float Kp = 1.0f;
-    float Ki = 0.0001f;
+    float Kp = 2.0f;
+    float Ki = 0.001f;
     // 时间间隔一半, 后面 pi/180 用于 deg/s 转 rad/s
     float halfT = (float)intervalMs / 2 / 1000;
     float q[4];
     float eInt[3];
+    float *errTotal;
     float norm;
     float ax, ay, az;
     float gx, gy, gz;
@@ -34,16 +35,11 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
     // stack out
     memcpy(q, &quat_err[0], sizeof(float) * 4);
     memcpy(eInt, &quat_err[4], sizeof(float) * 3);
+    errTotal = &quat_err[7];
     // 估计重力的方向,即(0,0,1)向量经过四元数的"逆旋转",即Crb
     vx = ax = 2 * (q[1] * q[3] - q[0] * q[2]);
     vy = ay = 2 * (q[0] * q[1] + q[2] * q[3]);
     vz = az = q[0] * q[0] - q[1] * q[1] - q[2] * q[2] + q[3] * q[3];
-    if (gravity)
-    {
-        gravity[0] = vx;
-        gravity[1] = vy;
-        gravity[2] = vz;
-    }
     // 加速度向量转为单位向量
     if (valA)
     {
@@ -54,6 +50,34 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
             ay = valA[1] / norm;
             az = valA[2] / norm;
         }
+        // 动态参数
+        if (norm < 0.8 || norm > 1.2)
+            Kp = Ki = 0;
+        else if (norm < 1.0)
+        {
+            Kp = (norm - 0.8) / 0.2 * Kp;
+            Ki = (norm - 0.8) / 0.2 * Ki;
+        }
+        else if (norm > 1.0)
+        {
+            Kp = (1.2 - norm) / 0.2 * Kp;
+            Ki = (1.2 - norm) / 0.2 * Ki;
+        }
+        // if (miscRate >= 110)
+        // {
+        //     Kp += Kp * 100;
+        //     Ki += Ki * 100;
+        // }
+        // else if (miscRate > 10)
+        // {
+        //     Kp += (miscRate - 10) * Kp;
+        //     Ki += (miscRate - 10) * Ki;
+        // }
+        // else if (miscRate < 0.01)
+        // {
+        //     Kp += (0.01 - miscRate) * 10000 * Kp;
+        //     Ki += (0.01 - miscRate) * 10000 * Ki;
+        // }
     }
     // 叉积补偿滤波(互补滤波) https://blog.csdn.net/weixin_40378598/article/details/108133032
     // 加速度向量(ax, ay, az)和向量(vx, vz, vy)的叉乘, gxyz 和 vxyz 夹角越大(90度时最大)则 exyz 值越大
@@ -64,10 +88,20 @@ void quat_pry(float quat_err[7], float valG[3], float valA[3], float pry[3], flo
     eInt[0] += ex * Ki;
     eInt[1] += ey * Ki;
     eInt[2] += ez * Ki;
+    //
+    errTotal[0] = Kp * ex + eInt[0];
+    errTotal[1] = Kp * ey + eInt[1];
+    errTotal[2] = Kp * ez + eInt[2];
     // 调整后的陀螺仪测量
-    gx = valG[0] * MATH_PI / 180 + Kp * ex + eInt[0];
-    gy = valG[1] * MATH_PI / 180 + Kp * ey + eInt[1];
-    gz = valG[2] * MATH_PI / 180 + Kp * ez + eInt[2];
+#if 1
+    gx = valG[0] * MATH_PI / 180 + errTotal[0];
+    gy = valG[1] * MATH_PI / 180 + errTotal[1];
+    gz = valG[2] * MATH_PI / 180 + errTotal[2];
+#else
+    gx = valG[0] * MATH_PI / 180;
+    gy = valG[1] * MATH_PI / 180;
+    gz = valG[2] * MATH_PI / 180;
+#endif
     // 四元数微分方程
     q[0] += (-q[1] * gx - q[2] * gy - q[3] * gz) * halfT;
     q[1] += (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
@@ -398,6 +432,46 @@ void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3])
         xyz[0] * 2 * (q1 * q3 + q0 * q2) +
         xyz[1] * 2 * (q2 * q3 + q0 * q1) +
         xyz[2] * (q0 * q0 - q1 * q1 - q2 * q2 + q3 * q3);
+}
+
+/*
+ *  向量取模
+ */
+float vector_norm(float v[3])
+{
+    float ret = 0;
+    ret = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (isnan(ret))
+        ret = 0;
+    return ret;
+}
+
+/*
+ *  向量单位化
+ */
+void vector_to_unit(float v[3], float ret[3])
+{
+    float norm = 0;
+    memcpy(ret, v, sizeof(float) * 3);
+    norm = vector_norm(v);
+    if (!isnan(norm) && norm != 0)
+    {
+        ret[0] /= norm;
+        ret[1] /= norm;
+        ret[2] /= norm;
+    }
+}
+
+/*
+ *  向量叉乘, v1 x v2 = ret
+ */
+void vector_cross_product(float v1[3], float v2[3], float ret[3])
+{
+    float _ret[3];
+    _ret[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    _ret[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    _ret[2] = v1[0] * v2[1] - v1[1] * v2[0];
+    memcpy(ret, _ret, sizeof(float) * 3);
 }
 
 /*

@@ -5,7 +5,7 @@
 #include "inv_mpu_dmp_motion_driver.h"
 
 //使用dmp库
-#define ENABLE_MPU_DMP
+// #define ENABLE_MPU_DMP
 
 //1弧度对应采样值,陀螺仪数据除以该值得到绕轴角加速度,单位rad/s
 #define GYRO_VAL_P_RED (32768 / 2000)
@@ -21,6 +21,12 @@
 
 //q30格式,long转float时的除数.
 #define q30 1073741824.0f
+
+#ifndef ENABLE_MPU_DMP
+#define GYRO_X_ERR (21)
+#define GYRO_Y_ERR (-14)
+#define GYRO_Z_ERR (15)
+#endif
 
 //陀螺仪方向设置
 static signed char gyro_orientation[9] = {
@@ -214,9 +220,10 @@ int mpu6050_angle(float *pry, float *gyro, float *accel)
 #else
     if (mpu_get_gyro_reg(_gyro, NULL) == 0)
     {
-        gyro[0] = (float)_gyro[0] / GYRO_VAL_P_RED;
-        gyro[1] = (float)_gyro[1] / GYRO_VAL_P_RED;
-        gyro[2] = (float)_gyro[2] / GYRO_VAL_P_RED;
+        // printf("gyro %05d %05d %05d \r\n", _gyro[0], _gyro[1], _gyro[2]);
+        gyro[0] = (float)(_gyro[0] + GYRO_X_ERR) / GYRO_VAL_P_RED;
+        gyro[1] = (float)(_gyro[1] + GYRO_Y_ERR) / GYRO_VAL_P_RED;
+        gyro[2] = (float)(_gyro[2] + GYRO_Z_ERR) / GYRO_VAL_P_RED;
     }
     if (mpu_get_accel_reg(_accel, NULL) == 0)
     {

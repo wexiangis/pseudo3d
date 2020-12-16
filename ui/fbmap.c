@@ -78,7 +78,7 @@ int fb_init(void)
     fbmap->fb = (unsigned char *)mmap(0, fbmap->fbSize, PROT_READ | PROT_WRITE, MAP_SHARED, fbmap->fd, 0);
     if (!fbmap->fb)
     {
-        fprintf(stderr, "fb_init: mmap size %ld err \r\n", fbmap->fbSize);
+        fprintf(stderr, "fb_init: mmap size %d err \r\n", (int)fbmap->fbSize);
         fb_release();
         return -1;
     }

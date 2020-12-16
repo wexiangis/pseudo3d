@@ -11,9 +11,6 @@
 #define P3D_PI 3.14159265358979323846
 #define P3D_2PI (P3D_PI * 2)
 
-//xyz坐标轴长度
-#define P3D_XYZ_LEN (VIEW_X_SIZE / 2)
-
 //管理多边形图像的point-point连接关系的结构体
 typedef struct P3D_PPLink
 {

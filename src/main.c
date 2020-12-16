@@ -32,12 +32,15 @@
 //平移分度值
 #define DIV_MOVE 10
 
+//xyz坐标轴长度
+#define P3D_XYZ_LEN (VIEW_X_SIZE / 2 - 8)
+
 int main(int argc, char **argv)
 {
     //初始化一个多边形
     P3D_PointArray_Type *dpat0, *dpat1, *dpat2, *dpat3;
     //测试点
-    float xyz[3];
+    float gravity[3] = {0};
     float raxyz[3] = {0};
     float mvxyz[3] = {0};
     float quat[4] = {1, 0, 0, 0};
@@ -51,8 +54,6 @@ int main(int argc, char **argv)
     PostureStruct *ps;
     //示波器2个
     Wave_Struct *ws1, *ws2;
-    //打点器1个
-    Dot_Struct *ds;
 
     // open console
     if (argc > 1)
@@ -182,11 +183,6 @@ int main(int argc, char **argv)
     //示波器初始化(上、下半屏)
     ws1 = wave_init(0, 0, fb_width - VIEW_X_SIZE, fb_height / 2);
     ws2 = wave_init(0, fb_height / 2, fb_width - VIEW_X_SIZE, fb_height / 2);
-    //打点器初始化(在姿态图像下方)
-    ds = dot_init(
-        fb_width - VIEW_X_SIZE, VIEW_Y_SIZE,
-        VIEW_X_SIZE, fb_height - VIEW_Y_SIZE,
-        -1.5, 1.5, -1.5, 1.5);
 #endif
 
     while (1)
@@ -196,6 +192,10 @@ int main(int argc, char **argv)
 #ifdef ENABLE_MPU6050
 
 #if 0
+        wave_load(ws1, 0, (short)(ps->rollXYZ[0] * 10000));
+        wave_load(ws1, 1, (short)(ps->rollXYZ[1] * 10000));
+        wave_load(ws1, 2, (short)(ps->rollXYZ[2] * 10000));
+#elif 0
         wave_load(ws1, 0, (short)(ps->gyrXYZ[0] * 50));
         wave_load(ws1, 1, (short)(ps->gyrXYZ[1] * 50));
         wave_load(ws1, 2, (short)(ps->gyrXYZ[2] * 50));
@@ -205,31 +205,27 @@ int main(int argc, char **argv)
         wave_load(ws2, 2, (short)(ps->accXYZ[2] * 10000));
 #elif 1
         wave_load(ws1, 0, 10000);//基准线
-        wave_load(ws1, 1, (short)(ps->speX * 10000) + 10000);
-        wave_load(ws1, 3, (short)(ps->speY * 10000) + 10000);
-
-        wave_load(ws1, 4, (short)(ps->speZ * 10000));
-
-        wave_load(ws1, 5, (short)(ps->speXYZ * 10000) - 10000);
+        wave_load(ws1, 1, (short)(ps->speXYZ[0] * 20000) + 10000);
+        wave_load(ws1, 3, (short)(ps->speXYZ[1] * 20000));
+        wave_load(ws1, 4, (short)(ps->speXYZ[2] * 20000) - 10000);
         wave_load(ws1, 6, -10000);//基准线
 
+        // wave_load(ws2, 0, 10000);//基准线
+        // wave_load(ws2, 1, (short)(ps->gXYZ[0] * 50000) + 10000);
+        // wave_load(ws2, 3, (short)(ps->gXYZ[1] * 50000));
+        // wave_load(ws2, 4, (short)(ps->gXYZ[2] * 50000) - 10000);
+        // wave_load(ws2, 5, -10000);//基准线
+
         wave_load(ws2, 0, 10000);//基准线
-        wave_load(ws2, 1, (short)(ps->gX * 50000) + 10000);
-        wave_load(ws2, 3, (short)(ps->gY * 50000) + 10000);
-
-        wave_load(ws2, 4, (short)((ps->gZ - 1.0) * 50000));
-
-        wave_load(ws2, 5, (short)((ps->gXYZ - 1.0) * 50000) - 10000);
-        wave_load(ws2, 6, -10000);//基准线
+        wave_load(ws2, 1, (short)(ps->gForce[0] * 50000) + 10000);
+        wave_load(ws2, 3, (short)(ps->gForce[1] * 50000));
+        // wave_load(ws2, 4, (short)((ps->gForce[2] - 1.0) * 50000) - 10000);
+        wave_load(ws2, 4, (short)((ps->accXYZ2 - 1.0) * 50000) - 10000);
+        wave_load(ws2, 5, -10000);//基准线
 #endif
-
-        dot_set(ds, ps->gX, 0, 0xFF0000);
-        dot_set(ds, 0, ps->gY, 0x0000FF);
-        dot_set(ds, ps->gX, ps->gY, 0x00FF00);
 
         wave_output(ws1);
         wave_output(ws2);
-        dot_output(ds);
 
         //拷贝姿态角度+调整
         memcpy(dpat1->raxyz, ps->rollXYZ, sizeof(float) * 3);
@@ -253,18 +249,22 @@ int main(int argc, char **argv)
             //     ps->rollXYZ[0], ps->rollXYZ[1], ps->rollXYZ[2],
             //     ps->gyrRollXYZ[0], ps->gyrRollXYZ[1], ps->gyrRollXYZ[2]);
 
-            // printf(" spe %8.4f %8.4f %8.4f mov %8.4f %8.4f %8.4f \r\n",
+            // printf(" spe %8.4f %8.4f %8.4f mov %8.4f %8.4f %8.4f gyrRate %8.4f accRate %8.4f misc %8.4f\r\n",
             //     ps->speX, ps->speY, ps->speZ,
-            //     ps->movX, ps->movY, ps->movZ);
+            //     ps->movX, ps->movY, ps->movZ,
+            //     ps->gyrRate, ps->accRate, ps->miscRate);
 
             // printf(" g %8.4f %8.4f %8.4f gXYZ %8.4f \r\n",
             //     ps->gX, ps->gY, ps->gZ, ps->gXYZ);
+
+            // printf("gyrRate %8.4f accRate %8.4f misc %8.4f err %8.4f %8.4f %8.4f\r\n",
+            //     ps->gyrRate, ps->accRate, ps->miscRate,
+            //     ps->quat_err[7], ps->quat_err[8], ps->quat_err[9]);
         }
         //逆矩阵测试,查看重力加速的合向量在空间坐标系中的位置
-        xyz[0] = -ps->accXYZ[0] * 100;
-        xyz[1] = ps->accXYZ[1] * 100;
-        xyz[2] = -ps->accXYZ[2] * 100;
-        matrix_zyx(dpat1->raxyz, xyz, xyz);
+        gravity[0] = ps->gForce[0] * 100;
+        gravity[1] = ps->gForce[1] * 100;
+        gravity[2] = -ps->gForce[2] * 100;
 #endif
 
         PRINT_CLEAR();
@@ -273,7 +273,7 @@ int main(int argc, char **argv)
         p3d_draw(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 4, dpat1);
         p3d_draw(VIEW_X_SIZE / 4, VIEW_Y_SIZE / 4 * 3, dpat2);
         p3d_draw(VIEW_X_SIZE / 4 * 3, VIEW_Y_SIZE / 4 * 3, dpat3);
-        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, 0xFF8000, xyz);
+        p3d_draw2(VIEW_X_SIZE / 2, VIEW_Y_SIZE / 2, 0xFF8000, gravity);
 
         PRINT_EN();
 
@@ -328,7 +328,6 @@ int main(int argc, char **argv)
                 p3d_reset(dpat3);
 #ifdef ENABLE_MPU6050
                 pe_reset(ps);
-                dot_clear(ds);
 #endif
             }
 
