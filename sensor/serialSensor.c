@@ -222,7 +222,6 @@ static int attr_set(int fd, SERIAL_ATTR_ST *serial_attr)
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include "mpu6050.h"
 #include "serialSensor.h"
 
 typedef struct
@@ -233,18 +232,29 @@ typedef struct
     //当前读写位置
     uint32_t buff_r, buff_w;
     //缓冲区
+    char temp[SERIAL_CIRCLE_BUFF_POINT];//温度 -128~127
+
+    uint32_t timeStamp[SERIAL_CIRCLE_BUFF_POINT];
+
     float accX[SERIAL_CIRCLE_BUFF_POINT];
     float accY[SERIAL_CIRCLE_BUFF_POINT];
     float accZ[SERIAL_CIRCLE_BUFF_POINT];
+
     float gyrX[SERIAL_CIRCLE_BUFF_POINT];
     float gyrY[SERIAL_CIRCLE_BUFF_POINT];
     float gyrZ[SERIAL_CIRCLE_BUFF_POINT];
 
-    float addX[SERIAL_CIRCLE_BUFF_POINT];
-    float addY[SERIAL_CIRCLE_BUFF_POINT];
-    float addZ[SERIAL_CIRCLE_BUFF_POINT];
+    float compassX[SERIAL_CIRCLE_BUFF_POINT];
+    float compassY[SERIAL_CIRCLE_BUFF_POINT];
+    float compassZ[SERIAL_CIRCLE_BUFF_POINT];
 
-    float addXErr, addYErr, addZErr;
+    float angleAddX[SERIAL_CIRCLE_BUFF_POINT];
+    float angleAddY[SERIAL_CIRCLE_BUFF_POINT];
+    float angleAddZ[SERIAL_CIRCLE_BUFF_POINT];
+
+    float speedAddX[SERIAL_CIRCLE_BUFF_POINT];
+    float speedAddY[SERIAL_CIRCLE_BUFF_POINT];
+    float speedAddZ[SERIAL_CIRCLE_BUFF_POINT];
 } Serial_Sensor;
 
 static Serial_Sensor *serial_sensor = NULL;
@@ -253,7 +263,7 @@ static bool _crcCheck(uint8_t *buff)
 {
     int i;
     uint8_t crc = 0;
-    for (i = 0; i < 44; i++)
+    for (i = 0; i < 70 - 2; i++)
         crc ^= buff[i];
     if (crc == buff[i])
         return true;
@@ -264,57 +274,103 @@ static bool _crcCheck(uint8_t *buff)
 void serialSensor_thread(void *argv)
 {
     Serial_Sensor *ss = (Serial_Sensor *)argv;
-    size_t ret = 0;
+    size_t ret = 0, addr = 0, count;
     uint8_t buff[1024];
     uint8_t *pBuff;
-    float vFloat[10];
-    printf("serialSensor: thread start \r\n");
+    float vFloat[15];
+
+    // printf("serialSensor: thread start \r\n");
+
     while (ss->fd > 0)
     {
-        ret = read(ss->fd, buff, sizeof(buff));//阻塞读
+        ret = read(ss->fd, &buff[addr], sizeof(buff) - addr);//阻塞读
         if (ret > 0)
         {
+            ret += addr;
+            addr = 0;
+
             // printf("ret/%d %02X %02X %02X %02X \r\n",
             //      ret, buff[0], buff[1], buff[2], buff[3]);
 
             pBuff = (uint8_t *)buff;
-            while(ret >= 46)
+            while(ret >= 70)
             {
                 if (pBuff[0] == 0x7E && pBuff[1] == 0x7E && pBuff[2] == 0x0C)
                 {
-                    
                     _crcCheck(pBuff);
-                    memcpy(vFloat, &pBuff[8], 9 * 4);
+
+                    ss->temp[ss->buff_w] = (char)pBuff[3];
+
+                    ss->timeStamp[ss->buff_w] = *((uint32_t *)&pBuff[4]);
+
+                    //直接指针传递可能地址不是4的倍数
+                    memcpy(vFloat, &pBuff[8], sizeof(float) * 15);
 
                     ss->accY[ss->buff_w] = vFloat[0];
                     ss->accX[ss->buff_w] = vFloat[1];
                     ss->accZ[ss->buff_w] = vFloat[2];
 
-                    ss->gyrY[ss->buff_w] = -vFloat[3];
-                    ss->gyrX[ss->buff_w] = -vFloat[4];
-                    ss->gyrZ[ss->buff_w] = -vFloat[5];
+                    ss->gyrY[ss->buff_w] = vFloat[3];
+                    ss->gyrX[ss->buff_w] = vFloat[4];
+                    ss->gyrZ[ss->buff_w] = vFloat[5];
 
-                    ss->addY[ss->buff_w] = -vFloat[6];
-                    ss->addX[ss->buff_w] = -vFloat[7];
-                    ss->addZ[ss->buff_w] = -vFloat[8];
+                    ss->compassX[ss->buff_w] = vFloat[6];
+                    ss->compassY[ss->buff_w] = vFloat[7];
+                    ss->compassZ[ss->buff_w] = vFloat[8];
 
-                    // printf("%02X %02X %02X %02X %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f\r\n",
+                    // printf("%02X %02X %02X %02X %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %6.4f %06dms\r\n",
                     //     pBuff[0], pBuff[1], pBuff[2], pBuff[3],
                     //     ss->accX[ss->buff_w],
                     //     ss->accY[ss->buff_w],
                     //     ss->accZ[ss->buff_w],
-                    //     ss->addX[ss->buff_w],
-                    //     ss->addY[ss->buff_w],
-                    //     ss->addZ[ss->buff_w]);
+                    //     ss->gyrY[ss->buff_w],
+                    //     ss->gyrY[ss->buff_w],
+                    //     ss->gyrY[ss->buff_w],
+                    //     ss->compassX[ss->buff_w],
+                    //     ss->compassY[ss->buff_w],
+                    //     ss->compassZ[ss->buff_w],
+                    //     ss->timeStamp[ss->buff_w]);
+
+                    ss->angleAddX[ss->buff_w] = vFloat[9];
+                    ss->angleAddY[ss->buff_w] = vFloat[10];
+                    ss->angleAddZ[ss->buff_w] = vFloat[11];
+
+                    ss->speedAddX[ss->buff_w] = vFloat[12];
+                    ss->speedAddY[ss->buff_w] = vFloat[13];
+                    ss->speedAddZ[ss->buff_w] = vFloat[14];
+
+                    // printf("aa %8.4f %8.4f %8.4f sa %8.4f %8.4f %8.4f temp %d\r\n",
+                    //     ss->angleAddX[ss->buff_w],
+                    //     ss->angleAddY[ss->buff_w],
+                    //     ss->angleAddZ[ss->buff_w],
+                    //     ss->speedAddX[ss->buff_w],
+                    //     ss->speedAddY[ss->buff_w],
+                    //     ss->speedAddZ[ss->buff_w],
+                    //     ss->temp[ss->buff_w]);
 
                     if (ss->buff_w + 1 >= SERIAL_CIRCLE_BUFF_POINT)
                         ss->buff_w = 0;
                     else
                         ss->buff_w += 1;
+
+                    pBuff += 70;
+                    ret -= 70;
                 }
-                pBuff += 46;
-                ret -= 46;
+                else
+                {
+                    pBuff += 1;
+                    ret -= 1;
+                }
             }
+            //还有剩余
+            if (ret > 0)
+            {
+                //移动内存
+                for (count = 0; count < ret; count++)
+                    buff[count] = pBuff[count];
+            }
+            //更新下一次的写入地址
+            addr = ret;
         }
         else if (ret < 0)
             break;
@@ -327,7 +383,7 @@ void serialSensor_thread(void *argv)
 /*
  *  返回0正常
  */
-int serialSensor_get(float gyro[3], float accel[3])
+int serialSensor_get(float gyro[3], float accel[3], float compass[3], float angleAdd[3], float speedAdd[3], char *temp, uint32_t *timeStamp)
 {
     //打开串口
     if (!serial_sensor || serial_sensor->fd < 1)
@@ -350,6 +406,7 @@ int serialSensor_get(float gyro[3], float accel[3])
 
     if (serial_sensor->buff_r == serial_sensor->buff_w)
         return 1;
+
     if (accel)
     {
         accel[0] = serial_sensor->accX[serial_sensor->buff_r];
@@ -358,19 +415,37 @@ int serialSensor_get(float gyro[3], float accel[3])
     }
     if (gyro)
     {
-#if 0
-        gyro[0] = (serial_sensor->addX[serial_sensor->buff_r] + serial_sensor->addXErr) / 0.01;
-        gyro[1] = (serial_sensor->addY[serial_sensor->buff_r] + serial_sensor->addYErr) / 0.01;
-        gyro[2] = (serial_sensor->addZ[serial_sensor->buff_r] + serial_sensor->addZErr) / 0.01;
-#else
         gyro[0] = serial_sensor->gyrX[serial_sensor->buff_r];
         gyro[1] = serial_sensor->gyrY[serial_sensor->buff_r];
         gyro[2] = serial_sensor->gyrZ[serial_sensor->buff_r];
-#endif
     }
+    if (compass)
+    {
+        compass[0] = serial_sensor->compassX[serial_sensor->buff_r];
+        compass[1] = serial_sensor->compassY[serial_sensor->buff_r];
+        compass[2] = serial_sensor->compassZ[serial_sensor->buff_r];
+    }
+    if (angleAdd)
+    {
+        angleAdd[0] = serial_sensor->angleAddX[serial_sensor->buff_r];
+        angleAdd[1] = serial_sensor->angleAddY[serial_sensor->buff_r];
+        angleAdd[2] = serial_sensor->angleAddZ[serial_sensor->buff_r];
+    }
+    if (speedAdd)
+    {
+        speedAdd[0] = serial_sensor->speedAddX[serial_sensor->buff_r];
+        speedAdd[1] = serial_sensor->speedAddY[serial_sensor->buff_r];
+        speedAdd[2] = serial_sensor->speedAddZ[serial_sensor->buff_r];
+    }
+    if (temp)
+        *temp = serial_sensor->temp[serial_sensor->buff_r];
+    if (timeStamp)
+        *timeStamp = serial_sensor->timeStamp[serial_sensor->buff_r];
+
     if (serial_sensor->buff_r + 1 >= SERIAL_CIRCLE_BUFF_POINT)
         serial_sensor->buff_r = 0;
     else
         serial_sensor->buff_r += 1;
+
     return 0;
 }

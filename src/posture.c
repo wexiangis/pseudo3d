@@ -19,16 +19,14 @@
 #include "serialSensor.h"
 #include "tcpServer.h"
 #include "mma8451.h"
-#include "hmc5883.h"
 
 #define POSTURE_PI 3.14159265358979323846
 
 // 传感器5选1
-#define SENSOR_MPU6050 //启用mpu6050
-// #define SENSOR_SERIALSENSOR //启用serialSensor
+// #define SENSOR_MPU6050 //启用mpu6050
+#define SENSOR_SERIALSENSOR //启用serialSensor
 // #define SENSOR_TCPSERVER //启用tcpServer
 // #define SENSOR_MMA8451 //启用MMA8451
-// #define SENSOR_HMC5883 //启用HMC5883罗盘
 
 // 存/读文件(选一个,读文件时不依赖传感器)
 // #define PE_SAVE_FILE "./data.txt"
@@ -238,7 +236,7 @@ void *pe_thread(void *argv)
         return NULL;
 #endif
 #ifdef SENSOR_SERIALSENSOR
-    serialSensor_get(valGyr, valAcc);
+    serialSensor_get(valGyr, valAcc, NULL, NULL, NULL, NULL, NULL);
 #endif
 #ifdef SENSOR_TCPSERVER
     tcpServer_get(valRoll, valGyr, valAcc);
@@ -255,8 +253,13 @@ void *pe_thread(void *argv)
         DELAY_US(ps->intervalMs * 1000);
 #else
         ps->intervalMs = 10;
-        while (serialSensor_get(valGyr, valAcc))
+        while (serialSensor_get(valGyr, valAcc, NULL, NULL, NULL, NULL, NULL))
             delayus(50);
+        valAcc[0] /= PE_GRAVITY;
+        valAcc[1] /= PE_GRAVITY;
+        valAcc[2] /= PE_GRAVITY;
+        valGyr[0] = -valGyr[0];
+        valGyr[1] = -valGyr[1];
 #endif
         // 采样
 #ifdef SENSOR_MPU6050
@@ -383,9 +386,5 @@ void pe_exit(PostureStruct **ps)
 //获取罗盘角度(rad:[-pi, pi])
 float pe_dir(void)
 {
-#ifdef SENSOR_HMC5883
-    return (float)hmc5883_get();
-#else
     return 0;
-#endif
 }
