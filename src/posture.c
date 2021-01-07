@@ -35,6 +35,9 @@
 // 启用四元数解算
 #define PE_QUATERNION
 
+//使能双子样处理(姿态更新间隔将由10ms变为20ms)
+// #define TWO_SAMPLE
+
 // (unit:N/kg)
 #define PE_GRAVITY 9.8
 // (unit:kg)
@@ -169,21 +172,6 @@ void pe_gyrCorrect(PostureStruct *ps, float valGyr[3])
     valGyr[2] += ps->gyrXYZErr[2];
 }
 
-void pe_xxx(float valAcc[3])
-{
-#define ACC_BUFF_LEN 1
-    static float buff[3][ACC_BUFF_LEN] = {0};
-    int i, j;
-    for (j = 0; j < 3; j++) {
-        for (i = 0; i < ACC_BUFF_LEN - 1; i++)
-            buff[j][i] = buff[j][i + 1];
-        buff[j][i] = valAcc[j];
-    }
-    valAcc[0] = buff[0][0];
-    valAcc[1] = buff[1][0];
-    valAcc[2] = buff[2][0];
-}
-
 //复位(重置计算值)
 void pe_reset(PostureStruct *ps)
 {
@@ -210,11 +198,23 @@ void *pe_thread(void *argv)
     int timeCount = 0;
     float valRoll[3] = {0};
     float valGyr[3] = {0};
+    float valAA[3] = {0};
     float valAcc[3] = {0};
 #ifdef PE_QUATERNION
     float valRoll2[3] = {0};
 #endif
     PostureStruct *ps = (PostureStruct *)argv;
+#ifdef TWO_SAMPLE
+    //缓存陀螺仪各轴2次的采样量
+    float tmpGyrX[2] = {0};
+    float tmpGyrY[2] = {0};
+    float tmpGyrZ[2] = {0};
+    //采样次数计数
+    int sampleCount = 0;
+    //
+    float cv1[3], cv2[3];
+#endif
+
     //存/读文件数据
 #ifdef PE_SAVE_FILE
     FILE *f_fp = fopen(PE_SAVE_FILE, "w");
@@ -236,7 +236,7 @@ void *pe_thread(void *argv)
         return NULL;
 #endif
 #ifdef SENSOR_SERIALSENSOR
-    serialSensor_get(valGyr, valAcc, NULL, NULL, NULL, NULL, NULL);
+    serialSensor_get(valGyr, valAcc, NULL, valAA, NULL, NULL, NULL);
 #endif
 #ifdef SENSOR_TCPSERVER
     tcpServer_get(valRoll, valGyr, valAcc);
@@ -253,13 +253,37 @@ void *pe_thread(void *argv)
         DELAY_US(ps->intervalMs * 1000);
 #else
         ps->intervalMs = 10;
-        while (serialSensor_get(valGyr, valAcc, NULL, NULL, NULL, NULL, NULL))
+        while (serialSensor_get(valGyr, valAcc, NULL, valAA, NULL, NULL, NULL))
             delayus(50);
-        valAcc[0] /= PE_GRAVITY;
-        valAcc[1] /= PE_GRAVITY;
+        valAcc[1] /= -PE_GRAVITY;
+        valAcc[0] /= -PE_GRAVITY;
         valAcc[2] /= PE_GRAVITY;
-        valGyr[0] = -valGyr[0];
-        valGyr[1] = -valGyr[1];
+#ifdef TWO_SAMPLE
+        ps->intervalMs = 20;
+        //
+        tmpGyrX[sampleCount] = valAA[1] + 0.001;
+        tmpGyrY[sampleCount] = valAA[0] + 0.001;
+        tmpGyrZ[sampleCount] = valAA[2] + 0.001;
+        //
+        if (++sampleCount < 2)
+            continue;
+        sampleCount = 0;
+        //
+        cv1[0] = 0; cv1[1] = tmpGyrY[0]; cv1[2] = tmpGyrZ[0];
+        cv2[0] = 0; cv2[1] = tmpGyrY[1]; cv2[2] = tmpGyrZ[1];
+        valGyr[0] = (tmpGyrX[0] + tmpGyrX[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
+        // cv1[0] = tmpGyrX[0]; cv1[1] = 0; cv1[2] = tmpGyrZ[0];
+        // cv2[0] = tmpGyrX[1]; cv2[1] = 0; cv2[2] = tmpGyrZ[1];
+        // valGyr[1] = (tmpGyrY[0] + tmpGyrY[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
+        // cv1[0] = tmpGyrX[0]; cv1[1] = tmpGyrY[0]; cv1[2] = 0;
+        // cv2[0] = tmpGyrX[1]; cv2[1] = tmpGyrY[1]; cv2[2] = 0;
+        // valGyr[2] = (tmpGyrZ[0] + tmpGyrZ[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
+
+        // valGyr[0] = (tmpGyrX[0] + tmpGyrX[1]) / 0.02;
+        valGyr[1] = (tmpGyrY[0] + tmpGyrY[1]) / 0.02;
+        valGyr[2] = (tmpGyrZ[0] + tmpGyrZ[1]) / 0.02;
+
+#endif
 #endif
         // 采样
 #ifdef SENSOR_MPU6050
@@ -303,9 +327,7 @@ void *pe_thread(void *argv)
         //变化率
         pe_changeRate(ps, valGyr, valAcc);
         //角速度矫正
-        pe_gyrCorrect(ps, valGyr);
-        //缓存和延迟
-        // pe_xxx(valAcc);
+        // pe_gyrCorrect(ps, valGyr);
 
 #ifdef PE_QUATERNION
         quat_pry(ps->quat_err, valGyr, valAcc, valRoll2, ps->intervalMs, ps->miscRate);

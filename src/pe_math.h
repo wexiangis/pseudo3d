@@ -64,19 +64,20 @@ void quat_matrix_xyz(float quat[4], float xyz[3], float retXyz[3]); // 待验证
 void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3]);
 
 /*
+ *  向量叉乘, v1 x v2 = ret
+ */
+void vector_cross_product(float v1[3], float v2[3], float ret[3]);
+
+/*
  *  向量取模
  */
 float vector_norm(float v[3]);
+float vector_norm2(float v1[3], float v2[3]);
 
 /*
  *  向量单位化
  */
 void vector_to_unit(float v[3], float ret[3]);
-
-/*
- *  向量叉乘, v1 x v2 = ret
- */
-void vector_cross_product(float v1[3], float v2[3], float ret[3]);
 
 /*
  *  旋转矩阵(matrix_xyz 和 matrix_zyx 互为转置矩阵,互为逆向旋转)

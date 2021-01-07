@@ -435,6 +435,18 @@ void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3])
 }
 
 /*
+ *  向量叉乘, v1 x v2 = ret
+ */
+void vector_cross_product(float v1[3], float v2[3], float ret[3])
+{
+    float _ret[3];
+    _ret[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    _ret[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    _ret[2] = v1[0] * v2[1] - v1[1] * v2[0];
+    memcpy(ret, _ret, sizeof(float) * 3);
+}
+
+/*
  *  向量取模
  */
 float vector_norm(float v[3])
@@ -444,6 +456,12 @@ float vector_norm(float v[3])
     if (isnan(ret))
         ret = 0;
     return ret;
+}
+float vector_norm2(float v1[3], float v2[3])
+{
+    float ret[3] = {0};
+    vector_cross_product(v1, v2, ret);
+    return vector_norm(ret);
 }
 
 /*
@@ -460,18 +478,6 @@ void vector_to_unit(float v[3], float ret[3])
         ret[1] /= norm;
         ret[2] /= norm;
     }
-}
-
-/*
- *  向量叉乘, v1 x v2 = ret
- */
-void vector_cross_product(float v1[3], float v2[3], float ret[3])
-{
-    float _ret[3];
-    _ret[0] = v1[1] * v2[2] - v1[2] * v2[1];
-    _ret[1] = v1[2] * v2[0] - v1[0] * v2[2];
-    _ret[2] = v1[0] * v2[1] - v1[1] * v2[0];
-    memcpy(ret, _ret, sizeof(float) * 3);
 }
 
 /*
