@@ -30,6 +30,12 @@ void quat_pry(float quat_err[10], float valG[3], float valA[3], float pry[3], in
     float gx, gy, gz;
     float vx, vy, vz;
     float ex, ey, ez;
+
+    float delta_2;
+    float s1[4], s2[4], s3[4], s4[4];
+    float gx1, gy1, gz1;
+    float T = (float)intervalMs / 1000;
+
     if (!valG)
         return;
     // stack out
@@ -102,11 +108,54 @@ void quat_pry(float quat_err[10], float valG[3], float valA[3], float pry[3], in
     gy = valG[1] * MATH_PI / 180;
     gz = valG[2] * MATH_PI / 180;
 #endif
-    // 四元数微分方程
+
+#if 1
+    // 四元数微分方程: 一阶龙格库塔法
     q[0] += (-q[1] * gx - q[2] * gy - q[3] * gz) * halfT;
     q[1] += (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
     q[2] += (q[0] * gy - q[1] * gz + q[3] * gx) * halfT;
     q[3] += (q[0] * gz + q[1] * gy - q[2] * gx) * halfT;
+#elif 0
+    // 四元数微分方程: 二阶毕卡法
+    delta_2 = (2 * halfT * gx) * (2 * halfT * gx) + (2 * halfT * gy) * (2 * halfT * gy) + (2 * halfT * gz) * (2 * halfT * gz);
+    q[0] = (1 - delta_2 / 8) * q[0] + (-q[1] * gx - q[2] * gy - q[3] * gz) * halfT;
+    q[1] = (1 - delta_2 / 8) * q[1] + (q[0] * gx + q[2] * gz - q[3] * gy) * halfT;
+    q[2] = (1 - delta_2 / 8) * q[2] + (q[0] * gy - q[1] * gz + q[3] * gx) * halfT;
+    q[3] = (1 - delta_2 / 8) * q[3] + (q[0] * gz + q[1] * gy - q[2] * gx) * halfT;
+#else
+    // 四元数微分方程: 四阶(注意valG[6])
+    gx = valG[0] * MATH_PI / 180;
+    gy = valG[1] * MATH_PI / 180;
+    gz = valG[2] * MATH_PI / 180;
+    gx1 = valG[3] * MATH_PI / 180;
+    gy1 = valG[4] * MATH_PI / 180;
+    gz1 = valG[5] * MATH_PI / 180;
+
+    s1[0] = (-gx * q[1] - gy * q[2] - gz * q[3]) / 2;
+    s1[1] = (gx * q[0] - gz * q[2] - gy * q[3]) / 2;
+    s1[2] = (gy * q[0] - gz * q[1] + gx * q[3]) / 2;
+    s1[3] = (gz * q[0] + gy * q[1] - gx * q[2]) / 2;
+
+    s2[0] = (-(gx + gx1) * (q[1] + halfT * s1[1]) - (gy + gy1) * (q[2] + halfT * s1[2]) - (gz + gz1) * (q[3] + halfT * s1[3])) / 4;
+    s2[1] = ((gx + gx1) * (q[0] + halfT * s1[0]) - (gz + gz1) * (q[2] + halfT * s1[2]) - (gy + gy1) * (q[3] + halfT * s1[3])) / 4;
+    s2[2] = ((gy + gy1) * (q[0] + halfT * s1[0]) - (gz + gz1) * (q[1] + halfT * s1[1]) + (gx + gx1) * (q[3] + halfT * s1[3])) / 4;
+    s2[3] = ((gz + gz1) * (q[0] + halfT * s1[0]) + (gy + gy1) * (q[1] + halfT * s1[1]) - (gx + gx1) * (q[2] + halfT * s1[2])) / 4;
+
+    s3[0] = (-(gx + gx1) * (q[1] + halfT * s2[1]) - (gy + gy1) * (q[2] + halfT * s2[2]) - (gz + gz1) * (q[3] + halfT * s2[3])) / 4;
+    s3[1] = ((gx + gx1) * (q[0] + halfT * s2[0]) - (gz + gz1) * (q[2] + halfT * s2[2]) - (gy + gy1) * (q[3] + halfT * s2[3])) / 4;
+    s3[2] = ((gy + gy1) * (q[0] + halfT * s2[0]) - (gz + gz1) * (q[1] + halfT * s2[1]) + (gx + gx1) * (q[3] + halfT * s2[3])) / 4;
+    s3[3] = ((gz + gz1) * (q[0] + halfT * s2[0]) + (gy + gy1) * (q[1] + halfT * s2[1]) - (gx + gx1) * (q[2] + halfT * s2[2])) / 4;
+
+    s4[0] = (-gx1 * (q[1] + T * s3[1]) - gy1 * (q[2] + T * s3[2]) - gz1 * (q[3] + T * s3[3])) / 2;
+    s4[1] = (gx1 * (q[0] + T * s3[0]) - gz1 * (q[2] + T * s3[2]) - gy1 * (q[3] + T * s3[3])) / 2;
+    s4[2] = (gy1 * (q[0] + T * s3[0]) - gz1 * (q[1] + T * s3[1]) + gx1 * (q[3] + T * s3[3])) / 2;
+    s4[3] = (gz1 * (q[0] + T * s3[0]) + gy1 * (q[1] + T * s3[1]) - gx1 * (q[2] + T * s3[2])) / 2;
+
+    q[0] += (s1[0] + 2 * s2[0] + 2 * s3[0] + s4[0]) * T / 6;//如果gx不是用的上一次gx1,则这里6改为3
+    q[1] += (s1[1] + 2 * s2[1] + 2 * s3[1] + s4[1]) * T / 6;
+    q[2] += (s1[2] + 2 * s2[2] + 2 * s3[2] + s4[2]) * T / 6;
+    q[3] += (s1[3] + 2 * s2[3] + 2 * s3[3] + s4[3]) * T / 6;
+#endif
     // 单位化
     norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
     if (isnan(norm))
@@ -222,6 +271,19 @@ void quat_to_pry2(float q[4], float pry[3])
     pry[0] *= 180 / MATH_PI;
     pry[1] *= 180 / MATH_PI;
     pry[2] *= 180 / MATH_PI;
+}
+
+//
+void quat_norm(float q[4])
+{
+    float norm = sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    if (!isnan(norm))
+    {
+        q[0] /= norm;
+        q[1] /= norm;
+        q[2] /= norm;
+        q[3] /= norm;
+    }
 }
 
 /*
@@ -409,7 +471,7 @@ void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3])
     float q2 = quat[2];
     float q3 = quat[3];
     float norm;
-    
+
     // 单位化
     norm = sqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
     if (!isnan(norm))
@@ -437,13 +499,15 @@ void quat_matrix_zyx(float quat[4], float xyz[3], float retXyz[3])
 /*
  *  向量叉乘, v1 x v2 = ret
  */
-void vector_cross_product(float v1[3], float v2[3], float ret[3])
+float vector_cross_product(float v1[3], float v2[3], float ret[3])
 {
     float _ret[3];
     _ret[0] = v1[1] * v2[2] - v1[2] * v2[1];
     _ret[1] = v1[2] * v2[0] - v1[0] * v2[2];
     _ret[2] = v1[0] * v2[1] - v1[1] * v2[0];
-    memcpy(ret, _ret, sizeof(float) * 3);
+    if (ret)
+        memcpy(ret, _ret, sizeof(float) * 3);
+    return sqrt(_ret[0] * _ret[0] + _ret[1] * _ret[1] + _ret[2] * _ret[2]);
 }
 
 /*
@@ -457,11 +521,13 @@ float vector_norm(float v[3])
         ret = 0;
     return ret;
 }
-float vector_norm2(float v1[3], float v2[3])
+float vector_norm2(float v[4])
 {
-    float ret[3] = {0};
-    vector_cross_product(v1, v2, ret);
-    return vector_norm(ret);
+    float ret = 0;
+    ret = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
+    if (isnan(ret))
+        ret = 0;
+    return ret;
 }
 
 /*
@@ -471,12 +537,25 @@ void vector_to_unit(float v[3], float ret[3])
 {
     float norm = 0;
     memcpy(ret, v, sizeof(float) * 3);
-    norm = vector_norm(v);
+    norm = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
     if (!isnan(norm) && norm != 0)
     {
         ret[0] /= norm;
         ret[1] /= norm;
         ret[2] /= norm;
+    }
+}
+void vector_to_unit2(float v[4], float ret[4])
+{
+    float norm = 0;
+    memcpy(ret, v, sizeof(float) * 4);
+    norm = sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]);
+    if (!isnan(norm) && norm != 0)
+    {
+        ret[0] /= norm;
+        ret[1] /= norm;
+        ret[2] /= norm;
+        ret[3] /= norm;
     }
 }
 

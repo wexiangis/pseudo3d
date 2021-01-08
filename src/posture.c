@@ -195,24 +195,20 @@ void pe_reset(PostureStruct *ps)
 void *pe_thread(void *argv)
 {
     DELAY_US_INIT;
-    int timeCount = 0;
     float valRoll[3] = {0};
-    float valGyr[3] = {0};
-    float valAA[3] = {0};
+    float valGyr[6] = {0};
+    float valAA[2] = {0};
     float valAcc[3] = {0};
 #ifdef PE_QUATERNION
     float valRoll2[3] = {0};
 #endif
     PostureStruct *ps = (PostureStruct *)argv;
 #ifdef TWO_SAMPLE
-    //缓存陀螺仪各轴2次的采样量
-    float tmpGyrX[2] = {0};
-    float tmpGyrY[2] = {0};
-    float tmpGyrZ[2] = {0};
-    //采样次数计数
-    int sampleCount = 0;
-    //
-    float cv1[3], cv2[3];
+    int ts_count = 0;
+    float aa[3][3] = {0};
+    float qh[4] = {0};
+    float f;
+    float *quat;
 #endif
 
     //存/读文件数据
@@ -252,37 +248,23 @@ void *pe_thread(void *argv)
 #ifndef SENSOR_SERIALSENSOR
         DELAY_US(ps->intervalMs * 1000);
 #else
+        valGyr[3] = valGyr[0];
+        valGyr[4] = valGyr[1];
+        valGyr[5] = valGyr[2];
+
         ps->intervalMs = 10;
         while (serialSensor_get(valGyr, valAcc, NULL, valAA, NULL, NULL, NULL))
             delayus(50);
         valAcc[1] /= -PE_GRAVITY;
         valAcc[0] /= -PE_GRAVITY;
         valAcc[2] /= PE_GRAVITY;
-#ifdef TWO_SAMPLE
-        ps->intervalMs = 20;
-        //
-        tmpGyrX[sampleCount] = valAA[1] + 0.001;
-        tmpGyrY[sampleCount] = valAA[0] + 0.001;
-        tmpGyrZ[sampleCount] = valAA[2] + 0.001;
-        //
-        if (++sampleCount < 2)
-            continue;
-        sampleCount = 0;
-        //
-        cv1[0] = 0; cv1[1] = tmpGyrY[0]; cv1[2] = tmpGyrZ[0];
-        cv2[0] = 0; cv2[1] = tmpGyrY[1]; cv2[2] = tmpGyrZ[1];
-        valGyr[0] = (tmpGyrX[0] + tmpGyrX[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
-        // cv1[0] = tmpGyrX[0]; cv1[1] = 0; cv1[2] = tmpGyrZ[0];
-        // cv2[0] = tmpGyrX[1]; cv2[1] = 0; cv2[2] = tmpGyrZ[1];
-        // valGyr[1] = (tmpGyrY[0] + tmpGyrY[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
-        // cv1[0] = tmpGyrX[0]; cv1[1] = tmpGyrY[0]; cv1[2] = 0;
-        // cv2[0] = tmpGyrX[1]; cv2[1] = tmpGyrY[1]; cv2[2] = 0;
-        // valGyr[2] = (tmpGyrZ[0] + tmpGyrZ[1] + vector_norm2(cv1, cv2) * 2 / 3) / 0.02;
-
-        // valGyr[0] = (tmpGyrX[0] + tmpGyrX[1]) / 0.02;
-        valGyr[1] = (tmpGyrY[0] + tmpGyrY[1]) / 0.02;
-        valGyr[2] = (tmpGyrZ[0] + tmpGyrZ[1]) / 0.02;
-
+#if 1
+        valGyr[0] = (valAA[1] + 0.001) * 1000 / ps->intervalMs;
+        valGyr[1] = (valAA[0] + 0.001) * 1000 / ps->intervalMs;
+        valGyr[2] = (valAA[2] + 0.001) * 1000 / ps->intervalMs;
+        // valGyr[0] = valAA[1] * 1000 / ps->intervalMs;
+        // valGyr[1] = valAA[0] * 1000 / ps->intervalMs;
+        // valGyr[2] = valAA[2] * 1000 / ps->intervalMs;
 #endif
 #endif
         // 采样
@@ -329,6 +311,76 @@ void *pe_thread(void *argv)
         //角速度矫正
         // pe_gyrCorrect(ps, valGyr);
 
+#ifdef TWO_SAMPLE
+
+        pe_accel(ps, valAcc);
+        
+        aa[ts_count][0] = valAA[1];
+        aa[ts_count][1] = valAA[0];
+        aa[ts_count][2] = valAA[2];
+        
+        if (++ts_count < 2)
+            continue;
+        ts_count = 0;
+
+        aa[2][0] = aa[0][0] + aa[1][0] + aa[0][0] * aa[1][0] * 2 / 3;
+        aa[2][1] = aa[0][1] + aa[1][1] + aa[0][1] * aa[1][1] * 2 / 3;
+        aa[2][2] = aa[0][2] + aa[1][2] + aa[0][2] * aa[1][2] * 2 / 3;
+
+        f = sqrt(aa[2][0] * aa[2][0] + aa[2][1] * aa[2][1] + aa[2][2] * aa[2][2]);
+
+        qh[0] = cos(f / 2);
+        qh[1] = aa[2][0] / f * sin(f / 2);
+        qh[2] = aa[2][1] / f * sin(f / 2);
+        qh[3] = aa[2][2] / f * sin(f / 2);
+
+        // vector_to_unit2(qh, qh);
+
+        quat = ps->quat_err2;
+
+        quat[0] += qh[0] * ps->intervalMs / 1000;
+        quat[1] += qh[1] * ps->intervalMs / 1000;
+        quat[2] += qh[2] * ps->intervalMs / 1000;
+        quat[3] += qh[3] * ps->intervalMs / 1000;
+
+        // quat_multiply(quat, qh, quat);
+        // memcpy(quat, qh, sizeof(float) * 4);
+
+        vector_to_unit2(quat, quat);
+
+        // aa[2][0] = aa[2][0] * 1000 / ps->intervalMs / 2;
+        // aa[2][1] = aa[2][1] * 1000 / ps->intervalMs / 2;
+        // aa[2][2] = aa[2][2] * 1000 / ps->intervalMs / 2;
+        // quat_pry(quat, aa[2], NULL, valRoll2, ps->intervalMs * 2, ps->miscRate);
+
+        quat_to_pry(quat, valRoll2);
+        ps->rollXYZ[0] = valRoll2[0];
+        ps->rollXYZ[1] = valRoll2[1];
+        ps->rollXYZ[2] = valRoll2[2] + ps->rollZErr;
+#elif 0
+        
+        aa[ts_count][0] = (valAA[1] + 0.001);
+        aa[ts_count][1] = (valAA[0] + 0.001);
+        aa[ts_count][2] = (valAA[2] + 0.001);
+        
+        if (++ts_count < 2)
+            continue;
+        ts_count = 0;
+
+        valAA[0] = aa[0][0] + aa[1][0];// + (aa[0][0] / 140 - aa[1][0] * 13 / 210 + aa[0][0] * 323 / 420) * aa[1][0];
+        valAA[1] = aa[0][1] + aa[1][1];// + (aa[0][1] / 140 - aa[1][1] * 13 / 210 + aa[0][1] * 323 / 420) * aa[1][1];
+        valAA[2] = aa[0][2] + aa[1][2];// + (aa[0][2] / 140 - aa[1][2] * 13 / 210 + aa[0][2] * 323 / 420) * aa[1][2];
+
+        valGyr[0] = valAA[0] * 1000 / ps->intervalMs / 2;
+        valGyr[1] = valAA[1] * 1000 / ps->intervalMs / 2;
+        valGyr[2] = valAA[2] * 1000 / ps->intervalMs / 2;
+        
+        quat_pry(ps->quat_err, valGyr, NULL, valRoll2, ps->intervalMs * 2, ps->miscRate);
+        // 得到姿态欧拉角,其中绕z轴添加偏差矫正
+        ps->rollXYZ[0] = valRoll2[0];
+        ps->rollXYZ[1] = valRoll2[1];
+        ps->rollXYZ[2] = valRoll2[2] + ps->rollZErr;
+#else
 #ifdef PE_QUATERNION
         quat_pry(ps->quat_err, valGyr, valAcc, valRoll2, ps->intervalMs, ps->miscRate);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
@@ -353,17 +405,8 @@ void *pe_thread(void *argv)
         pe_accel(ps, valAcc);
         // 惯导参数计算
         pe_navigation(ps);
-        //定时获取罗盘数据 & 温度数据
-        timeCount += ps->intervalMs;
-        if (timeCount >= 200)
-        {
-            timeCount = 0;
-            //罗盘
-            if (mpu6050_compass(ps->compassXYZ) == 0)
-                ps->dir = atan2(ps->compassXYZ[1], ps->compassXYZ[0]);
-            //温度
-            mpu6050_temper(&ps->temper);
-        }
+#endif
+
         //
         if (ps->callback)
             ps->callback(ps->obj);
