@@ -23,8 +23,8 @@
 #define POSTURE_PI 3.14159265358979323846
 
 // 传感器5选1
-// #define SENSOR_MPU6050 //启用mpu6050
-#define SENSOR_SERIALSENSOR //启用serialSensor
+#define SENSOR_MPU6050 //启用mpu6050
+// #define SENSOR_SERIALSENSOR //启用serialSensor
 // #define SENSOR_TCPSERVER //启用tcpServer
 // #define SENSOR_MMA8451 //启用MMA8451
 
@@ -172,6 +172,48 @@ void pe_gyrCorrect(PostureStruct *ps, float valGyr[3])
     valGyr[2] += ps->gyrXYZErr[2];
 }
 
+/*等效旋转矢量转换为四元数 */
+void rv2q(float rv[3], float quat[4])
+{
+#define F1 (2 * 1) // define: Fk=2^k*k!
+#define F2 (F1 * 2 * 2)
+#define F3 (F2 * 2 * 3)
+#define F4 (F3 * 2 * 4)
+#define F5 (F4 * 2 * 5)
+    float n2 = rv[0] * rv[0] + rv[1] * rv[1] + rv[2] * rv[2];
+    float c, f;
+    float n4, n_2;
+
+    if (n2 < (POSTURE_PI / 180.0 * POSTURE_PI / 180.0)) // 0.017^2
+    {
+        n4 = n2 * n2;
+        c = 1.0 - n2 * (1.0 / F2) + n4 * (1.0 / F4);
+        f = 0.5 - n2 * (1.0 / F3) + n4 * (1.0 / F5);
+    }
+    else
+    {
+        n_2 = sqrt(n2) / 2.0;
+        c = cos(n_2);
+        f = sin(n_2) / n_2 * 0.5;
+    }
+    quat[0] = c;
+    quat[1] = rv[0] * f;
+    quat[2] = rv[1] * f;
+    quat[3] = rv[2] * f;
+}
+
+void q2att(float qnb[4], float pry[3])
+{
+	float	q11 = qnb[0]*qnb[0], q12 = qnb[0]*qnb[1], q13 = qnb[0]*qnb[2], q14 = qnb[0]*qnb[3], 
+			q22 = qnb[1]*qnb[1], q23 = qnb[1]*qnb[2], q24 = qnb[1]*qnb[3],     
+			q33 = qnb[2]*qnb[2], q34 = qnb[2]*qnb[3],  
+			q44 = qnb[3]*qnb[3];
+
+	pry[0] = asin(2*(q34+q12));
+	pry[1] = atan2(-2*(q24-q13), q11-q22-q33+q44);
+	pry[2] = atan2(-2*(q23-q14), q11-q22+q33-q44);
+}
+
 //复位(重置计算值)
 void pe_reset(PostureStruct *ps)
 {
@@ -207,7 +249,7 @@ void *pe_thread(void *argv)
     int ts_count = 0;
     float aa[3][3] = {0};
     float qh[4] = {0};
-    float f;
+    float rv[3] = {0};
     float *quat;
 #endif
 
@@ -255,17 +297,9 @@ void *pe_thread(void *argv)
         ps->intervalMs = 10;
         while (serialSensor_get(valGyr, valAcc, NULL, valAA, NULL, NULL, NULL))
             delayus(50);
-        valAcc[1] /= -PE_GRAVITY;
         valAcc[0] /= -PE_GRAVITY;
+        valAcc[1] /= -PE_GRAVITY;
         valAcc[2] /= PE_GRAVITY;
-#if 1
-        valGyr[0] = (valAA[1] + 0.001) * 1000 / ps->intervalMs;
-        valGyr[1] = (valAA[0] + 0.001) * 1000 / ps->intervalMs;
-        valGyr[2] = (valAA[2] + 0.001) * 1000 / ps->intervalMs;
-        // valGyr[0] = valAA[1] * 1000 / ps->intervalMs;
-        // valGyr[1] = valAA[0] * 1000 / ps->intervalMs;
-        // valGyr[2] = valAA[2] * 1000 / ps->intervalMs;
-#endif
 #endif
         // 采样
 #ifdef SENSOR_MPU6050
@@ -314,67 +348,74 @@ void *pe_thread(void *argv)
 #ifdef TWO_SAMPLE
 
         pe_accel(ps, valAcc);
-        
-        aa[ts_count][0] = valAA[1];
-        aa[ts_count][1] = valAA[0];
-        aa[ts_count][2] = valAA[2];
-        
-        if (++ts_count < 2)
+
+        aa[ts_count][0] = valAA[1];// * 0.01;
+        aa[ts_count][1] = valAA[0];// * 0.01;
+        aa[ts_count][2] = valAA[2];// * 0.01;
+
+        if (++ts_count < 1)
             continue;
+
+        if (ts_count == 1)
+        {
+            rv[0] = (aa[0][0] + aa[0][0] * aa[1][0] * 1 / 12) * 1.8;
+            rv[1] = (aa[0][1] + aa[0][1] * aa[1][1] * 1 / 12) * 1.8;
+            rv[2] = (aa[0][2] + aa[0][2] * aa[1][2] * 1 / 12) * 1.8;
+
+            // rv[0] = (aa[0][0] + 0) * 2;
+            // rv[1] = (aa[0][1] + 0) * 2;
+            // rv[2] = (aa[0][2] + 0) * 2;
+
+            aa[1][0] = aa[0][0];
+            aa[1][1] = aa[0][1];
+            aa[1][2] = aa[0][2];
+        }
+        else
+        {
+            rv[0] = (aa[0][0] + aa[1][0] + aa[0][0] * aa[1][0] * 2 / 3) * 1.8;
+            rv[1] = (aa[0][1] + aa[1][1] + aa[0][1] * aa[1][1] * 2 / 3) * 1.8;
+            rv[2] = (aa[0][2] + aa[1][2] + aa[0][2] * aa[1][2] * 2 / 3) * 1.8;
+        }
         ts_count = 0;
 
-        aa[2][0] = aa[0][0] + aa[1][0] + aa[0][0] * aa[1][0] * 2 / 3;
-        aa[2][1] = aa[0][1] + aa[1][1] + aa[0][1] * aa[1][1] * 2 / 3;
-        aa[2][2] = aa[0][2] + aa[1][2] + aa[0][2] * aa[1][2] * 2 / 3;
-
-        f = sqrt(aa[2][0] * aa[2][0] + aa[2][1] * aa[2][1] + aa[2][2] * aa[2][2]);
-
-        qh[0] = cos(f / 2);
-        qh[1] = aa[2][0] / f * sin(f / 2);
-        qh[2] = aa[2][1] / f * sin(f / 2);
-        qh[3] = aa[2][2] / f * sin(f / 2);
-
-        // vector_to_unit2(qh, qh);
+        rv2q(rv, qh);
 
         quat = ps->quat_err2;
-
-        quat[0] += qh[0] * ps->intervalMs / 1000;
-        quat[1] += qh[1] * ps->intervalMs / 1000;
-        quat[2] += qh[2] * ps->intervalMs / 1000;
-        quat[3] += qh[3] * ps->intervalMs / 1000;
+        // quat = qh;
 
         // quat_multiply(quat, qh, quat);
         // memcpy(quat, qh, sizeof(float) * 4);
 
-        vector_to_unit2(quat, quat);
+        // vector_to_unit2(quat, quat);
 
-        // aa[2][0] = aa[2][0] * 1000 / ps->intervalMs / 2;
-        // aa[2][1] = aa[2][1] * 1000 / ps->intervalMs / 2;
-        // aa[2][2] = aa[2][2] * 1000 / ps->intervalMs / 2;
-        // quat_pry(quat, aa[2], NULL, valRoll2, ps->intervalMs * 2, ps->miscRate);
+        // rv[0] = aa[0][0] / 0.01;
+        // rv[1] = aa[0][1] / 0.01;
+        // rv[2] = aa[0][2] / 0.01;
+        // quat_pry(quat, rv, NULL, valRoll2, ps->intervalMs, ps->miscRate);
 
-        quat_to_pry(quat, valRoll2);
+        // quat_to_pry(quat, valRoll2);
+        q2att(quat, valRoll2);
         ps->rollXYZ[0] = valRoll2[0];
         ps->rollXYZ[1] = valRoll2[1];
         ps->rollXYZ[2] = valRoll2[2] + ps->rollZErr;
 #elif 0
-        
+
         aa[ts_count][0] = (valAA[1] + 0.001);
         aa[ts_count][1] = (valAA[0] + 0.001);
         aa[ts_count][2] = (valAA[2] + 0.001);
-        
+
         if (++ts_count < 2)
             continue;
         ts_count = 0;
 
-        valAA[0] = aa[0][0] + aa[1][0];// + (aa[0][0] / 140 - aa[1][0] * 13 / 210 + aa[0][0] * 323 / 420) * aa[1][0];
-        valAA[1] = aa[0][1] + aa[1][1];// + (aa[0][1] / 140 - aa[1][1] * 13 / 210 + aa[0][1] * 323 / 420) * aa[1][1];
-        valAA[2] = aa[0][2] + aa[1][2];// + (aa[0][2] / 140 - aa[1][2] * 13 / 210 + aa[0][2] * 323 / 420) * aa[1][2];
+        valAA[0] = aa[0][0] + aa[1][0]; // + (aa[0][0] / 140 - aa[1][0] * 13 / 210 + aa[0][0] * 323 / 420) * aa[1][0];
+        valAA[1] = aa[0][1] + aa[1][1]; // + (aa[0][1] / 140 - aa[1][1] * 13 / 210 + aa[0][1] * 323 / 420) * aa[1][1];
+        valAA[2] = aa[0][2] + aa[1][2]; // + (aa[0][2] / 140 - aa[1][2] * 13 / 210 + aa[0][2] * 323 / 420) * aa[1][2];
 
         valGyr[0] = valAA[0] * 1000 / ps->intervalMs / 2;
         valGyr[1] = valAA[1] * 1000 / ps->intervalMs / 2;
         valGyr[2] = valAA[2] * 1000 / ps->intervalMs / 2;
-        
+
         quat_pry(ps->quat_err, valGyr, NULL, valRoll2, ps->intervalMs * 2, ps->miscRate);
         // 得到姿态欧拉角,其中绕z轴添加偏差矫正
         ps->rollXYZ[0] = valRoll2[0];

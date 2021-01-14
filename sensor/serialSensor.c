@@ -331,9 +331,9 @@ void serialSensor_thread(void *argv)
                     //     ss->compassZ[ss->buff_w],
                     //     ss->timeStamp[ss->buff_w]);
 
-                    ss->angleAddX[ss->buff_w] = vFloat[9];
-                    ss->angleAddY[ss->buff_w] = vFloat[10];
-                    ss->angleAddZ[ss->buff_w] = vFloat[11];
+                    ss->angleAddX[ss->buff_w] = vFloat[9] + 0.001;//矫正值
+                    ss->angleAddY[ss->buff_w] = vFloat[10] + 0.001;
+                    ss->angleAddZ[ss->buff_w] = vFloat[11] + 0.001;
 
                     ss->speedAddX[ss->buff_w] = vFloat[12];
                     ss->speedAddY[ss->buff_w] = vFloat[13];
@@ -415,9 +415,15 @@ int serialSensor_get(float gyro[3], float accel[3], float compass[3], float angl
     }
     if (gyro)
     {
+#if 1
+        gyro[1] = serial_sensor->angleAddX[serial_sensor->buff_r] / 0.01;//如有需要,在这里调换XY轴
+        gyro[0] = serial_sensor->angleAddY[serial_sensor->buff_r] / 0.01;
+        gyro[2] = serial_sensor->angleAddZ[serial_sensor->buff_r] / 0.01;
+#else
         gyro[0] = serial_sensor->gyrX[serial_sensor->buff_r];
         gyro[1] = serial_sensor->gyrY[serial_sensor->buff_r];
         gyro[2] = serial_sensor->gyrZ[serial_sensor->buff_r];
+#endif
     }
     if (compass)
     {
